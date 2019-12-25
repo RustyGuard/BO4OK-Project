@@ -1,5 +1,7 @@
+import random
 import socket
 import threading
+import time
 from threading import Lock
 
 import pygame
@@ -34,7 +36,7 @@ class Client:
 
     def send(self, data):
         try:
-            self.conn.send(data.encode())
+            self.conn.send((data + ';').encode())
         except socket.error as e:
             self.disconnect(e)
 
@@ -47,12 +49,17 @@ class Client:
         while self.connected:
             try:
                 if self.callback:
-                    command = self.conn.recv(1024).decode().split('_')
-                    cmd, *args = command
-                    self.callback(cmd, args, *self.call_args)
+                    commands = self.conn.recv(1024).decode().split(';')
+                    for i in commands:
+                        if i == '':
+                            continue
+                        command = i.split('_')
+                        cmd, *args = command
+                        self.callback(cmd, args, *self.call_args)
             except Exception as ex:
                 print('[READ THREAD]', ex)
                 print('[READ THREAD] NO LONGER READING FROM SERVER!')
+                self.disconnect(ex)
                 return
 
 
@@ -88,20 +95,30 @@ class Game:
 
 
 def waiting_screen(screen, client, game):
+    players_info = [0, 0]
+
     def read(cmd, args):
+        print(cmd, args)
         if cmd == '0':
             game.start()
             print('start')
+        if cmd == '10':
+            players_info[0] = int(args[0])
+            players_info[1] = int(args[1])
+            print(players_info)
 
     client.setEventCallback(read)
     clock = pygame.time.Clock()
     running = True
     t, c = 0, 0
+    font = pygame.font.Font(None, 30)
     while running and not game.started:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
         screen.fill((125, 125, 0))
+        text = font.render(f'{players_info[0]}/{players_info[1]} players.', 1, (255, 255, 100))
+        screen.blit(text, (100, 75))
 
         t += 1
         c += 1
@@ -126,28 +143,76 @@ def waiting_screen(screen, client, game):
         exit(0)
 
 
+class SelectArea:
+    def __init__(self):
+        self.x = 0
+        self.y = 0
+        self.width = 0
+        self.height = 0
+        self.active = False
+
+    def mouse_moved(self, x, y):
+        if x > 0:
+            self.width += x
+        if y > 0:
+            self.height += y
+        if x < 0:
+            self.width += -x
+            self.x += x
+        if y < 0:
+            self.height += -y
+            self.y += y
+
+    def draw(self, screen):
+        pygame.draw.rect(screen, pygame.Color('blue'), (self.x, self.y, self.width, self.height), 2)
+
+
 def game_screen(screen, client, game):
     def listen(cmd, args):
         # 0 - Game Started
         # 1 - Add object at [x, y]
+        # 10 - Tell player count [curr, max]
+        print(cmd, args)
         if cmd == '1':
-            x, y = list(map(int, args))
+            x, y, id = list(map(int, args))
+            print(id)
             game.addSprite(x, y)
         else:
             print('Taken message:', cmd, args)
 
+    def add_bomb(x, y):
+        # game.addSprite(x, y)
+        client.send(f'1_{x}_{y}')
+
     client.setEventCallback(listen)
+    time.sleep(1)
     clock = pygame.time.Clock()
     running = True
-    while running:
+    current_area = SelectArea()
+    for _ in range(2):
+        add_bomb(random.randint(0, 300), random.randint(0, 300))
+    while running and client.connected:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
-                game.addSprite(event.pos[0] - 50, event.pos[1] - 50)
-                client.send(f'0_1_{event.pos[0] - 50}_{event.pos[1] - 50}')
+                if not current_area.active:
+                    current_area.x, current_area.y = event.pos
+            if event.type == pygame.MOUSEBUTTONUP:
+                if current_area.active:
+                    # Do collide
+                    current_area.width, current_area.height = 0, 0
+                    current_area.active = False
+                elif current_area.width != 0 and current_area.height != 0:
+                    current_area.active = True
+                else:
+                    add_bomb(event.pos[0] - 50, event.pos[1] - 50)
+            if event.type == pygame.MOUSEMOTION:
+                if pygame.mouse.get_pressed()[0] == 1 and not current_area.active:
+                    current_area.mouse_moved(*event.rel)
         screen.fill((125, 125, 125))
         game.drawSprites(screen)
+        current_area.draw(screen)
         pygame.display.flip()
         clock.tick(60)
     client.disconnect('Application closed.')
@@ -156,7 +221,7 @@ def game_screen(screen, client, game):
 def main():
     client = Client()
     pygame.init()
-    size = 320, 470
+    size = 500, 500
     screen = pygame.display.set_mode(size)
     game = Game()
     client.start_thread()

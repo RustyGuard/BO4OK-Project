@@ -1,7 +1,10 @@
 import socket
 import threading
+from threading import Lock
 
-NEED_PLAYERS = 3
+import pygame
+
+NEED_PLAYERS = 1
 
 
 class ClienConnection:
@@ -13,7 +16,7 @@ class ClienConnection:
         ClienConnection.curr_id += 1
 
     def send(self, msg):
-        self.conn.send(msg.encode())
+        self.conn.send((msg + ';').encode())
 
 
 class Server:
@@ -21,6 +24,7 @@ class Server:
         self.clients = []
         self.connected = 0
         self.waiting = True
+        self.callback = None
 
     def send_all(self, msg):
         for c in self.clients:
@@ -49,6 +53,7 @@ class Server:
             self.connected += 1
             print(f"[CONNECT] Connected [{self.connected}/{NEED_PLAYERS}]!")
             self.authentication(conn, addr)
+            self.send_all(f'10_{self.connected}_{NEED_PLAYERS}')
         self.send_all('0')
         print('Everybody connected.')
         self.waiting = False
@@ -68,25 +73,53 @@ class Server:
     def player_input_thread(self, client):
         while True:
             try:
-                command = client.conn.recv(1024).decode()
-
-                # 0 - Send cmd to other clients
-                if command.startswith('0'):
-                    print('Command 0.', command)
-                    self.send_others(client, command[2::])
-                else:
-                    print('Invalid command:', command)
+                commands = client.conn.recv(1024).decode().split(';')
+                for i in commands:
+                    if i == '':
+                        continue
+                    command = i.split('_')
+                    cmd, *args = command
+                    self.callback(cmd, args, client)
             except Exception as ex:
                 print('[PLAYER THREAD ERROR] from client:', client.id, ex)
                 self.clients.remove(client)
-                if self.waiting:
-                    self.connected -= 1
-                    print(f"[CONNECT] Disconnected [{self.connected}/{NEED_PLAYERS}]!")
+                self.connected -= 1
+                print(f"[CONNECT] Disconnected [{self.connected}/{NEED_PLAYERS}]!")
+                self.send_all(f'10_{self.connected}_{NEED_PLAYERS}')
                 return
 
 
+class Bomb(pygame.sprite.Sprite):
+    bomb = pygame.image.load('sprites/bomb.png')
+
+    def __init__(self, group, x, y, id):
+        self.rect = self.bomb.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        super().__init__(group)
+
+
+curr_id, id_lock = 0, Lock()
+
+
 def main():
+
+    def read(cmd, args, client):
+        global curr_id
+        if cmd == '1':
+            id_lock.acquire()
+            x, y = list(map(int, args))
+            # game.addSprite(x, y)
+            server.send_all(f'1_{x}_{y}_{curr_id}')
+            print(curr_id)
+            curr_id += 1
+            id_lock.release()
+        else:
+            print('Invalid command')
+    group = pygame.sprite.Group()
+
     server = Server()
+    server.callback = read
     thread = threading.Thread(target=server.thread_connection)
     thread.start()
     thread.join()
