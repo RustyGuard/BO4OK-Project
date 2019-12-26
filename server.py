@@ -4,7 +4,7 @@ from threading import Lock
 
 import pygame
 
-NEED_PLAYERS = 1
+NEED_PLAYERS = 3
 
 
 class ClienConnection:
@@ -62,7 +62,7 @@ class Server:
         try:
             client = ClienConnection(addr, conn)
             self.clients.append(client)
-            thread = threading.Thread(target=self.player_input_thread, args=(client, ))
+            thread = threading.Thread(target=self.player_input_thread, args=(client,))
             client.thread = thread
             thread.start()
             print(f"[AUTHENTICATION] Thread for client '{client.id}' started.")
@@ -103,19 +103,26 @@ curr_id, id_lock = 0, Lock()
 
 
 def main():
-
     def read(cmd, args, client):
         global curr_id
-        if cmd == '1':
+        print(cmd, args)
+        if cmd == '1':  # Add object at [x, y]
             id_lock.acquire()
             x, y = list(map(int, args))
             # game.addSprite(x, y)
             server.send_all(f'1_{x}_{y}_{curr_id}')
-            print(curr_id)
+            # print(curr_id)
             curr_id += 1
+            id_lock.release()
+        elif cmd == '2':  # Retarget
+            id_lock.acquire()
+            id, x, y = list(map(int, args))
+            print('Retarget:', id, x, y)
+            server.send_all(f'2_{id}_{x}_{y}')
             id_lock.release()
         else:
             print('Invalid command')
+
     group = pygame.sprite.Group()
 
     server = Server()
