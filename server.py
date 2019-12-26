@@ -4,7 +4,7 @@ from threading import Lock
 
 import pygame
 
-NEED_PLAYERS = 3
+NEED_PLAYERS = 2
 
 
 class ClienConnection:
@@ -71,15 +71,19 @@ class Server:
             conn.close()
 
     def player_input_thread(self, client):
+        command_buffer = ''
         while True:
             try:
-                commands = client.conn.recv(1024).decode().split(';')
-                for i in commands:
-                    if i == '':
-                        continue
-                    command = i.split('_')
-                    cmd, *args = command
-                    self.callback(cmd, args, client)
+                command_buffer += client.conn.recv(1024).decode()
+                splitter = command_buffer.find(';')
+                while splitter != -1:
+                    command = command_buffer[:splitter]
+                    if command != '':
+                        command = command.split('_')
+                        cmd, *args = command
+                        self.callback(cmd, args, client)
+                    command_buffer = command_buffer[splitter + 1:]
+                    splitter = command_buffer.find(';')
             except Exception as ex:
                 print('[PLAYER THREAD ERROR] from client:', client.id, ex)
                 self.clients.remove(client)
@@ -123,7 +127,7 @@ def main():
         else:
             print('Invalid command')
 
-    group = pygame.sprite.Group()
+    # group = pygame.sprite.Group()
 
     server = Server()
     server.callback = read

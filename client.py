@@ -47,16 +47,20 @@ class Client:
         self.connected = False
 
     def thread_listen(self):
+        command_buffer = ''
         while self.connected:
             try:
                 if self.callback:
-                    commands = self.conn.recv(1024).decode().split(';')
-                    for i in commands:
-                        if i == '':
-                            continue
-                        command = i.split('_')
-                        cmd, *args = command
-                        self.callback(cmd, args, *self.call_args)
+                    command_buffer += self.conn.recv(1024).decode()
+                    splitter = command_buffer.find(';')
+                    while splitter != -1:
+                        command = command_buffer[:splitter]
+                        if command != '':
+                            command = command.split('_')
+                            cmd, *args = command
+                            self.callback(cmd, args, *self.call_args)
+                        command_buffer = command_buffer[splitter + 1:]
+                        splitter = command_buffer.find(';')
             except Exception as ex:
                 print('[READ THREAD]', ex)
                 print('[READ THREAD] NO LONGER READING FROM SERVER!')
