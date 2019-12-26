@@ -119,6 +119,7 @@ class Game:
             if i.id == id:
                 i.target = (x, y)
                 return
+        print(f'No objects with this id {id}!!!')
 
 
 def waiting_screen(screen, client, game):
