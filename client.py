@@ -72,24 +72,62 @@ class Bomb(pygame.sprite.Sprite):
     bomb = pygame.image.load('sprites/bomb.png')
 
     def __init__(self, group, x, y, id):
+        self.angle = 0
         self.image = Bomb.bomb
         self.rect = self.image.get_rect()
+        self.x = float(x)
+        self.y = float(y)
         self.rect.x = x
         self.rect.y = y
         self.id = id
         self.target = None
+        self.set_angle(random.randint(0, 359))
+
         super().__init__(group)
 
+    def set_angle(self, angle):
+        self.angle = angle
+        center = Bomb.bomb.get_rect().center
+        rotated_image = pygame.transform.rotate(Bomb.bomb, self.angle)
+        new_rect = rotated_image.get_rect(center=center)
+        new_rect.centerx = self.rect.centerx
+        new_rect.centery = self.rect.centery
+        self.image = rotated_image
+        self.rect = new_rect
+
+    def add_angle(self, angle):
+        self.angle += angle
+        center = Bomb.bomb.get_rect().center
+        rotated_image = pygame.transform.rotate(Bomb.bomb, self.angle)
+        new_rect = rotated_image.get_rect(center=center)
+        new_rect.centerx = self.rect.centerx
+        new_rect.centery = self.rect.centery
+        self.image = rotated_image
+        self.rect = new_rect
+
+    def move(self, x, y):
+        self.x += x
+        self.rect.x = int(self.x)
+        self.y += y
+        self.rect.y = int(self.y)
+        print(x, y)
+        print(self.x, self.y)
+        print(self.rect.x, self.rect.y)
+        print()
+
     def update(self, *args):
+        # self.add_angle(1)
+        self.move(math.cos(math.radians(self.angle)), math.sin(math.radians(self.angle)))
         if self.target is not None:
             xr = self.target[0] - self.rect.centerx
             yr = self.target[1] - self.rect.centery
-            if math.sqrt(xr * xr + yr * yr) < 50:
-                self.target = None
-                return
-            x = (-1 if self.target[0] - self.rect.centerx < 0 else 1) if self.target[0] != self.rect.centerx else 0
-            y = (-1 if self.target[1] - self.rect.centery < 0 else 1) if self.target[1] != self.rect.centery else 0
-            self.rect.move_ip(x, y)
+            self.set_angle(math.degrees(math.atan2(yr, xr)))
+            # if math.sqrt(xr * xr + yr * yr) < 50:
+            #     self.target = None
+            #     return
+            # x = (-1 if self.target[0] - self.rect.centerx < 0 else 1) if self.target[0] != self.rect.centerx else 0
+            # y = (-1 if self.target[1] - self.rect.centery < 0 else 1) if self.target[1] != self.rect.centery else 0
+            # self.rect.move_ip(x, y)
 
 
 class Game:

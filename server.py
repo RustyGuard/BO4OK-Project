@@ -4,7 +4,7 @@ from threading import Lock
 
 import pygame
 
-NEED_PLAYERS = 2
+NEED_PLAYERS = 1
 
 
 class ClienConnection:
