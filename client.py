@@ -3,10 +3,11 @@ import random
 import socket
 import threading
 import time
+from random import randint
 from threading import Lock
 
 import pygame
-from pygame.sprite import Group
+from pygame.sprite import Group, Sprite
 
 
 class Client:
@@ -68,21 +69,22 @@ class Client:
                 return
 
 
-class Bomb(pygame.sprite.Sprite):
-    bomb = pygame.image.load('sprites/cursor.png')
+class Bomb(Sprite):
+    cost = 10.0
+    bomb = pygame.image.load('sprites/bomb.png')
 
-    def __init__(self, group, x, y, id):
+    def __init__(self, x, y, id, player_id, group):
         self.angle = 0
         self.image = Bomb.bomb
+        self.target_angle = 0
         self.rect = self.image.get_rect()
         self.x = float(x)
         self.y = float(y)
         self.rect.centerx = x
         self.rect.centery = y
         self.id = id
+        self.player_id = player_id
         self.target = None
-        self.target_angle = 0
-        # self.set_angle(random.randint(0, 359))
 
         super().__init__(group)
 
@@ -128,11 +130,40 @@ class Bomb(pygame.sprite.Sprite):
             self.move(math.cos(math.radians(self.angle)) * 0.5, math.sin(math.radians(self.angle)) * 0.5)
 
 
+class SimpleMine(Sprite):
+    cost = 100.0
+    mine = pygame.image.load('sprites/mine.png')
+
+    def __init__(self, x, y, id, player_id, group):
+        self.id = id
+        self.player_id = player_id
+        self.image = SimpleMine.mine
+        self.rect = self.image.get_rect()
+        self.rect.centerx = x
+        self.rect.centery = y
+        super().__init__(group)
+
+
+class PlayerInfo:
+    def __init__(self):
+        self.money = 150.0
+        self.color = (0, 0, 0)
+
+
 class Game:
     def __init__(self):
         self.sprites = Group()
         self.lock = Lock()
         self.started = False
+        self.types = {
+            0: Bomb,
+            1: SimpleMine
+        }
+
+    def get_type_id(self, type):
+        for i, j in self.types.items():
+            if j == type:
+                return i
 
     def start(self):
         self.started = True
@@ -142,9 +173,11 @@ class Game:
         self.sprites.draw(surface)
         self.lock.release()
 
-    def addSprite(self, x, y, id):
+    def addEntity(self, type, x, y, id, player_id, *args):
         self.lock.acquire()
-        Bomb(self.sprites, x, y, id)
+        print('[START}')
+        self.types[type](x, y, id, player_id, *args, self.sprites)
+        print('[DONE]')
         self.lock.release()
 
     def update(self):
@@ -243,30 +276,30 @@ class SelectArea:
 def game_screen(screen, client, game):
     def listen(cmd, args):
         # 0 - Game Started
-        # 1 - Add object at [x, y]
+        # 1 - Add entity of [type] at [x, y] with [id]
+        # 2 - Retarget entity of [type] at [x, y] with [id]
+        # 3 - Update Player Info
         # 10 - Tell player count [curr, max]
         print(cmd, args)
         if cmd == '1':
-            x, y, id = list(map(int, args))
-            print(id)
-            game.addSprite(x, y, id)
+            type, x, y, id, id_player = int(args[0]), int(args[1]), int(args[2]), int(args[3]), int(args[4])
+            game.addEntity(type, x, y, id, id_player, *args[5::])
         elif cmd == '2':
             id, x, y = list(map(int, args))
             game.retarget(id, x, y)
+        elif cmd == '3':  # Update Player Info
+            if args[0] == '1':  # Money
+                info.money = float(args[1])
         else:
             print('Taken message:', cmd, args)
 
-    def add_bomb(x, y):
-        # game.addSprite(x, y)
-        client.send(f'1_{x}_{y}')
-
+    info = PlayerInfo()
     client.setEventCallback(listen)
     time.sleep(1)
     clock = pygame.time.Clock()
     running = True
     current_area = SelectArea()
-    for _ in range(1):
-        add_bomb(random.randint(0, 300), random.randint(0, 300))
+
     while running and client.connected:
         for event in pygame.event.get():
 
@@ -276,6 +309,8 @@ def game_screen(screen, client, game):
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if not current_area.active:
                     current_area.x, current_area.y = event.pos
+                if event.button == 2:
+                    client.send(f'1_{game.get_type_id(SimpleMine)}_{event.pos[0]}_{event.pos[1]}')
 
             if event.type == pygame.MOUSEBUTTONUP:
                 if current_area.active:
@@ -285,7 +320,7 @@ def game_screen(screen, client, game):
                 elif current_area.width != 0 and current_area.height != 0:
                     current_area.active = True
                 else:
-                    add_bomb(event.pos[0], event.pos[1])
+                    client.send(f'1_{game.get_type_id(Bomb)}_{event.pos[0]}_{event.pos[1]}')
 
             if event.type == pygame.MOUSEMOTION:
                 if pygame.mouse.get_pressed()[0] == 1 and not current_area.active:
@@ -295,6 +330,11 @@ def game_screen(screen, client, game):
         screen.fill((125, 125, 125))
         game.drawSprites(screen)
         current_area.draw(screen)
+
+        font = pygame.font.Font(None, 50)
+        text = font.render(str(info.money), 1, (100, 255, 100))
+        screen.blit(text, (5, 5))
+
         pygame.display.flip()
         clock.tick(60)
     client.disconnect('Application closed.')

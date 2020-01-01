@@ -1,10 +1,28 @@
+import math
 import socket
 import threading
+from random import randint
 from threading import Lock
 
 import pygame
+from pygame import sprite
+from pygame.sprite import Group, Sprite
 
+# Constants
 NEED_PLAYERS = 1
+EVENT_UPDATE = 30
+EVENT_SEC = 31
+CURRENT_ID = 0
+ID_LOCK = Lock()
+
+
+def get_curr_id():
+    global CURRENT_ID
+    ID_LOCK.acquire()
+    c = CURRENT_ID
+    CURRENT_ID += 1
+    ID_LOCK.release()
+    return c
 
 
 class ClienConnection:
@@ -25,6 +43,7 @@ class Server:
         self.connected = 0
         self.waiting = True
         self.callback = None
+        self.connected_callback = None
 
     def send_all(self, msg):
         for c in self.clients:
@@ -55,13 +74,14 @@ class Server:
             self.authentication(conn, addr)
             self.send_all(f'10_{self.connected}_{NEED_PLAYERS}')
         self.send_all('0')
-        print('Everybody connected.')
         self.waiting = False
+        print('Everybody connected.')
 
     def authentication(self, conn, addr):
         try:
             client = ClienConnection(addr, conn)
             self.clients.append(client)
+            self.connected_callback(client)
             thread = threading.Thread(target=self.player_input_thread, args=(client,))
             client.thread = thread
             thread.start()
@@ -93,47 +113,195 @@ class Server:
                 return
 
 
-class Bomb(pygame.sprite.Sprite):
+class Unit(Sprite):
+
+    def __init__(self, x, y, player_id, *groups):
+        global CURRENT_ID
+        self.rect = self.image.get_rect()  # Init image before __init__
+        self.x = float(x)
+        self.y = float(y)
+        self.rect.centerx = x
+        self.rect.centery = y
+        self.id = get_curr_id()
+        self.player_id = player_id
+        super().__init__(*groups)
+
+    def move(self, x, y):
+        self.x += x
+        self.rect.centerx = int(self.x)
+        self.y += y
+        self.rect.centery = int(self.y)
+
+    def get_args(self):
+        return ''
+
+
+class Mine(Unit):
+    cost = 100.0
+    mine = pygame.image.load('sprites/mine.png')
+
+    def __init__(self, x, y, player_id, *groups):
+        self.image = Mine.mine
+        super().__init__(x, y, player_id, *groups)
+
+    def update(self, *args):
+        if args:
+            if args[0].type == EVENT_SEC:
+                args[1].players[self.player_id].money += 5
+
+
+class Bomb(Unit):
+    cost = 10.0
     bomb = pygame.image.load('sprites/bomb.png')
 
-    def __init__(self, group, x, y, id):
-        self.rect = self.bomb.get_rect()
-        self.rect.x = x
-        self.rect.y = y
-        super().__init__(group)
+    def __init__(self, x, y, player_id, *groups):
+        self.angle = 0
+        self.image = Bomb.bomb
+        self.target = None
+        self.target_angle = 0
+        # self.set_angle(random.randint(0, 359))
+
+        super().__init__(x, y, player_id, *groups)
+
+    def set_angle(self, angle):
+        self.angle = angle
+        self.validate_angle()
+        self.update_image()
+
+    def add_angle(self, angle):
+        self.angle += angle
+        self.validate_angle()
+        self.update_image()
+
+    def validate_angle(self):
+        while self.angle >= 360:
+            self.angle -= 360
+        while self.angle < 0:
+            self.angle += 360
+
+    def update_image(self):
+        center = Bomb.bomb.get_rect().center
+        rotated_image = pygame.transform.rotate(Bomb.bomb, -self.angle)
+        new_rect = rotated_image.get_rect(center=center)
+        new_rect.centerx = self.rect.centerx
+        new_rect.centery = self.rect.centery
+        self.image = rotated_image
+        self.rect = new_rect
+
+    def move(self, x, y):
+        self.x += x
+        self.rect.centerx = int(self.x)
+        self.y += y
+        self.rect.centery = int(self.y)
+
+    def update(self, *args):
+        if self.target is not None:
+            xr = self.target[0] - self.rect.centerx
+            yr = self.target[1] - self.rect.centery
+            if math.sqrt(xr * xr + yr * yr) < 50:
+                self.target = None
+                return
+            self.set_angle(int(math.degrees(math.atan2(yr, xr))))
+            self.move(math.cos(math.radians(self.angle)) * 0.5, math.sin(math.radians(self.angle)) * 0.5)
 
 
-curr_id, id_lock = 0, Lock()
+class Player:
+    def __init__(self, client):
+        self.client = client
+        self.money = 150.0
+        self.id = self.client.id
+        self.color = (randint(0, 255), randint(0, 255), randint(0, 255))
+
+
+class ServerGame:
+    def __init__(self, server):
+        self.all_sprites = Group()
+        self.projectiles = Group()
+        self.players = {}
+        self.server = server
+        self.types = {
+            0: Bomb,
+            1: Mine
+        }
+
+    def add_player(self, client):
+        p = Player(client)
+        self.players[p.id] = p
+
+    def update(self, *args):
+        self.all_sprites.update(*args)
+
+    def place(self, build_class, x, y, player_id):
+        player = self.players[player_id]
+        if player.money >= build_class.cost:
+            building = build_class(x, y, player_id)
+            if not sprite.spritecollideany(building, self.all_sprites):
+                player.money -= build_class.cost
+                self.all_sprites.add(building)
+                self.server.send_all(f'1_{self.get_type_id(build_class)}_{x}_{y}_{building.id}_{player_id}{building.get_args()}')
+                player.client.send(f'3_1_{player.money}')
+                print(f'Success {player.money}')
+            else:
+                print(f'No place {player.money}')
+        else:
+            print(f'No money {player.money}/{build_class.cost}')
+
+    def get_type_id(self, type):
+        for i, j in self.types.items():
+            if j == type:
+                return i
 
 
 def main():
+
     def read(cmd, args, client):
         global curr_id
         print(cmd, args)
-        if cmd == '1':  # Add object at [x, y]
-            id_lock.acquire()
-            x, y = list(map(int, args))
-            # game.addSprite(x, y)
-            server.send_all(f'1_{x}_{y}_{curr_id}')
-            # print(curr_id)
-            curr_id += 1
-            id_lock.release()
-        elif cmd == '2':  # Retarget
-            id_lock.acquire()
-            id, x, y = list(map(int, args))
-            print('Retarget:', id, x, y)
-            server.send_all(f'2_{id}_{x}_{y}')
-            id_lock.release()
+        # if cmd == '1':  # Add object at [x, y]
+        #     id_lock.acquire()
+        #     x, y = list(map(int, args))
+        #     # game.addSprite(x, y)
+        #     server.send_all(f'1_{x}_{y}_{curr_id}')
+        #     # print(curr_id)
+        #     curr_id += 1
+        #     id_lock.release()
+        # elif cmd == '2':  # Retarget
+        #     id_lock.acquire()
+        #     id, x, y = list(map(int, args))
+        #     print('Retarget:', id, x, y)
+        #     server.send_all(f'2_{id}_{x}_{y}')
+        #     id_lock.release()
+        if cmd == '1':
+            game.place(game.types[int(args[0])], int(args[1]), int(args[2]), client.id)
         else:
             print('Invalid command')
 
-    # group = pygame.sprite.Group()
+    def connect_player(client):
+        game.add_player(client)
 
     server = Server()
+    game = ServerGame(server)
     server.callback = read
+    server.connected_callback = connect_player
     thread = threading.Thread(target=server.thread_connection)
     thread.start()
     thread.join()
+
+    pygame.init()
+    running = True
+    clock = pygame.time.Clock()
+    pygame.time.set_timer(EVENT_UPDATE, 1000 // 60)
+    pygame.time.set_timer(EVENT_SEC, 1000 // 1)
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type in [EVENT_UPDATE, EVENT_SEC]:
+                game.update(event, game)
+                if event.type == EVENT_SEC:
+                    for pl in game.players.values():
+                        pl.client.send(f'3_1_{pl.money}')
+        clock.tick(60)
 
 
 if __name__ == '__main__':
