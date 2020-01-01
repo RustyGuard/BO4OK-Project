@@ -69,7 +69,7 @@ class Client:
 
 
 class Bomb(pygame.sprite.Sprite):
-    bomb = pygame.image.load('sprites/bomb.png')
+    bomb = pygame.image.load('sprites/cursor.png')
 
     def __init__(self, group, x, y, id):
         self.angle = 0
@@ -77,28 +77,34 @@ class Bomb(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.x = float(x)
         self.y = float(y)
-        self.rect.x = x
-        self.rect.y = y
+        self.rect.centerx = x
+        self.rect.centery = y
         self.id = id
         self.target = None
-        self.set_angle(random.randint(0, 359))
+        self.target_angle = 0
+        # self.set_angle(random.randint(0, 359))
 
         super().__init__(group)
 
     def set_angle(self, angle):
         self.angle = angle
-        center = Bomb.bomb.get_rect().center
-        rotated_image = pygame.transform.rotate(Bomb.bomb, self.angle)
-        new_rect = rotated_image.get_rect(center=center)
-        new_rect.centerx = self.rect.centerx
-        new_rect.centery = self.rect.centery
-        self.image = rotated_image
-        self.rect = new_rect
+        self.validate_angle()
+        self.update_image()
 
     def add_angle(self, angle):
         self.angle += angle
+        self.validate_angle()
+        self.update_image()
+
+    def validate_angle(self):
+        while self.angle >= 360:
+            self.angle -= 360
+        while self.angle < 0:
+            self.angle += 360
+
+    def update_image(self):
         center = Bomb.bomb.get_rect().center
-        rotated_image = pygame.transform.rotate(Bomb.bomb, self.angle)
+        rotated_image = pygame.transform.rotate(Bomb.bomb, -self.angle)
         new_rect = rotated_image.get_rect(center=center)
         new_rect.centerx = self.rect.centerx
         new_rect.centery = self.rect.centery
@@ -107,27 +113,19 @@ class Bomb(pygame.sprite.Sprite):
 
     def move(self, x, y):
         self.x += x
-        self.rect.x = int(self.x)
+        self.rect.centerx = int(self.x)
         self.y += y
-        self.rect.y = int(self.y)
-        print(x, y)
-        print(self.x, self.y)
-        print(self.rect.x, self.rect.y)
-        print()
+        self.rect.centery = int(self.y)
 
     def update(self, *args):
-        # self.add_angle(1)
-        self.move(math.cos(math.radians(self.angle)), math.sin(math.radians(self.angle)))
         if self.target is not None:
             xr = self.target[0] - self.rect.centerx
             yr = self.target[1] - self.rect.centery
-            self.set_angle(math.degrees(math.atan2(yr, xr)))
-            # if math.sqrt(xr * xr + yr * yr) < 50:
-            #     self.target = None
-            #     return
-            # x = (-1 if self.target[0] - self.rect.centerx < 0 else 1) if self.target[0] != self.rect.centerx else 0
-            # y = (-1 if self.target[1] - self.rect.centery < 0 else 1) if self.target[1] != self.rect.centery else 0
-            # self.rect.move_ip(x, y)
+            if math.sqrt(xr * xr + yr * yr) < 50:
+                self.target = None
+                return
+            self.set_angle(int(math.degrees(math.atan2(yr, xr))))
+            self.move(math.cos(math.radians(self.angle)) * 0.5, math.sin(math.radians(self.angle)) * 0.5)
 
 
 class Game:
@@ -227,7 +225,8 @@ class SelectArea:
         self.active = False
 
     def draw(self, screen):
-        pygame.draw.rect(screen, pygame.Color('blue'), (self.x, self.y, self.width, self.height), 2)
+        if self.width != 0 and self.height != 0:
+            pygame.draw.rect(screen, pygame.Color('blue'), (self.x, self.y, self.width, self.height), 2)
 
     def find_intersect(self, group):
         test = pygame.sprite.Sprite()
@@ -266,7 +265,7 @@ def game_screen(screen, client, game):
     clock = pygame.time.Clock()
     running = True
     current_area = SelectArea()
-    for _ in range(2):
+    for _ in range(1):
         add_bomb(random.randint(0, 300), random.randint(0, 300))
     while running and client.connected:
         for event in pygame.event.get():
@@ -286,7 +285,7 @@ def game_screen(screen, client, game):
                 elif current_area.width != 0 and current_area.height != 0:
                     current_area.active = True
                 else:
-                    add_bomb(event.pos[0] - 50, event.pos[1] - 50)
+                    add_bomb(event.pos[0], event.pos[1])
 
             if event.type == pygame.MOUSEMOTION:
                 if pygame.mouse.get_pressed()[0] == 1 and not current_area.active:
