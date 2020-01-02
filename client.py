@@ -1,5 +1,4 @@
 import math
-import random
 import socket
 import threading
 import time
@@ -8,6 +7,9 @@ from threading import Lock
 
 import pygame
 from pygame.sprite import Group, Sprite
+
+EVENT_UPDATE = 30
+EVENT_SEC = 31
 
 
 class Client:
@@ -69,24 +71,39 @@ class Client:
                 return
 
 
-class Bomb(Sprite):
+class SimpleUnit(Sprite):
+
+    def __init__(self, x, y, id, player_id, game):
+        self.game = game
+        self.id = id
+        self.player_id = player_id
+        self.rect = self.image.get_rect()  # Init image before
+        self.rect.centerx = x
+        self.rect.centery = y
+        self.x = float(x)
+        self.y = float(y)
+        self.has_target = False
+        super().__init__()
+
+    def move(self, x, y):
+        self.x += x
+        self.rect.centerx = int(self.x)
+        self.y += y
+        self.rect.centery = int(self.y)
+
+
+class Bomb(SimpleUnit):
     cost = 10.0
     bomb = pygame.image.load('sprites/bomb.png')
 
-    def __init__(self, x, y, id, player_id, group):
+    def __init__(self, x, y, id, player_id, game):
         self.angle = 0
         self.image = Bomb.bomb
         self.target_angle = 0
-        self.rect = self.image.get_rect()
-        self.x = float(x)
-        self.y = float(y)
-        self.rect.centerx = x
-        self.rect.centery = y
-        self.id = id
-        self.player_id = player_id
         self.target = None
 
-        super().__init__(group)
+        super().__init__(x, y, id, player_id, game)
+        self.has_target = True
 
     def set_angle(self, angle):
         self.angle = angle
@@ -113,35 +130,26 @@ class Bomb(Sprite):
         self.image = rotated_image
         self.rect = new_rect
 
-    def move(self, x, y):
-        self.x += x
-        self.rect.centerx = int(self.x)
-        self.y += y
-        self.rect.centery = int(self.y)
-
     def update(self, *args):
-        if self.target is not None:
-            xr = self.target[0] - self.rect.centerx
-            yr = self.target[1] - self.rect.centery
-            if math.sqrt(xr * xr + yr * yr) < 50:
-                self.target = None
-                return
-            self.set_angle(int(math.degrees(math.atan2(yr, xr))))
-            self.move(math.cos(math.radians(self.angle)) * 0.5, math.sin(math.radians(self.angle)) * 0.5)
+        if args:
+            if args[0].type == EVENT_UPDATE:
+                if self.target is not None:
+                    xr = self.target[0] - self.rect.centerx
+                    yr = self.target[1] - self.rect.centery
+                    if math.sqrt(xr * xr + yr * yr) < 50:
+                        self.target = None
+                        return
+                    self.set_angle(int(math.degrees(math.atan2(yr, xr))))
+                    self.move(math.cos(math.radians(self.angle)) * 0.5, math.sin(math.radians(self.angle)) * 0.5)
 
 
-class SimpleMine(Sprite):
+class SimpleMine(SimpleUnit):
     cost = 100.0
     mine = pygame.image.load('sprites/mine.png')
 
-    def __init__(self, x, y, id, player_id, group):
-        self.id = id
-        self.player_id = player_id
+    def __init__(self, x, y, id, player_id, game):
         self.image = SimpleMine.mine
-        self.rect = self.image.get_rect()
-        self.rect.centerx = x
-        self.rect.centery = y
-        super().__init__(group)
+        super().__init__(x, y, id, player_id, game)
 
 
 class PlayerInfo:
@@ -175,13 +183,12 @@ class Game:
 
     def addEntity(self, type, x, y, id, player_id, *args):
         self.lock.acquire()
-        print('[START}')
-        self.types[type](x, y, id, player_id, *args, self.sprites)
-        print('[DONE]')
+        self.sprites.add(self.types[type](x, y, id, player_id, *args, self))
+        print(f'Created entity of type [{type}] at [{x}, {y}] owner {player_id}')
         self.lock.release()
 
-    def update(self):
-        self.sprites.update()
+    def update(self, *args):
+        self.sprites.update(*args)
 
     def retarget(self, id, x, y):
         for i in self.sprites:
@@ -299,6 +306,8 @@ def game_screen(screen, client, game):
     clock = pygame.time.Clock()
     running = True
     current_area = SelectArea()
+    pygame.time.set_timer(EVENT_UPDATE, 1000 // 60)
+    pygame.time.set_timer(EVENT_SEC, 1000 // 1)
 
     while running and client.connected:
         for event in pygame.event.get():
@@ -309,24 +318,27 @@ def game_screen(screen, client, game):
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if not current_area.active:
                     current_area.x, current_area.y = event.pos
-                if event.button == 2:
-                    client.send(f'1_{game.get_type_id(SimpleMine)}_{event.pos[0]}_{event.pos[1]}')
 
             if event.type == pygame.MOUSEBUTTONUP:
-                if current_area.active:
-                    for spr in current_area.find_intersect(game.sprites):
-                        client.send(f'2_{spr.id}_{event.pos[0]}_{event.pos[1]}')
-                    current_area.clear()
-                elif current_area.width != 0 and current_area.height != 0:
-                    current_area.active = True
-                else:
-                    client.send(f'1_{game.get_type_id(Bomb)}_{event.pos[0]}_{event.pos[1]}')
+                if event.button == 2:
+                    client.send(f'1_{game.get_type_id(SimpleMine)}_{event.pos[0]}_{event.pos[1]}')
+                if event.button == 1:
+                    if current_area.active:
+                        for spr in current_area.find_intersect(game.sprites):
+                            client.send(f'2_{spr.id}_{event.pos[0]}_{event.pos[1]}')
+                        current_area.clear()
+                    elif current_area.width != 0 and current_area.height != 0:
+                        current_area.active = True
+                    else:
+                        client.send(f'1_{game.get_type_id(Bomb)}_{event.pos[0]}_{event.pos[1]}')
 
             if event.type == pygame.MOUSEMOTION:
                 if pygame.mouse.get_pressed()[0] == 1 and not current_area.active:
                     current_area.mouse_moved(*event.rel)
 
-        game.update()
+            if event.type in [EVENT_UPDATE, EVENT_SEC]:
+                game.update(event, game)
+
         screen.fill((125, 125, 125))
         game.drawSprites(screen)
         current_area.draw(screen)

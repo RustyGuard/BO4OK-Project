@@ -124,6 +124,7 @@ class Unit(Sprite):
         self.rect.centery = y
         self.id = get_curr_id()
         self.player_id = player_id
+        self.has_target = False
         super().__init__(*groups)
 
     def move(self, x, y):
@@ -162,6 +163,7 @@ class Bomb(Unit):
         # self.set_angle(random.randint(0, 359))
 
         super().__init__(x, y, player_id, *groups)
+        self.has_target = True
 
     def set_angle(self, angle):
         self.angle = angle
@@ -195,14 +197,16 @@ class Bomb(Unit):
         self.rect.centery = int(self.y)
 
     def update(self, *args):
-        if self.target is not None:
-            xr = self.target[0] - self.rect.centerx
-            yr = self.target[1] - self.rect.centery
-            if math.sqrt(xr * xr + yr * yr) < 50:
-                self.target = None
-                return
-            self.set_angle(int(math.degrees(math.atan2(yr, xr))))
-            self.move(math.cos(math.radians(self.angle)) * 0.5, math.sin(math.radians(self.angle)) * 0.5)
+        if args:
+            if args[0].type == EVENT_UPDATE:
+                if self.target is not None:
+                    xr = self.target[0] - self.rect.centerx
+                    yr = self.target[1] - self.rect.centery
+                    if math.sqrt(xr * xr + yr * yr) < 50:
+                        self.target = None
+                        return
+                    self.set_angle(int(math.degrees(math.atan2(yr, xr))))
+                    self.move(math.cos(math.radians(self.angle)) * 0.5, math.sin(math.radians(self.angle)) * 0.5)
 
 
 class Player:
@@ -215,6 +219,7 @@ class Player:
 
 class ServerGame:
     def __init__(self, server):
+        self.lock = Lock()
         self.all_sprites = Group()
         self.projectiles = Group()
         self.players = {}
@@ -226,12 +231,17 @@ class ServerGame:
 
     def add_player(self, client):
         p = Player(client)
+        self.lock.acquire()
         self.players[p.id] = p
+        self.lock.release()
 
     def update(self, *args):
+        self.lock.acquire()
         self.all_sprites.update(*args)
+        self.lock.release()
 
     def place(self, build_class, x, y, player_id):
+        self.lock.acquire()
         player = self.players[player_id]
         if player.money >= build_class.cost:
             building = build_class(x, y, player_id)
@@ -245,6 +255,17 @@ class ServerGame:
                 print(f'No place {player.money}')
         else:
             print(f'No money {player.money}/{build_class.cost}')
+        self.lock.release()
+
+    def retarget(self, id, x, y):
+        for i in self.all_sprites:
+            if i.id == id:
+                if i.has_target:
+                    self.lock.acquire()
+                    i.target = (x, y)
+                    self.lock.release()
+                    return True
+        return False
 
     def get_type_id(self, type):
         for i, j in self.types.items():
@@ -255,24 +276,16 @@ class ServerGame:
 def main():
 
     def read(cmd, args, client):
-        global curr_id
         print(cmd, args)
-        # if cmd == '1':  # Add object at [x, y]
-        #     id_lock.acquire()
-        #     x, y = list(map(int, args))
-        #     # game.addSprite(x, y)
-        #     server.send_all(f'1_{x}_{y}_{curr_id}')
-        #     # print(curr_id)
-        #     curr_id += 1
-        #     id_lock.release()
-        # elif cmd == '2':  # Retarget
-        #     id_lock.acquire()
-        #     id, x, y = list(map(int, args))
-        #     print('Retarget:', id, x, y)
-        #     server.send_all(f'2_{id}_{x}_{y}')
-        #     id_lock.release()
         if cmd == '1':
             game.place(game.types[int(args[0])], int(args[1]), int(args[2]), client.id)
+        elif cmd == '2':
+            id, x, y = list(map(int, args))
+            print('Retarget:', id, x, y)
+            if game.retarget(id, x, y):
+                server.send_all(f'2_{id}_{x}_{y}')
+            else:
+                print(f'Entity[{id}] has not got a "target"')
         else:
             print('Invalid command')
 
