@@ -1,15 +1,12 @@
-import math
 import socket
 import threading
 import time
-from random import randint
 from threading import Lock
 
 import pygame
-from pygame.sprite import Group, Sprite
-
-EVENT_UPDATE = 30
-EVENT_SEC = 31
+from pygame.sprite import Group
+from constants import CLIENT_EVENT_SEC, CLIENT_EVENT_UPDATE
+from units import Mine, Soldier, get_class_id, UNIT_TYPES
 
 
 class Client:
@@ -71,97 +68,6 @@ class Client:
                 return
 
 
-class SimpleUnit(Sprite):
-
-    def __init__(self, x, y, id, player_id, game):
-        self.game = game
-        self.id = id
-        self.player_id = player_id
-        self.rect = self.image.get_rect()  # Init image before
-        self.rect.centerx = x
-        self.rect.centery = y
-        self.x = float(x)
-        self.y = float(y)
-        self.offsetx = 0
-        self.offsety = 0
-        self.has_target = False
-        super().__init__()
-
-    def move(self, x, y):
-        if x != 0 or y != 0:
-            self.x += x
-            self.y += y
-            self.update_rect()
-
-    def set_offset(self, x, y):
-        self.offsetx, self.offsety = x, y
-        self.update_rect()
-
-    def update_rect(self):
-        self.rect.centerx = int(self.x) + self.offsetx
-        self.rect.centery = int(self.y) + self.offsety
-
-
-class Soldier(SimpleUnit):
-    cost = 10.0
-    image = pygame.image.load('sprite-games/warrior/soldier/soldier.png')
-
-    def __init__(self, x, y, id, player_id, game):
-        self.angle = 0
-        self.image = Soldier.image
-        self.target_angle = 0
-        self.target = None
-
-        super().__init__(x, y, id, player_id, game)
-        self.has_target = True
-
-    def set_angle(self, angle):
-        self.angle = angle
-        self.validate_angle()
-        self.update_image()
-
-    def add_angle(self, angle):
-        self.angle += angle
-        self.validate_angle()
-        self.update_image()
-
-    def validate_angle(self):
-        while self.angle >= 360:
-            self.angle -= 360
-        while self.angle < 0:
-            self.angle += 360
-
-    def update_image(self):
-        center = Soldier.image.get_rect().center
-        rotated_image = pygame.transform.rotate(Soldier.image, -self.angle)
-        new_rect = rotated_image.get_rect(center=center)
-        new_rect.centerx = self.rect.centerx
-        new_rect.centery = self.rect.centery
-        self.image = rotated_image
-        self.rect = new_rect
-
-    def update(self, *args):
-        if args:
-            if args[0].type == EVENT_UPDATE:
-                if self.target is not None:
-                    xr = self.target[0] - self.rect.centerx
-                    yr = self.target[1] - self.rect.centery
-                    if math.sqrt(xr * xr + yr * yr) < 50:
-                        self.target = None
-                        return
-                    self.set_angle(int(math.degrees(math.atan2(yr, xr))))
-                    self.move(math.cos(math.radians(self.angle)) * 0.5, math.sin(math.radians(self.angle)) * 0.5)
-
-
-class SimpleMine(SimpleUnit):
-    cost = 100.0
-    mine = pygame.image.load('sprites/mine.png')
-
-    def __init__(self, x, y, id, player_id, game):
-        self.image = SimpleMine.mine
-        super().__init__(x, y, id, player_id, game)
-
-
 class PlayerInfo:
     def __init__(self):
         self.money = 150.0
@@ -189,16 +95,7 @@ class Game:
         self.sprites = Group()
         self.lock = Lock()
         self.started = False
-        self.types = {
-            0: Soldier,
-            1: SimpleMine
-        }
         self.info = PlayerInfo()
-
-    def get_type_id(self, type):
-        for i, j in self.types.items():
-            if j == type:
-                return i
 
     def start(self):
         self.started = True
@@ -208,9 +105,9 @@ class Game:
         self.sprites.draw(surface)
         self.lock.release()
 
-    def addEntity(self, type, x, y, id, player_id, camera,  *args):
+    def addEntity(self, type, x, y, id, player_id, camera, *args):
         self.lock.acquire()
-        en = self.types[type](x, y, id, player_id, *args, self)
+        en = UNIT_TYPES[type](x, y, id, player_id, *args)
         en.offsetx = camera.off_x
         en.offsety = camera.off_y
         en.update_rect()
@@ -314,7 +211,7 @@ class SelectArea:
 
 def game_screen(screen, client, game):
     def place(mouse_pos, clazz):
-        client.send(f'1_{game.get_type_id(clazz)}_{mouse_pos[0] - camera.off_x}_{mouse_pos[1] - camera.off_y}')
+        client.send(f'1_{get_class_id(clazz)}_{mouse_pos[0] - camera.off_x}_{mouse_pos[1] - camera.off_y}')
 
     def listen(cmd, args):
         # 0 - Game Started
@@ -341,8 +238,8 @@ def game_screen(screen, client, game):
     clock = pygame.time.Clock()
     running = True
     current_area = SelectArea()
-    pygame.time.set_timer(EVENT_UPDATE, 1000 // 60)
-    pygame.time.set_timer(EVENT_SEC, 1000 // 1)
+    pygame.time.set_timer(CLIENT_EVENT_UPDATE, 1000 // 60)
+    pygame.time.set_timer(CLIENT_EVENT_SEC, 1000 // 1)
     camera = Camera(game.sprites)
 
     while running and client.connected:
@@ -357,7 +254,7 @@ def game_screen(screen, client, game):
 
             if event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 2:
-                    place(event.pos, SimpleMine)
+                    place(event.pos, Mine)
 
                 if event.button == 1:
                     if current_area.active:
@@ -374,8 +271,8 @@ def game_screen(screen, client, game):
                 if pygame.mouse.get_pressed()[0] == 1 and not current_area.active:
                     current_area.mouse_moved(*event.rel)
 
-            if event.type in [EVENT_UPDATE, EVENT_SEC]:
-                if event.type == EVENT_UPDATE:
+            if event.type in [CLIENT_EVENT_UPDATE, CLIENT_EVENT_SEC]:
+                if event.type == CLIENT_EVENT_UPDATE:
                     if pygame.key.get_pressed()[pygame.K_w]:
                         camera.move(0, 1)
                     if pygame.key.get_pressed()[pygame.K_s]:
@@ -402,7 +299,8 @@ def game_screen(screen, client, game):
 def main():
     client = Client()
     pygame.init()
-    size = 800, 450
+    with open('settings.txt', 'r') as settings:
+        size = list(map(int, settings.readline().split()))
     screen = pygame.display.set_mode(size)
     game = Game()
     client.start_thread()
