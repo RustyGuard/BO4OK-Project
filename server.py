@@ -9,7 +9,7 @@ from pygame import sprite
 from pygame.sprite import Group, Sprite
 
 # Constants
-NEED_PLAYERS = 1
+NEED_PLAYERS = 2
 EVENT_UPDATE = 30
 EVENT_SEC = 31
 CURRENT_ID = 0
@@ -32,9 +32,15 @@ class ClienConnection:
         self.addr, self.conn = addr, conn
         self.id = ClienConnection.curr_id
         ClienConnection.curr_id += 1
+        self.connected = True
 
     def send(self, msg):
-        self.conn.send((msg + ';').encode())
+        if self.connected:
+            try:
+                self.conn.send((msg + ';').encode())
+            except Exception as ex:
+                print('[ClientConnection::send]', ex)
+                self.connected = False
 
 
 class Server:
@@ -73,7 +79,9 @@ class Server:
             print(f"[CONNECT] Connected [{self.connected}/{NEED_PLAYERS}]!")
             self.authentication(conn, addr)
             self.send_all(f'10_{self.connected}_{NEED_PLAYERS}')
-        self.send_all('0')
+
+        for c in self.clients:
+            c.send(f'0_{c.id}')
         self.waiting = False
         print('Everybody connected.')
 
@@ -153,7 +161,7 @@ class Mine(Unit):
 
 class Bomb(Unit):
     cost = 10.0
-    bomb = pygame.image.load('sprites/bomb.png')
+    bomb = pygame.image.load('sprite-games/warrior/soldier/soldier.png')
 
     def __init__(self, x, y, player_id, *groups):
         self.angle = 0
@@ -257,12 +265,13 @@ class ServerGame:
             print(f'No money {player.money}/{build_class.cost}')
         self.lock.release()
 
-    def retarget(self, id, x, y):
+    def retarget(self, id, x, y, client):
         for i in self.all_sprites:
             if i.id == id:
                 if i.has_target:
                     self.lock.acquire()
-                    i.target = (x, y)
+                    if i.player_id == client.id:
+                        i.target = (x, y)
                     self.lock.release()
                     return True
         return False
@@ -271,6 +280,10 @@ class ServerGame:
         for i, j in self.types.items():
             if j == type:
                 return i
+
+
+def place_on_map():
+    pass
 
 
 def main():
@@ -282,7 +295,7 @@ def main():
         elif cmd == '2':
             id, x, y = list(map(int, args))
             print('Retarget:', id, x, y)
-            if game.retarget(id, x, y):
+            if game.retarget(id, x, y, client):
                 server.send_all(f'2_{id}_{x}_{y}')
             else:
                 print(f'Entity[{id}] has not got a "target"')
@@ -291,6 +304,10 @@ def main():
 
     def connect_player(client):
         game.add_player(client)
+
+    def update_players_info():
+        for pl in game.players.values():
+            pl.client.send(f'3_1_{pl.money}')
 
     server = Server()
     game = ServerGame(server)
@@ -312,8 +329,7 @@ def main():
             if event.type in [EVENT_UPDATE, EVENT_SEC]:
                 game.update(event, game)
                 if event.type == EVENT_SEC:
-                    for pl in game.players.values():
-                        pl.client.send(f'3_1_{pl.money}')
+                    update_players_info()
         clock.tick(60)
 
 
