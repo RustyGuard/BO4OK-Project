@@ -91,7 +91,7 @@ class Server:
             client = ClientConnection(addr, conn)
             self.clients.append(client)
             self.connected_callback(client)
-            thread = threading.Thread(target=self.player_input_thread, args=(client,))
+            thread = threading.Thread(target=self.player_input_thread, args=(client,), daemon=True)
             client.thread = thread
             thread.start()
             print(f"[AUTHENTICATION] Thread for client '{client.id}' started.")
@@ -209,13 +209,24 @@ def main():
     game = ServerGame(server)
     server.callback = read
     server.connected_callback = connect_player
-    thread = threading.Thread(target=server.thread_connection)
+    thread = threading.Thread(target=server.thread_connection, daemon=True)
     thread.start()
-    thread.join()
-
-    pygame.init()
-    running = True
+    screen = pygame.display.set_mode((100, 100))
     clock = pygame.time.Clock()
+    while thread.is_alive():
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit(0)
+            if event.type in [SERVER_EVENT_UPDATE, SERVER_EVENT_SEC]:
+                game.update(event, game)
+                if event.type == SERVER_EVENT_SEC:
+                    update_players_info()
+        screen.fill((0, 125, 255))
+        pygame.display.flip()
+        clock.tick(60)
+
+    running = True
     pygame.time.set_timer(SERVER_EVENT_UPDATE, 1000 // 60)
     pygame.time.set_timer(SERVER_EVENT_SEC, 1000 // 1)
     while running:
