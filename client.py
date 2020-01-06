@@ -82,23 +82,33 @@ class SimpleUnit(Sprite):
         self.rect.centery = y
         self.x = float(x)
         self.y = float(y)
+        self.offsetx = 0
+        self.offsety = 0
         self.has_target = False
         super().__init__()
 
     def move(self, x, y):
-        self.x += x
-        self.rect.centerx = int(self.x)
-        self.y += y
-        self.rect.centery = int(self.y)
+        if x != 0 or y != 0:
+            self.x += x
+            self.y += y
+            self.update_rect()
+
+    def set_offset(self, x, y):
+        self.offsetx, self.offsety = x, y
+        self.update_rect()
+
+    def update_rect(self):
+        self.rect.centerx = int(self.x) + self.offsetx
+        self.rect.centery = int(self.y) + self.offsety
 
 
-class Bomb(SimpleUnit):
+class Soldier(SimpleUnit):
     cost = 10.0
-    bomb = pygame.image.load('sprites/bomb.png')
+    image = pygame.image.load('sprite-games/warrior/soldier/soldier.png')
 
     def __init__(self, x, y, id, player_id, game):
         self.angle = 0
-        self.image = Bomb.bomb
+        self.image = Soldier.image
         self.target_angle = 0
         self.target = None
 
@@ -122,8 +132,8 @@ class Bomb(SimpleUnit):
             self.angle += 360
 
     def update_image(self):
-        center = Bomb.bomb.get_rect().center
-        rotated_image = pygame.transform.rotate(Bomb.bomb, -self.angle)
+        center = Soldier.image.get_rect().center
+        rotated_image = pygame.transform.rotate(Soldier.image, -self.angle)
         new_rect = rotated_image.get_rect(center=center)
         new_rect.centerx = self.rect.centerx
         new_rect.centery = self.rect.centery
@@ -156,6 +166,22 @@ class PlayerInfo:
     def __init__(self):
         self.money = 150.0
         self.color = (0, 0, 0)
+        self.id = None
+
+
+class Camera:
+    def __init__(self, sprites):
+        self.sprites = sprites
+        self.off_x = 0
+        self.off_y = 0
+        self.zoom = 1
+
+    def move(self, x, y):
+        if x != 0 or y != 0:
+            self.off_x += x
+            self.off_y += y
+            for spr in self.sprites:
+                spr.set_offset(self.off_x, self.off_y)
 
 
 class Game:
@@ -164,9 +190,10 @@ class Game:
         self.lock = Lock()
         self.started = False
         self.types = {
-            0: Bomb,
+            0: Soldier,
             1: SimpleMine
         }
+        self.info = PlayerInfo()
 
     def get_type_id(self, type):
         for i, j in self.types.items():
@@ -181,9 +208,13 @@ class Game:
         self.sprites.draw(surface)
         self.lock.release()
 
-    def addEntity(self, type, x, y, id, player_id, *args):
+    def addEntity(self, type, x, y, id, player_id, camera,  *args):
         self.lock.acquire()
-        self.sprites.add(self.types[type](x, y, id, player_id, *args, self))
+        en = self.types[type](x, y, id, player_id, *args, self)
+        en.offsetx = camera.off_x
+        en.offsety = camera.off_y
+        en.update_rect()
+        self.sprites.add(en)
         print(f'Created entity of type [{type}] at [{x}, {y}] owner {player_id}')
         self.lock.release()
 
@@ -204,8 +235,9 @@ def waiting_screen(screen, client, game):
     def read(cmd, args):
         print(cmd, args)
         if cmd == '0':
+            game.info.id = int(args[0])
             game.start()
-            print('start')
+            print(f'Game started. Our id is {game.info.id}')
         if cmd == '10':
             players_info[0] = int(args[0])
             players_info[1] = int(args[1])
@@ -281,6 +313,9 @@ class SelectArea:
 
 
 def game_screen(screen, client, game):
+    def place(mouse_pos, clazz):
+        client.send(f'1_{game.get_type_id(clazz)}_{mouse_pos[0] - camera.off_x}_{mouse_pos[1] - camera.off_y}')
+
     def listen(cmd, args):
         # 0 - Game Started
         # 1 - Add entity of [type] at [x, y] with [id]
@@ -290,17 +325,17 @@ def game_screen(screen, client, game):
         print(cmd, args)
         if cmd == '1':
             type, x, y, id, id_player = int(args[0]), int(args[1]), int(args[2]), int(args[3]), int(args[4])
-            game.addEntity(type, x, y, id, id_player, *args[5::])
+            game.addEntity(type, x, y, id, id_player, camera, *args[5::])
+
         elif cmd == '2':
             id, x, y = list(map(int, args))
             game.retarget(id, x, y)
         elif cmd == '3':  # Update Player Info
             if args[0] == '1':  # Money
-                info.money = float(args[1])
+                game.info.money = float(args[1])
         else:
             print('Taken message:', cmd, args)
 
-    info = PlayerInfo()
     client.setEventCallback(listen)
     time.sleep(1)
     clock = pygame.time.Clock()
@@ -308,6 +343,7 @@ def game_screen(screen, client, game):
     current_area = SelectArea()
     pygame.time.set_timer(EVENT_UPDATE, 1000 // 60)
     pygame.time.set_timer(EVENT_SEC, 1000 // 1)
+    camera = Camera(game.sprites)
 
     while running and client.connected:
         for event in pygame.event.get():
@@ -321,22 +357,33 @@ def game_screen(screen, client, game):
 
             if event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 2:
-                    client.send(f'1_{game.get_type_id(SimpleMine)}_{event.pos[0]}_{event.pos[1]}')
+                    place(event.pos, SimpleMine)
+
                 if event.button == 1:
                     if current_area.active:
                         for spr in current_area.find_intersect(game.sprites):
-                            client.send(f'2_{spr.id}_{event.pos[0]}_{event.pos[1]}')
+                            if spr.has_target and spr.player_id == game.info.id:
+                                client.send(f'2_{spr.id}_{event.pos[0]}_{event.pos[1]}')
                         current_area.clear()
                     elif current_area.width != 0 and current_area.height != 0:
                         current_area.active = True
                     else:
-                        client.send(f'1_{game.get_type_id(Bomb)}_{event.pos[0]}_{event.pos[1]}')
+                        place(event.pos, Soldier)
 
             if event.type == pygame.MOUSEMOTION:
                 if pygame.mouse.get_pressed()[0] == 1 and not current_area.active:
                     current_area.mouse_moved(*event.rel)
 
             if event.type in [EVENT_UPDATE, EVENT_SEC]:
+                if event.type == EVENT_UPDATE:
+                    if pygame.key.get_pressed()[pygame.K_w]:
+                        camera.move(0, 1)
+                    if pygame.key.get_pressed()[pygame.K_s]:
+                        camera.move(0, -1)
+                    if pygame.key.get_pressed()[pygame.K_a]:
+                        camera.move(1, 0)
+                    if pygame.key.get_pressed()[pygame.K_d]:
+                        camera.move(-1, 0)
                 game.update(event, game)
 
         screen.fill((125, 125, 125))
@@ -344,7 +391,7 @@ def game_screen(screen, client, game):
         current_area.draw(screen)
 
         font = pygame.font.Font(None, 50)
-        text = font.render(str(info.money), 1, (100, 255, 100))
+        text = font.render(str(game.info.money), 1, (100, 255, 100))
         screen.blit(text, (5, 5))
 
         pygame.display.flip()
@@ -355,7 +402,7 @@ def game_screen(screen, client, game):
 def main():
     client = Client()
     pygame.init()
-    size = 500, 500
+    size = 800, 450
     screen = pygame.display.set_mode(size)
     game = Game()
     client.start_thread()
