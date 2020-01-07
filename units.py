@@ -14,6 +14,10 @@ STATE_ATTACK = 3
 TARGET_MOVE = 0
 TARGET_ATTACK = 1
 
+team_id = [
+    'black', 'aqua', 'blue', 'green', 'light green', 'orange', 'pink', 'purple', 'red', 'yellow',
+]
+
 
 class Unit(Sprite):
 
@@ -102,7 +106,7 @@ class TwistUnit(Unit):
             self.angle += 360
 
     def update_image(self):
-        rotated_image = pygame.transform.rotate(Soldier.image, -self.angle)
+        rotated_image = pygame.transform.rotate(self.default_image, -self.angle)
         self.image = rotated_image
 
     def move_to_angle(self, speed, game):
@@ -161,12 +165,14 @@ class Fighter(TwistUnit):
 
 class Soldier(Fighter):
     cost = 10.0
-    image = pygame.image.load('sprite-games/warrior/soldier/aqua.png')
+    images = []
+    for i in range(10):
+        images.append(pygame.image.load(f'sprite-games/warrior/soldier/{team_id[i]}.png'))
 
     def __init__(self, x, y, id, player_id):
-        self.image = Soldier.image
+        self.image = Soldier.images[player_id]
 
-        super().__init__(x, y, id, player_id, Soldier.image)
+        super().__init__(x, y, id, player_id, Soldier.images[player_id])
 
     def update(self, *args):
         if not self.live:
