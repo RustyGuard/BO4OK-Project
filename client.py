@@ -4,7 +4,7 @@ import time
 from threading import Lock
 
 import pygame
-from pygame.sprite import Group
+from pygame.sprite import Group, Sprite
 from constants import CLIENT_EVENT_SEC, CLIENT_EVENT_UPDATE
 from units import Mine, Soldier, get_class_id, UNIT_TYPES, TARGET_MOVE
 
@@ -115,6 +115,9 @@ class Game:
         print(f'Created entity of type [{type}] at [{x}, {y}] owner {player_id}')
         self.lock.release()
 
+    def get_intersect(self, sprite):
+        return pygame.sprite.spritecollide(sprite, self.sprites, False)
+
     def update(self, *args):
         self.sprites.update(*args)
 
@@ -223,7 +226,6 @@ def game_screen(screen, client, game):
         if cmd == '1':
             type, x, y, id, id_player = int(args[0]), int(args[1]), int(args[2]), int(args[3]), int(args[4])
             game.addEntity(type, x, y, id, id_player, camera, *args[5::])
-
         elif cmd == '2':
             id, x, y = list(map(int, args))
             game.retarget(id, x, y)
@@ -233,6 +235,7 @@ def game_screen(screen, client, game):
         else:
             print('Taken message:', cmd, args)
 
+    font = pygame.font.Font(None, 50)
     client.setEventCallback(listen)
     time.sleep(1)
     clock = pygame.time.Clock()
@@ -260,7 +263,7 @@ def game_screen(screen, client, game):
                     if current_area.active:
                         for spr in current_area.find_intersect(game.sprites):
                             if spr.has_target and spr.player_id == game.info.id:
-                                client.send(f'2_{spr.id}_{event.pos[0]}_{event.pos[1]}')
+                                client.send(f'2_{spr.id}_{event.pos[0] - camera.off_x}_{event.pos[1] - camera.off_y}')
                         current_area.clear()
                     elif current_area.width != 0 and current_area.height != 0:
                         current_area.active = True
@@ -287,7 +290,6 @@ def game_screen(screen, client, game):
         game.drawSprites(screen)
         current_area.draw(screen)
 
-        font = pygame.font.Font(None, 50)
         text = font.render(str(game.info.money), 1, (100, 255, 100))
         screen.blit(text, (5, 5))
 
