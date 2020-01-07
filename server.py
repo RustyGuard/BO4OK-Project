@@ -11,7 +11,7 @@ from constants import SERVER_EVENT_SEC, SERVER_EVENT_UPDATE
 
 from units import get_class_id, UNIT_TYPES, TARGET_MOVE
 
-NEED_PLAYERS = 1
+NEED_PLAYERS = 2
 
 CURRENT_ID = 0
 ID_LOCK = Lock()
@@ -166,6 +166,9 @@ class ServerGame:
         else:
             print(f'No money {player.money}/{build_class.cost}')
         self.lock.release()
+
+    def get_intersect(self, spr):
+        return pygame.sprite.spritecollide(spr, self.all_sprites, False)
 
     def retarget(self, id, x, y, client):
         for i in self.all_sprites:

@@ -1,6 +1,7 @@
 import math
 
 import pygame
+from pygame.rect import Rect
 from pygame.sprite import Sprite
 from constants import SERVER_EVENT_SEC, SERVER_EVENT_UPDATE, CLIENT_EVENT_SEC, CLIENT_EVENT_UPDATE
 
@@ -49,6 +50,13 @@ class Unit(Sprite):
 
     def get_args(self):
         return ''
+
+    def __getitem__(self, item):
+        if item == 0:
+            return self.x
+        if item == 1:
+            return self.y
+        raise Exception('Noooooo way!!!')
 
 
 class TwistUnit(Unit):
@@ -114,9 +122,25 @@ class Fighter(TwistUnit):
 
     def find_target_angle(self):
         self.target_angle = int(
-            math.degrees(math.atan2(self.target[1][1] - self.rect.centery, self.target[1][0] - self.rect.centerx)))
+            math.degrees(math.atan2(self.target[1][1] - self.y, self.target[1][0] - self.x)))
         if self.target_angle < 0:
             self.target_angle += 360
+
+    def turn_around(self):
+        angle_diff = self.target_angle - self.angle
+        if angle_diff == 0:
+            return True
+        if angle_diff < 0:
+            if abs(angle_diff) >= 180:
+                self.add_angle(1)
+            else:
+                self.add_angle(-1)
+        elif angle_diff > 0:
+            if abs(angle_diff) >= 180:
+                self.add_angle(-1)
+            else:
+                self.add_angle(1)
+        return False
 
 
 class Soldier(Fighter):
@@ -134,32 +158,40 @@ class Soldier(Fighter):
         if args:
             if args[0].type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
                 if self.target is not None:
-
-                    xr = self.target[1][0] - self.rect.centerx
-                    yr = self.target[1][1] - self.rect.centery
-                    if math.sqrt(xr * xr + yr * yr) < 40:
-                        self.target = None
-                        return
-                    self.find_target_angle()
-                    angle_diff = self.target_angle - self.angle
-
-                    if angle_diff < 0:
-                        if abs(angle_diff) >= 180:
-                            self.add_angle(1)
+                    if self.target[0] == TARGET_MOVE:
+                        xr = self.target[1][0] - self.x
+                        yr = self.target[1][1] - self.y
+                        if math.sqrt(xr * xr + yr * yr) < 40:
+                            self.target = None
+                            return
+                        self.find_target_angle()
+                        if self.turn_around():
+                            self.move_to_angle(1)
                         else:
-                            self.add_angle(-1)
-                    elif angle_diff > 0:
-                        if abs(angle_diff) >= 180:
-                            self.add_angle(-1)
-                        else:
-                            self.add_angle(1)
-                    else:
-                        self.move_to_angle(1)
-                    # self.set_angle(self.target_angle)
-                    # self.move_to_angle(1)
+                            self.move_to_angle(0.5)
+                    elif self.target[0] == TARGET_ATTACK:
+                        self.find_target_angle()
+                        xr = self.target[1][0] - self.x
+                        yr = self.target[1][1] - self.y
+                        distance = math.sqrt(xr * xr + yr * yr)
+                        if self.turn_around():
+                            if distance < 40:
+                                pass  # Attack enemy
+                            else:
+                                self.move_to_angle(1)
+                        elif distance >= 40:
+                            self.move_to_angle(0.5)
+
                 else:
-                    pass
-                    # self.add_angle(1)
+                    area = Sprite()
+                    area.rect = Rect(0, 0, 1500, 1500)
+                    area.rect.center = self.rect.center
+                    for spr in args[1].get_intersect(area):
+                        if spr != self and spr.player_id != self.player_id:
+                            self.target = (TARGET_ATTACK, spr)
+            elif args[0].type in [CLIENT_EVENT_SEC, SERVER_EVENT_SEC]:
+                pass
+                # print('En', self.id, self.x, self.y)
 
 
 UNIT_TYPES = {
