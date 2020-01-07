@@ -16,17 +16,12 @@ running = True
 clock = pygame.time.Clock()
 Timer = 0
 pygame.mouse.set_visible(0)
-f = None
+f = False
 while running:
     screen.fill(pygame.Color("white"))
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        if event.type == pygame.MOUSEBUTTONUP:
-            f = None
-            Potick1 = pygame.image.load('sprite-games/headpiece/Potick1.png')
-            Bo4ok_rect = [-900, 500]
-            Potick1_rect = [-400, 500]
     if Bo4ok_rect[0] < 232:
         Bo4ok_rect[0] += 10
         Potick1_rect[0] += 10
