@@ -6,7 +6,7 @@ from threading import Lock
 import pygame
 from pygame.sprite import Group
 from constants import CLIENT_EVENT_SEC, CLIENT_EVENT_UPDATE
-from units import Mine, Soldier, get_class_id, UNIT_TYPES
+from units import Mine, Soldier, get_class_id, UNIT_TYPES, TARGET_MOVE
 
 
 class Client:
@@ -121,7 +121,7 @@ class Game:
     def retarget(self, id, x, y):
         for i in self.sprites:
             if i.id == id:
-                i.target = (x, y)
+                i.set_target(TARGET_MOVE, (x, y))
                 return
         print(f'No objects with this id {id}!!!')
 

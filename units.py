@@ -4,6 +4,15 @@ import pygame
 from pygame.sprite import Sprite
 from constants import SERVER_EVENT_SEC, SERVER_EVENT_UPDATE, CLIENT_EVENT_SEC, CLIENT_EVENT_UPDATE
 
+# States
+STATE_IDLE = 0
+STATE_TURN_AROUND = 1
+STATE_MOVE = 2
+STATE_ATTACK = 3
+
+TARGET_MOVE = 0
+TARGET_ATTACK = 1
+
 
 class Unit(Sprite):
 
@@ -18,6 +27,10 @@ class Unit(Sprite):
         self.offsetx = 0
         self.offsety = 0
         self.has_target = False
+        self.state = STATE_IDLE
+        self.max_health = 100
+        self.health = 100
+        self.live = True
         super().__init__()
 
     def move(self, x, y):
@@ -38,32 +51,11 @@ class Unit(Sprite):
         return ''
 
 
-class Mine(Unit):
-    cost = 100.0
-    mine = pygame.image.load('sprite-games/building/mine/mine.png')
-
-    def __init__(self, x, y, id, player_id):
-        self.image = Mine.mine
-        super().__init__(x, y, id, player_id)
-
-    def update(self, *args):
-        if args:
-            if args[0].type == SERVER_EVENT_SEC:
-                args[1].players[self.player_id].money += 5
-
-
-class Soldier(Unit):
-    cost = 10.0
-    image = pygame.image.load('sprite-games/warrior/soldier/soldier.png')
-
-    def __init__(self, x, y, id, player_id):
+class TwistUnit(Unit):
+    def __init__(self, x, y, id, player_id, default_image):
         self.angle = 0
-        self.image = Soldier.image
-        self.target_angle = 0
-        self.target = None
-
+        self.default_image = default_image
         super().__init__(x, y, id, player_id)
-        self.has_target = True
 
     def set_angle(self, angle):
         self.angle = angle
@@ -82,7 +74,7 @@ class Soldier(Unit):
             self.angle += 360
 
     def update_image(self):
-        center = Soldier.image.get_rect().center
+        center = self.default_image.get_rect().center
         rotated_image = pygame.transform.rotate(Soldier.image, -self.angle)
         new_rect = rotated_image.get_rect(center=center)
         new_rect.centerx = self.rect.centerx
@@ -90,17 +82,84 @@ class Soldier(Unit):
         self.image = rotated_image
         self.rect = new_rect
 
+    def move_to_angle(self, speed):
+        self.move(math.cos(math.radians(self.angle)) * speed, math.sin(math.radians(self.angle)) * speed)
+
+
+class Mine(Unit):
+    cost = 100.0
+    mine = pygame.image.load('sprite-games/building/mine/mine.png')
+
+    def __init__(self, x, y, id, player_id):
+        self.image = Mine.mine
+        super().__init__(x, y, id, player_id)
+
     def update(self, *args):
+        if not self.live:
+            return
+        if args:
+            if args[0].type == SERVER_EVENT_SEC:
+                args[1].players[self.player_id].money += 5
+
+
+class Fighter(TwistUnit):
+    def __init__(self, x, y, id, player_id, default_image):
+        super().__init__(x, y, id, player_id, default_image)
+        self.target_angle = 0
+        self.target = None
+        self.has_target = True
+
+    def set_target(self, target_type, coord):
+        self.target = (target_type, coord)
+
+    def find_target_angle(self):
+        self.target_angle = int(
+            math.degrees(math.atan2(self.target[1][1] - self.rect.centery, self.target[1][0] - self.rect.centerx)))
+        if self.target_angle < 0:
+            self.target_angle += 360
+
+
+class Soldier(Fighter):
+    cost = 10.0
+    image = pygame.image.load('sprite-games/warrior/soldier/soldier.png')
+
+    def __init__(self, x, y, id, player_id):
+        self.image = Soldier.image
+
+        super().__init__(x, y, id, player_id, Soldier.image)
+
+    def update(self, *args):
+        if not self.live:
+            return
         if args:
             if args[0].type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
                 if self.target is not None:
-                    xr = self.target[0] - self.rect.centerx
-                    yr = self.target[1] - self.rect.centery
-                    if math.sqrt(xr * xr + yr * yr) < 50:
+
+                    xr = self.target[1][0] - self.rect.centerx
+                    yr = self.target[1][1] - self.rect.centery
+                    if math.sqrt(xr * xr + yr * yr) < 40:
                         self.target = None
                         return
-                    self.set_angle(int(math.degrees(math.atan2(yr, xr))))
-                    self.move(math.cos(math.radians(self.angle)) * 0.5, math.sin(math.radians(self.angle)) * 0.5)
+                    self.find_target_angle()
+                    angle_diff = self.target_angle - self.angle
+
+                    if angle_diff < 0:
+                        if abs(angle_diff) >= 180:
+                            self.add_angle(1)
+                        else:
+                            self.add_angle(-1)
+                    elif angle_diff > 0:
+                        if abs(angle_diff) >= 180:
+                            self.add_angle(-1)
+                        else:
+                            self.add_angle(1)
+                    else:
+                        self.move_to_angle(1)
+                    # self.set_angle(self.target_angle)
+                    # self.move_to_angle(1)
+                else:
+                    pass
+                    # self.add_angle(1)
 
 
 UNIT_TYPES = {

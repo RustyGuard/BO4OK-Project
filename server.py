@@ -9,7 +9,7 @@ from pygame import sprite
 from pygame.sprite import Group, Sprite
 from constants import SERVER_EVENT_SEC, SERVER_EVENT_UPDATE
 
-from units import get_class_id, UNIT_TYPES
+from units import get_class_id, UNIT_TYPES, TARGET_MOVE
 
 NEED_PLAYERS = 1
 
@@ -173,7 +173,7 @@ class ServerGame:
                 if i.has_target:
                     self.lock.acquire()
                     if i.player_id == client.id:
-                        i.target = (x, y)
+                        i.set_target(TARGET_MOVE, (x, y))
                     self.lock.release()
                     return True
         return False
