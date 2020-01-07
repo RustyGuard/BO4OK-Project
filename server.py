@@ -134,6 +134,7 @@ class ServerGame:
     def __init__(self, server):
         self.lock = Lock()
         self.all_sprites = Group()
+        self.buildings = Group()
         self.projectiles = Group()
         self.players = {}
         self.server = server
@@ -156,9 +157,11 @@ class ServerGame:
             building = build_class(x, y, get_curr_id(), player_id)
             if not sprite.spritecollideany(building, self.all_sprites):
                 player.money -= build_class.cost
-                self.all_sprites.add(building)
                 self.server.send_all(
                     f'1_{get_class_id(build_class)}_{x}_{y}_{building.id}_{player_id}{building.get_args()}')
+                self.all_sprites.add(building)
+                if building.is_building:
+                    self.buildings.add(building)
                 player.client.send(f'3_1_{player.money}')
                 print(f'Success {player.money}')
             else:
@@ -169,6 +172,9 @@ class ServerGame:
 
     def get_intersect(self, spr):
         return pygame.sprite.spritecollide(spr, self.all_sprites, False)
+
+    def get_building_intersect(self, spr):
+        return pygame.sprite.spritecollide(spr, self.buildings, False)
 
     def retarget(self, id, x, y, client):
         for i in self.all_sprites:

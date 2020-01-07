@@ -32,13 +32,33 @@ class Unit(Sprite):
         self.max_health = 100
         self.health = 100
         self.live = True
+        self.is_building = True
         super().__init__()
 
-    def move(self, x, y):
-        if x != 0 or y != 0:
+    def move(self, x, y, game):
+        if x != 0:
             self.x += x
+            self.rect.centerx = int(self.x) + self.offsetx
+            for spr in game.get_building_intersect(self):
+                if spr != self:
+                    if x < 0:
+                        self.rect.left = spr.rect.right
+                    else:
+                        self.rect.right = spr.rect.left
+                    self.x = self.rect.centerx - self.offsetx
+                    break
+
+        if y != 0:
             self.y += y
-            self.update_rect()
+            self.rect.centery = int(self.y) + self.offsety
+            for spr in game.get_building_intersect(self):
+                if spr != self:
+                    if y < 0:
+                        self.rect.top = spr.rect.bottom
+                    else:
+                        self.rect.bottom = spr.rect.top
+                    self.y = self.rect.centery - self.offsety
+                    break
 
     def set_offset(self, x, y):
         self.offsetx, self.offsety = x, y
@@ -82,16 +102,11 @@ class TwistUnit(Unit):
             self.angle += 360
 
     def update_image(self):
-        center = self.default_image.get_rect().center
         rotated_image = pygame.transform.rotate(Soldier.image, -self.angle)
-        new_rect = rotated_image.get_rect(center=center)
-        new_rect.centerx = self.rect.centerx
-        new_rect.centery = self.rect.centery
         self.image = rotated_image
-        self.rect = new_rect
 
-    def move_to_angle(self, speed):
-        self.move(math.cos(math.radians(self.angle)) * speed, math.sin(math.radians(self.angle)) * speed)
+    def move_to_angle(self, speed, game):
+        self.move(math.cos(math.radians(self.angle)) * speed, math.sin(math.radians(self.angle)) * speed, game)
 
 
 class Mine(Unit):
@@ -116,6 +131,7 @@ class Fighter(TwistUnit):
         self.target_angle = 0
         self.target = None
         self.has_target = True
+        self.is_building = False
 
     def set_target(self, target_type, coord):
         self.target = (target_type, coord)
@@ -145,7 +161,7 @@ class Fighter(TwistUnit):
 
 class Soldier(Fighter):
     cost = 10.0
-    image = pygame.image.load('sprite-games/warrior/soldier/soldier.png')
+    image = pygame.image.load('sprite-games/warrior/soldier/aqua.png')
 
     def __init__(self, x, y, id, player_id):
         self.image = Soldier.image
@@ -166,9 +182,9 @@ class Soldier(Fighter):
                             return
                         self.find_target_angle()
                         if self.turn_around():
-                            self.move_to_angle(1)
+                            self.move_to_angle(1, args[1])
                         else:
-                            self.move_to_angle(0.5)
+                            self.move_to_angle(0.5, args[1])
                     elif self.target[0] == TARGET_ATTACK:
                         self.find_target_angle()
                         xr = self.target[1][0] - self.x
@@ -178,9 +194,9 @@ class Soldier(Fighter):
                             if distance < 40:
                                 pass  # Attack enemy
                             else:
-                                self.move_to_angle(1)
+                                self.move_to_angle(1, args[1])
                         elif distance >= 40:
-                            self.move_to_angle(0.5)
+                            self.move_to_angle(0.5, args[1])
 
                 else:
                     area = Sprite()

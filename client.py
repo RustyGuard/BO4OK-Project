@@ -93,6 +93,7 @@ class Camera:
 class Game:
     def __init__(self):
         self.sprites = Group()
+        self.buildings = Group()
         self.lock = Lock()
         self.started = False
         self.info = PlayerInfo()
@@ -112,11 +113,16 @@ class Game:
         en.offsety = camera.off_y
         en.update_rect()
         self.sprites.add(en)
+        if en.is_building:
+            self.buildings.add(en)
         print(f'Created entity of type [{type}] at [{x}, {y}] owner {player_id}')
         self.lock.release()
 
     def get_intersect(self, sprite):
         return pygame.sprite.spritecollide(sprite, self.sprites, False)
+
+    def get_building_intersect(self, spr):
+        return pygame.sprite.spritecollide(spr, self.buildings, False)
 
     def update(self, *args):
         self.sprites.update(*args)
