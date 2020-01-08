@@ -6,7 +6,7 @@ from threading import Lock
 import pygame
 from pygame.sprite import Group, Sprite
 from constants import CLIENT_EVENT_SEC, CLIENT_EVENT_UPDATE
-from units import Mine, Soldier, get_class_id, UNIT_TYPES, TARGET_MOVE
+from units import Mine, Soldier, get_class_id, UNIT_TYPES, TARGET_MOVE, TARGET_ATTACK, TARGET_NONE
 
 
 class Client:
@@ -134,6 +134,11 @@ class Game:
                 return
         print(f'No objects with this id {id}!!!')
 
+    def find_with_id(self, id):
+        for spr in self.sprites:
+            if spr.id == id:
+                return spr
+
 
 def waiting_screen(screen, client, game):
     players_info = [0, 0]
@@ -233,11 +238,20 @@ def game_screen(screen, client, game):
             type, x, y, id, id_player = int(args[0]), int(args[1]), int(args[2]), int(args[3]), int(args[4])
             game.addEntity(type, x, y, id, id_player, camera, *args[5::])
         elif cmd == '2':
-            id, x, y = list(map(int, args))
-            game.retarget(id, x, y)
+            if args[0] == str(TARGET_MOVE):
+                id, x, y = int(args[1]), int(args[2]), int(args[3])
+                game.retarget(id, x, y)
+            elif args[0] == str(TARGET_ATTACK):
+                id, other_id = int(args[1]), int(args[2])
+                game.find_with_id(id).set_target(TARGET_ATTACK, game.find_with_id(other_id))
+            elif args[0] == str(TARGET_NONE):
+                id = int(args[0])
+                game.find_with_id(id).set_target(TARGET_NONE, None)
         elif cmd == '3':  # Update Player Info
             if args[0] == '1':  # Money
                 game.info.money = float(args[1])
+        elif cmd == '4':
+            game.find_with_id(int(args[0])).kill()
         else:
             print('Taken message:', cmd, args)
 
