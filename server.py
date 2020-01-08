@@ -187,6 +187,15 @@ class ServerGame:
                     return True
         return False
 
+    def find_with_id(self, id):
+        for spr in self.all_sprites:
+            if spr.id == id:
+                return spr
+
+    def kill(self, spr):
+        self.server.send_all(f'4_{spr.id}')
+        spr.kill()
+
 
 def place_on_map():
     pass
@@ -201,7 +210,7 @@ def main():
             id, x, y = list(map(int, args))
             print('Retarget:', id, x, y)
             if game.retarget(id, x, y, client):
-                server.send_all(f'2_{id}_{x}_{y}')
+                server.send_all(f'2_{TARGET_MOVE}_{id}_{x}_{y}')
             else:
                 print(f'Entity[{id}] has not got a "target"')
         else:
