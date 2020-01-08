@@ -6,7 +6,7 @@ from threading import Lock
 import pygame
 from pygame.sprite import Group, Sprite
 from constants import CLIENT_EVENT_SEC, CLIENT_EVENT_UPDATE
-from units import Mine, Soldier, get_class_id, UNIT_TYPES, TARGET_MOVE, TARGET_ATTACK, TARGET_NONE
+from units import Mine, Soldier, get_class_id, UNIT_TYPES, TARGET_MOVE, TARGET_ATTACK, TARGET_NONE, Archer
 
 
 class Client:
@@ -106,7 +106,7 @@ class Game:
         self.sprites.draw(surface)
         self.lock.release()
 
-    def addEntity(self, type, x, y, id, player_id, camera, *args):
+    def addEntity(self, type, x, y, id, player_id, camera, args):
         self.lock.acquire()
         en = UNIT_TYPES[type](x, y, id, player_id, *args)
         en.offsetx = camera.off_x
@@ -236,7 +236,7 @@ def game_screen(screen, client, game):
         print(cmd, args)
         if cmd == '1':
             type, x, y, id, id_player = int(args[0]), int(args[1]), int(args[2]), int(args[3]), int(args[4])
-            game.addEntity(type, x, y, id, id_player, camera, *args[5::])
+            game.addEntity(type, x, y, id, id_player, camera, args[5::])
         elif cmd == '2':
             if args[0] == str(TARGET_MOVE):
                 id, x, y = int(args[1]), int(args[2]), int(args[3])
@@ -286,6 +286,8 @@ def game_screen(screen, client, game):
             if event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 2:
                     place(event.pos, Mine)
+                elif event.button == 3:
+                    place(event.pos, Archer)
 
                 if event.button == 1:
                     if current_area.active:

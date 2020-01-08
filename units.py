@@ -38,6 +38,7 @@ class Unit(Sprite):
         self.health = 100
         self.live = True
         self.is_building = True
+        self.is_projectile = False
         super().__init__()
 
     def is_alive(self):
@@ -135,6 +136,42 @@ class Mine(Unit):
                 args[1].players[self.player_id].money += 5
 
 
+class Arrow(TwistUnit):
+    image = pygame.image.load(f'sprite-games/warrior/archer/arrow.png')
+    damage = 5
+
+    def __init__(self, x, y, id, player_id, angle):
+        super().__init__(x, y, id, player_id, Arrow.image)
+        self.set_angle(int(angle))
+        self.is_projectile = True
+        self.is_building = False
+        self.time = 1200
+
+    def update(self, *args):
+        if args[0].type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
+            self.move_to_angle(3, args[1])
+            if args[0].type == SERVER_EVENT_UPDATE:
+                self.time -= 1
+                if self.time <= 0:
+                    args[1].kill(self)
+                    # print('Arrow disappears.')
+                for spr in args[1].get_intersect(self):
+                    if spr != self and spr.player_id != self.player_id and not spr.is_projectile:
+                        spr.health -= 5
+                        args[1].kill(self)
+                        return
+
+    def get_args(self):
+        return f'_{self.angle}'
+
+    def move(self, x, y, game):
+        if x != 0:
+            self.x += x
+        if y != 0:
+            self.y += y
+        self.update_rect()
+
+
 class Fighter(TwistUnit):
     def __init__(self, x, y, id, player_id, default_image):
         super().__init__(x, y, id, player_id, default_image)
@@ -147,7 +184,7 @@ class Fighter(TwistUnit):
         self.damage = 10
 
     def set_target(self, target_type, coord):
-        print(f'Entity[{self.id}] found a new target of [{target_type}] is [{coord}]')
+        # print(f'Entity[{self.id}] found a new target of [{target_type}] is [{coord}]')
         self.target = (target_type, coord)
 
     def find_target_angle(self):
@@ -160,11 +197,19 @@ class Fighter(TwistUnit):
         area = Sprite()
         area.rect = Rect(0, 0, 1500, 1500)
         area.rect.center = self.rect.center
+        current = None
         for spr in game.get_intersect(area):
-            if spr != self and spr.player_id != self.player_id:
-                self.set_target(TARGET_ATTACK, spr)
-                game.server.send_all(f'2_{TARGET_ATTACK}_{self.id}_{spr.id}')
-                return True
+            if spr != self and spr.player_id != self.player_id and not spr.is_projectile:
+                if current is None:
+                    current = (spr, math.sqrt((spr.x - self.x) ** 2 + (spr.x - self.x) ** 2))
+                else:
+                    dist = math.sqrt((spr.x - self.x) ** 2 + (spr.x - self.x) ** 2)
+                    if dist < current[1]:
+                        current = (spr, dist)
+        if current:
+            self.set_target(TARGET_ATTACK, current[0])
+            game.server.send_all(f'2_{TARGET_ATTACK}_{self.id}_{current[0].id}')
+            return True
         return False
 
     def turn_around(self):
@@ -187,10 +232,12 @@ class Fighter(TwistUnit):
         if self.delay <= 0:
             self.target[1].health -= self.damage
             self.delay += self.delay_time
-            print('Awww', self.target[1].id, self.target[1].health)
+            # print('Awww', self.target[1].id, self.target[1].health)
 
-    def throw_projectile(self, game):
-        pass
+    def throw_projectile(self, game, clazz):
+        if self.delay <= 0:
+            self.delay += self.delay_time
+            game.create_entity(clazz, int(self.x), int(self.y), self.player_id, int(self.angle))
 
     def mass_attack(self, game):
         pass
@@ -202,6 +249,66 @@ class Fighter(TwistUnit):
     def close_to_attack(self, distance=1):
         return 2 * abs(self.target[1][0] - self.x) <= self.rect.width + self.target[1].rect.width + distance \
                and 2 * abs(self.target[1][1] - self.y) <= self.rect.height + self.target[1].rect.height + distance
+
+
+class Archer(Fighter):
+    cost = 15.0
+    images = []
+    for i in range(10):
+        images.append(pygame.image.load(f'sprite-games/warrior/archer/{team_id[i]}.png'))
+
+    def __init__(self, x, y, id, player_id):
+        self.image = Archer.images[player_id]
+
+        super().__init__(x, y, id, player_id, Archer.images[player_id])
+
+    def update(self, *args):
+        if not args:
+            return
+        if not self.is_alive():
+            if args[0].type == SERVER_EVENT_UPDATE:
+                args[1].kill(self)
+                return
+        if args[0].type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
+            if self.target[0] == TARGET_MOVE:
+                if args[0].type == SERVER_EVENT_UPDATE:
+                    xr = self.target[1][0] - self.x
+                    yr = self.target[1][1] - self.y
+                    if math.sqrt(xr * xr + yr * yr) < 40:
+                        args[1].server.send_all(f'2_{TARGET_NONE}_{self.id}')
+                        self.set_target(TARGET_NONE, None)
+                        return
+                self.find_target_angle()
+                if self.turn_around():
+                    self.move_to_angle(1, args[1])
+                else:
+                    self.move_to_angle(0.5, args[1])
+
+            elif self.target[0] == TARGET_ATTACK:
+                if args[0].type == SERVER_EVENT_UPDATE and not self.target[1].is_alive():
+                    args[1].server.send_all(f'2_{TARGET_NONE}_{self.id}')
+                    self.set_target(TARGET_NONE, None)
+                    return
+
+                self.find_target_angle()
+                if args[0].type == SERVER_EVENT_UPDATE:
+                    self.update_delay()
+                near = self.close_to_attack(1000)
+                if self.turn_around():
+                    if near:
+                        if args[0].type == SERVER_EVENT_UPDATE:
+                            self.throw_projectile(args[1], Arrow)
+                    else:
+                        self.move_to_angle(1, args[1])
+                elif not near:
+                    self.move_to_angle(0.5, args[1])
+
+            elif self.target[0] == TARGET_NONE:
+                if args[0].type == SERVER_EVENT_UPDATE:
+                    self.find_new_target(args[1])
+
+        elif args[0].type in [CLIENT_EVENT_SEC, SERVER_EVENT_SEC]:
+            pass
 
 
 class Soldier(Fighter):
@@ -267,7 +374,9 @@ class Soldier(Fighter):
 
 UNIT_TYPES = {
     0: Soldier,
-    1: Mine
+    1: Mine,
+    2: Archer,
+    3: Arrow
 }
 
 

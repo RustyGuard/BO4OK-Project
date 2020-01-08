@@ -135,7 +135,6 @@ class ServerGame:
         self.lock = Lock()
         self.all_sprites = Group()
         self.buildings = Group()
-        self.projectiles = Group()
         self.players = {}
         self.server = server
 
@@ -169,6 +168,13 @@ class ServerGame:
         else:
             print(f'No money {player.money}/{build_class.cost}')
         self.lock.release()
+
+    def create_entity(self, clazz, x, y, player_id, *args):
+        print(x, y)
+        building = clazz(x, y, get_curr_id(), player_id, *args)
+        self.server.send_all(
+            f'1_{get_class_id(clazz)}_{str(x)}_{str(y)}_{building.id}_{player_id}{building.get_args()}')
+        self.all_sprites.add(building)
 
     def get_intersect(self, spr):
         return pygame.sprite.spritecollide(spr, self.all_sprites, False)
