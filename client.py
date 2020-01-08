@@ -243,10 +243,18 @@ def game_screen(screen, client, game):
                 game.retarget(id, x, y)
             elif args[0] == str(TARGET_ATTACK):
                 id, other_id = int(args[1]), int(args[2])
-                game.find_with_id(id).set_target(TARGET_ATTACK, game.find_with_id(other_id))
+                en = game.find_with_id(id)
+                if en:
+                    en.set_target(TARGET_ATTACK, game.find_with_id(other_id))
+                else:
+                    print('No object with id:', id)
             elif args[0] == str(TARGET_NONE):
-                id = int(args[0])
-                game.find_with_id(id).set_target(TARGET_NONE, None)
+                id = int(args[1])
+                en = game.find_with_id(id)
+                if en:
+                    en.set_target(TARGET_NONE, None)
+                else:
+                    print('No object with id:', id)
         elif cmd == '3':  # Update Player Info
             if args[0] == '1':  # Money
                 game.info.money = float(args[1])

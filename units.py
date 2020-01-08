@@ -196,7 +196,7 @@ class Fighter(TwistUnit):
         pass
 
     def update_delay(self):
-        if self.delay > 1:
+        if self.delay > 0:
             self.delay -= 1
 
     def close_to_attack(self, distance=1):
@@ -224,11 +224,13 @@ class Soldier(Fighter):
                 return
         if args[0].type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
             if self.target[0] == TARGET_MOVE:
-                xr = self.target[1][0] - self.x
-                yr = self.target[1][1] - self.y
-                if math.sqrt(xr * xr + yr * yr) < 40:
-                    self.target = None
-                    return
+                if args[0].type == SERVER_EVENT_UPDATE:
+                    xr = self.target[1][0] - self.x
+                    yr = self.target[1][1] - self.y
+                    if math.sqrt(xr * xr + yr * yr) < 40:
+                        args[1].server.send_all(f'2_{TARGET_NONE}_{self.id}')
+                        self.set_target(TARGET_NONE, None)
+                        return
                 self.find_target_angle()
                 if self.turn_around():
                     self.move_to_angle(1, args[1])
@@ -255,7 +257,8 @@ class Soldier(Fighter):
                     self.move_to_angle(0.5, args[1])
 
             elif self.target[0] == TARGET_NONE:
-                self.find_new_target(args[1])
+                if args[0].type == SERVER_EVENT_UPDATE:
+                    self.find_new_target(args[1])
 
         elif args[0].type in [CLIENT_EVENT_SEC, SERVER_EVENT_SEC]:
             pass
