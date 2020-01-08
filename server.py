@@ -45,7 +45,8 @@ class ClientConnection:
 
 
 class Server:
-    def __init__(self):
+    def __init__(self, ip='localhost'):
+        self.ip = ip
         self.clients = []
         self.connected = 0
         self.waiting = True
@@ -61,8 +62,8 @@ class Server:
             if c != client:
                 c.send(msg)
 
-    def thread_connection(self, ip='localhost'):
-        server = ip
+    def thread_connection(self):
+        server = self.ip
         port = 5556
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
@@ -228,14 +229,14 @@ def main():
     def update_players_info():
         for pl in game.players.values():
             pl.client.send(f'3_1_{pl.money}')
-
+    print('\n\tYour ip is:', socket.gethostbyname(socket.gethostname()), '\n')
     server = Server()
     game = ServerGame(server)
     server.callback = read
     server.connected_callback = connect_player
     thread = threading.Thread(target=server.thread_connection, daemon=True)
     thread.start()
-    screen = pygame.display.set_mode((100, 100))
+    screen = pygame.display.set_mode((300, 300))
     clock = pygame.time.Clock()
     while thread.is_alive():
         for event in pygame.event.get():
