@@ -1,7 +1,7 @@
 import pygame
 
 
-class Headpiece():
+class Headpiece:
     def play(self, screen=pygame.display.set_mode((0, 0), pygame.FULLSCREEN)):
         FPS = 200
         Bo4ok = pygame.image.load('sprite-games/headpiece/Bo4ok.png')

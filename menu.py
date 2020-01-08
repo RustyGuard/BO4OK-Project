@@ -2,14 +2,13 @@ from headpiece import Headpiece
 from play import Play
 import pygame
 
-
+# pygame.mixer.init()
+# pygame.mixer.music.load('1.mp3')
+# pygame.mixer.music.play(-1)
 background = pygame.image.load('sprite-games/menu/background.png')
 pygame.init()
 screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
-# Вызов заставки
 Headpiece.play(screen)
-# Вызов заставки
-# screen = pygame.display.set_mode((500, 0))
 screen.blit(background, (0, 0))
 FPS = 60
 image = {"play": (28, 950),

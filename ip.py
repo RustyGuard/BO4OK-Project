@@ -1,16 +1,16 @@
-from ip import Ip
 import pygame
 
 
-class Play:
+class Ip:
     def play(self, screen=pygame.display.set_mode((0, 0), pygame.FULLSCREEN)):
-        background = pygame.image.load('sprite-games/play/Основа.png')
+        background = pygame.image.load('sprite-games/play/ip Пример.png')
+        not_connect = pygame.image.load('sprite-games/play/neconectitsya.png')
         pygame.init()
         screen.blit(background, (0, 0))
         FPS = 60
-        image = {"host": (330, 183),
-                 "connect": (330, 386),
-                 "back": (330, 784)}
+        image = {"OK": (1085, 709),
+                 "back": (558, 709),
+                 "ip": (565, 442)}
 
         class Button(pygame.sprite.Sprite):
             def __init__(self, group, name):
@@ -21,7 +21,6 @@ class Play:
                 self.image = self.stok_image
                 self.rect = self.image.get_rect()
                 self.rect.topleft = image[name]
-                self.condition = False
 
             def get_anim(self, event):
                 if self.rect.collidepoint(event.pos):
@@ -32,15 +31,12 @@ class Play:
 
             def get_event(self, event):
                 if self.rect.collidepoint(event.pos):
-                    if self.name == "host":
-                        # сдесь клиент должен сделать хост сервера,
-                        # если всё удачно то его состояние(self.condition) должно стать HOST
-                        if self.condition:
-                            self.condition = "HOST"
-                    if self.name == "connect":
-                        Ip.play(screen)
+                    if self.name == "OK":
+                        # сдесь клиент должен подключится к введённому айпи(ip), если удачно должен вернуть "connect",
+                        # если нет - то "not_connect"
+                        return "not_connect"
                     if self.name == "back":
-                        return True
+                        return "back"
 
         class Cursor(pygame.sprite.Sprite):
             def __init__(self, group):
@@ -49,6 +45,7 @@ class Play:
                 self.rect = self.image.get_rect()
 
         all_buttons = pygame.sprite.Group()
+        ip = ""
         for i in image:
             Button(all_buttons, i)
         running = True
@@ -56,6 +53,7 @@ class Play:
         all_cursor = pygame.sprite.Group()
         cursor = Cursor(all_cursor)
         pygame.mouse.set_visible(0)
+        font = pygame.font.Font(None, 100)
         f = False
         while running:
             screen.fill(pygame.Color("white"))
@@ -68,11 +66,23 @@ class Play:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     for button in all_buttons:
                         a = button.get_event(event)
-                        if a:
-                            return
+                        if a == "back":
+                            return True
+                        if a == "connect":
+                            return "connect"
+                        if a == "not_connect":
+                            f = True
+                if event.type == pygame.KEYDOWN:
+                    if event.unicode in "1234567890.:":
+                        ip += event.unicode
+                    if event.key == 8:
+                        ip = ip[:-1]
             screen.blit(background, (0, 0))
             all_buttons.draw(screen)
             cursor.rect.topleft = pygame.mouse.get_pos()
+            screen.blit(font.render(ip, 1, (255, 255, 255)), (565, 460))
+            if f:
+                screen.blit(not_connect, (650, 600))
             all_cursor.draw(screen)
             pygame.display.flip()
             clock.tick(FPS)
