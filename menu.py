@@ -1,12 +1,15 @@
-from headpiece import headpiece
+from headpiece import Headpiece
+from play import Play
 import pygame
 
-# Вызов заставки
-# headpiece.play()
-# Вызов заставки
+
 background = pygame.image.load('sprite-games/menu/background.png')
 pygame.init()
 screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+# Вызов заставки
+Headpiece.play(screen)
+# Вызов заставки
+# screen = pygame.display.set_mode((500, 0))
 screen.blit(background, (0, 0))
 FPS = 60
 image = {"play": (28, 950),
@@ -33,6 +36,19 @@ class Button(pygame.sprite.Sprite):
             if self.image == self.anim:
                 self.image = self.stok_image
 
+    def get_event(self, event):
+        if self.rect.collidepoint(event.pos):
+            if self.name == "play":
+                Play().play(screen)
+            if self.name == "settings":
+                Headpiece.play(screen)
+            if self.name == "statistics":
+                Headpiece.play(screen)
+            if self.name == "creators":
+                Headpiece.play(screen)
+            if self.name == "exit":
+                exit()
+
 
 class Cursor(pygame.sprite.Sprite):
     def __init__(self, group):
@@ -42,13 +58,12 @@ class Cursor(pygame.sprite.Sprite):
 
 
 all_buttons = pygame.sprite.Group()
-for i in ["creators", "exit", "play", "settings", "statistics"]:
+for i in image:
     Button(all_buttons, i)
 running = True
 clock = pygame.time.Clock()
 all_cursor = pygame.sprite.Group()
 cursor = Cursor(all_cursor)
-Timer = 0
 pygame.mouse.set_visible(0)
 f = False
 while running:
@@ -59,6 +74,9 @@ while running:
         if event.type == pygame.MOUSEMOTION:
             for button in all_buttons:
                 button.get_anim(event)
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            for button in all_buttons:
+                button.get_event(event)
     screen.blit(background, (0, 0))
     all_buttons.draw(screen)
     cursor.rect.topleft = pygame.mouse.get_pos()
