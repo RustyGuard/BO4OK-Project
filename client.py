@@ -288,6 +288,8 @@ class ClientWait:
                 elif event.type == pygame.KEYUP:
                     if event.key == pygame.K_ESCAPE:
                         running = False
+                    elif event.key == pygame.K_r:
+                        client.send('10')
             screen.fill((58, 117, 196))
             text = font.render(f'{players_info[0]}/{players_info[1]} players.', 1, (200, 200, 200))
             screen.blit(text, (OFFSET_X, OFFSET_Y - SIRCLE_SIZE / 2))

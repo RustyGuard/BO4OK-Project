@@ -2,6 +2,8 @@ import threading
 
 import pygame
 
+import server
+from client import ClientWait
 from server import Server, ServerGame
 
 
@@ -52,6 +54,8 @@ class Play:
                     if self.name == "OK":
                         print(Play.nicname)
                         print(ip)
+                        ClientWait().play(screen, ip if ip != '' else 'localhost')
+                        pygame.mouse.set_visible(False)
                         # сдесь клиент должен подключится к введённому айпи(ip), если удачно должен вернуть "connect",
                         # если нет - то "not_connect"
                         return "not_connect"
@@ -138,12 +142,14 @@ class Play:
             def get_event(self, event):
                 if self.rect.collidepoint(event.pos):
                     if self.name == "host":
-                        Play.instance.server = Server()
-                        Play.instance.game = ServerGame(Play.instance.server)
-                        Play.instance.server.callback = read
-                        Play.instance.server.connected_callback = connect_player
-                        thread = threading.Thread(target=Play.instance.server.thread_connection, daemon=True)
-                        thread.start()
+                        server.main(screen)
+                        pygame.mouse.set_visible(False)
+                        # Play.instance.server = Server()
+                        # Play.instance.game = ServerGame(Play.instance.server)
+                        # Play.instance.server.callback = read
+                        # Play.instance.server.connected_callback = connect_player
+                        # thread = threading.Thread(target=Play.instance.server.thread_connection, daemon=True)
+                        # thread.start()
                         Play.condition = "HOST"
                         Play.readiness = True
                     if self.name == "connect":

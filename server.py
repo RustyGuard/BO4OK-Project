@@ -228,7 +228,7 @@ def place_on_map():
     pass
 
 
-def main():
+def main(screen):
     def pre_read(cmd, args, client):
         print(cmd, args)
         if cmd == '10':  # Player is ready
@@ -256,6 +256,7 @@ def main():
         for pl in game.players.values():
             pl.client.send(f'3_1_{pl.money}')
     print('\n\tYour ip is:', socket.gethostbyname(socket.gethostname()), '\n')
+    pygame.mouse.set_visible(True)
     server = Server()
     game = ServerGame(server)
     server.callback = pre_read
@@ -264,7 +265,16 @@ def main():
     thread.start()
 
     while not server.is_ready():
-        pass
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_ESCAPE:
+                    return
+        screen.fill((195, 195, 195))
+        # Отрисовка информации!
+        pygame.display.flip()
+
     for c in server.clients:
         c.send(f'0_{c.id}')
 
@@ -292,5 +302,5 @@ def main():
 
 if __name__ == '__main__':
     pygame.init()
-    main()
+    main(pygame.display.set_mode((200, 200)))
     print('Server closed.')
