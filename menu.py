@@ -66,10 +66,9 @@ cursor = Cursor(all_cursor)
 pygame.mouse.set_visible(0)
 f = False
 while running:
-    screen.fill(pygame.Color("white"))
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            running = False
+            exit()
         if event.type == pygame.MOUSEMOTION:
             for button in all_buttons:
                 button.get_anim(event)
