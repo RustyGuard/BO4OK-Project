@@ -147,12 +147,15 @@ class Game:
 
 
 class SelectArea:
-    def __init__(self):
+    def __init__(self, game, camera, client):
         self.x = 0
         self.y = 0
         self.width = 0
         self.height = 0
         self.active = False
+        self.game = game
+        self.camera = camera
+        self.client = client
 
     def mouse_moved(self, x, y):
         self.width += x
@@ -163,7 +166,7 @@ class SelectArea:
         self.height = 0
         self.active = False
 
-    def draw(self, screen):
+    def draw_ui(self, screen):
         if self.width != 0 and self.height != 0:
             pygame.draw.rect(screen, pygame.Color('blue'), (self.x, self.y, self.width, self.height), 2)
 
@@ -178,7 +181,7 @@ class SelectArea:
         test.rect = pygame.Rect(self.x, self.y, self.width, self.height)
         return pygame.sprite.spritecollide(test, group, False)
 
-    def update(self, event, game, camera, client):
+    def process_events(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
             if not self.active:
                 self.x, self.y = event.pos
@@ -187,10 +190,10 @@ class SelectArea:
         if event.type == pygame.MOUSEBUTTONUP:
             if event.button == 1:
                 if self.active:
-                    for spr in self.find_intersect(game.sprites):
-                        if spr.has_target and spr.player_id == game.info.id:
-                            client.send(
-                                f'2_{spr.id}_{event.pos[0] - camera.off_x}_{event.pos[1] - camera.off_y}')
+                    for spr in self.find_intersect(self.game.sprites):
+                        if spr.has_target and spr.player_id == self.game.info.id:
+                            self.client.send(
+                                f'2_{spr.id}_{event.pos[0] - self.camera.off_x}_{event.pos[1] - self.camera.off_y}')
                     self.clear()
                 elif self.width != 0 and self.height != 0:
                     self.active = True
@@ -203,6 +206,9 @@ class SelectArea:
                 self.mouse_moved(*event.rel)
                 return True
         return False
+
+    def update(self, *args):
+        pass
 
 
 class PlaceManager:
@@ -352,11 +358,22 @@ class ClientWait:
             else:
                 print('Taken message:', cmd, args)
 
+        font = pygame.font.Font(None, 50)
+        client.setEventCallback(listen)
+        time.sleep(1)
+        clock = pygame.time.Clock()
+        running = True
+        camera = Camera(game.sprites)
+        current_area = SelectArea(game, camera, client)
+        pygame.time.set_timer(CLIENT_EVENT_UPDATE, 1000 // 60)
+        pygame.time.set_timer(CLIENT_EVENT_SEC, 1000 // 1)
+
         managers = {}
         current_manager = 'main'
 
         main_manager = UIManager(screen.get_size())
-        build_button = UIButton(pygame.Rect(5, 5, 50, 50), 'Build', main_manager)
+        build_button = UIButton(pygame.Rect(5, 5, 75, 50), 'Build', main_manager)
+        retarget_button = UIButton(pygame.Rect(80, 5, 75, 50), 'Retarget', main_manager)
 
         build_manager = UIManager(screen.get_size())
         UIButton(pygame.Rect(5, 5, 50, 50), 'Back', build_manager, object_id='back')
@@ -370,16 +387,7 @@ class ClientWait:
         managers['place'] = PlaceManager(place)
         managers['main'] = main_manager
         managers['build'] = build_manager
-
-        font = pygame.font.Font(None, 50)
-        client.setEventCallback(listen)
-        time.sleep(1)
-        clock = pygame.time.Clock()
-        running = True
-        current_area = SelectArea()
-        pygame.time.set_timer(CLIENT_EVENT_UPDATE, 1000 // 60)
-        pygame.time.set_timer(CLIENT_EVENT_SEC, 1000 // 1)
-        camera = Camera(game.sprites)
+        managers['retarget'] = current_area
 
         while running and client.connected:
             for event in pygame.event.get():
@@ -394,15 +402,17 @@ class ClientWait:
                             current_manager = 'place'
                         elif event.ui_element == build_button:
                             current_manager = 'build'
+                        elif event.ui_element == retarget_button:
+                            current_manager = 'retarget'
 
                 if event.type == pygame.QUIT:
                     running = False
                 if event.type == pygame.KEYUP:
                     if event.key == pygame.K_ESCAPE:
-                        running = False
-
-                if current_area.update(event, game, camera, client):
-                    continue
+                        if current_manager == 'main':
+                            running = False
+                        else:
+                            current_manager = 'main'
 
                 if event.type in [CLIENT_EVENT_UPDATE, CLIENT_EVENT_SEC]:
                     if event.type == CLIENT_EVENT_UPDATE:
@@ -418,10 +428,9 @@ class ClientWait:
 
             screen.fill((125, 125, 125))
             game.drawSprites(screen)
-            current_area.draw(screen)
 
             text = font.render(str(game.info.money), 1, (100, 255, 100))
-            screen.blit(text, (5, 5))
+            screen.blit(text, (5, 50))
             managers[current_manager].update(1 / 60)
             managers[current_manager].draw_ui(screen)
 
