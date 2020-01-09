@@ -372,11 +372,69 @@ class Soldier(Fighter):
             # print('En', self.id, self.x, self.y)
 
 
+class Fortress(Unit):
+    cost = 150.0
+    levels_info = [(150.0, True, False, False), (200.0, True, True, False), (300.0, True, True, True)]
+    images = []
+    for i in range(10):
+        images.append(pygame.image.load(f'sprite-games/building/fortress/{team_id[i]}.png'))
+
+    def __init__(self, x, y, id, player_id):
+        self.image = Fortress.images[player_id]
+        self.level = 0
+        self.workers_tray = 0
+        super().__init__(x, y, id, player_id)
+
+    def create_worker(self):
+        pass  # нужен класс рабочего
+
+    def update(self, *args):
+        if not self.is_alive():
+            if args[0].type == SERVER_EVENT_UPDATE:
+                args[1].kill(self)
+                return
+
+
+class ProductingBuild(Unit):
+    def __init__(self, x, y, id, player_id, time=5):
+        self.time = time
+        self.units_tray = [Archer, Archer]
+        super().__init__(x, y, id, player_id)
+
+    def create_unit(self):
+        if self.units_tray:
+            return self.units_tray.pop([0])
+
+    def update(self, *args):
+        if not self.is_alive():
+            if args[0].type == SERVER_EVENT_UPDATE:
+                args[1].kill(self)
+                return
+        if args[0].type == SERVER_EVENT_SEC and self.time != 0:
+            self.time -= 1
+        elif self.time == 0:
+            self.time = 5
+            self.create_unit()
+
+
+class Casern(ProductingBuild):
+    cost = 100.0
+    images = []
+    for i in range(10):
+        images.append(pygame.image.load(f'sprite-games/building/casern/{team_id[i]}.png'))
+
+    def __init__(self, x, y, id, player_id, time=5):
+        self.image = Casern.images[player_id]
+        super().__init__(x, y, id, player_id, time)
+
+
 UNIT_TYPES = {
     0: Soldier,
     1: Mine,
     2: Archer,
-    3: Arrow
+    3: Arrow,
+    4: Fortress,
+    5: Casern
 }
 
 

@@ -6,7 +6,8 @@ from threading import Lock
 import pygame
 from pygame.sprite import Group, Sprite
 from constants import CLIENT_EVENT_SEC, CLIENT_EVENT_UPDATE
-from units import Mine, Soldier, get_class_id, UNIT_TYPES, TARGET_MOVE, TARGET_ATTACK, TARGET_NONE, Archer
+from units import Mine, Soldier, get_class_id, UNIT_TYPES, TARGET_MOVE, TARGET_ATTACK, TARGET_NONE, Archer, Fortress, \
+    Casern, ProductingBuild
 
 
 class Client:
@@ -299,6 +300,16 @@ def game_screen(screen, client, game):
                         current_area.active = True
                     else:
                         place(event.pos, Soldier)
+
+            if event.type == pygame.KEYDOWN:
+                pos = pygame.mouse.get_pos()
+                if event.key == pygame.K_f:
+                    place(pos, Fortress)
+                if event.key == pygame.K_m:
+                    place(pos, Mine)
+                if event.key == pygame.K_c:
+                    print('oleg isch')
+                    place(pos, Casern)
 
             if event.type == pygame.MOUSEMOTION:
                 if pygame.mouse.get_pressed()[0] == 1 and not current_area.active:
