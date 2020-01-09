@@ -35,8 +35,8 @@ class Play:
                     if self.name == "host":
                         # сдесь клиент должен сделать хост сервера,
                         # если всё удачно то его состояние(self.condition) должно стать HOST
-                        if self.condition:
-                            self.condition = "HOST"
+                        # self.condition = "HOST"
+                        return
                     if self.name == "connect":
                         Ip.play(screen)
                     if self.name == "back":
