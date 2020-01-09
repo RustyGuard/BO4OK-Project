@@ -120,7 +120,11 @@ class TwistUnit(Unit):
 
 class Mine(Unit):
     cost = 100.0
+    placeable = True
+    name = 'Mine'
+    placeable = True
     mine = pygame.image.load('sprite-games/building/mine/mine.png')
+    image = mine
 
     def __init__(self, x, y, id, player_id):
         self.image = Mine.mine
@@ -139,6 +143,8 @@ class Mine(Unit):
 class Arrow(TwistUnit):
     image = pygame.image.load(f'sprite-games/warrior/archer/arrow.png')
     damage = 5
+    name = 'Arrow'
+    placeable = False
 
     def __init__(self, x, y, id, player_id, angle):
         super().__init__(x, y, id, player_id, Arrow.image)
@@ -253,6 +259,8 @@ class Fighter(TwistUnit):
 
 class Archer(Fighter):
     cost = 15.0
+    placeable = False
+    name = 'Archer'
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/warrior/archer/{team_id[i]}.png'))
@@ -313,6 +321,8 @@ class Archer(Fighter):
 
 class Soldier(Fighter):
     cost = 10.0
+    name = 'Soldier'
+    placeable = False
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/warrior/soldier/{team_id[i]}.png'))
@@ -325,10 +335,6 @@ class Soldier(Fighter):
     def update(self, *args):
         if not args:
             return
-        if not self.is_alive():
-            if args[0].type == SERVER_EVENT_UPDATE:
-                args[1].kill(self)
-                return
         if args[0].type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
             if self.target[0] == TARGET_MOVE:
                 if args[0].type == SERVER_EVENT_UPDATE:
@@ -370,6 +376,11 @@ class Soldier(Fighter):
         elif args[0].type in [CLIENT_EVENT_SEC, SERVER_EVENT_SEC]:
             pass
             # print('En', self.id, self.x, self.y)
+
+        if not self.is_alive():
+            if args[0].type == SERVER_EVENT_UPDATE:
+                args[1].kill(self)
+                return
 
 
 UNIT_TYPES = {

@@ -1,6 +1,5 @@
 import socket
 import threading
-from random import randint
 from threading import Lock
 
 import pygame
@@ -10,7 +9,7 @@ from constants import SERVER_EVENT_SEC, SERVER_EVENT_UPDATE
 
 from units import get_class_id, UNIT_TYPES, TARGET_MOVE
 
-NEED_PLAYERS = 2
+NEED_PLAYERS = 1
 
 CURRENT_ID = 0
 ID_LOCK = Lock()
@@ -127,7 +126,6 @@ class Player:
         self.client = client
         self.money = 150.0
         self.id = self.client.id
-        self.color = (randint(0, 255), randint(0, 255), randint(0, 255))
 
 
 class ServerGame:

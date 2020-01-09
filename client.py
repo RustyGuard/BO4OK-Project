@@ -4,7 +4,11 @@ import time
 from threading import Lock
 
 import pygame
+import pygame_gui
 from pygame.sprite import Group, Sprite
+from pygame_gui import UIManager
+from pygame_gui.elements import UIButton
+
 from constants import CLIENT_EVENT_SEC, CLIENT_EVENT_UPDATE
 from units import Mine, Soldier, get_class_id, UNIT_TYPES, TARGET_MOVE, TARGET_ATTACK, TARGET_NONE, Archer
 
@@ -201,6 +205,33 @@ class SelectArea:
         return False
 
 
+class PlaceManager:
+    def __init__(self, place_func):
+        self.place_func = place_func
+        self.build_id = None
+        self.sprite = Sprite()
+        self.group = Group(self.sprite)
+
+    def set_build(self, build_id):
+        self.build_id = build_id
+        self.sprite.image = UNIT_TYPES[self.build_id].image
+        self.sprite.rect = self.sprite.image.get_rect()
+
+    def process_events(self, event):
+        if not self.build_id:
+            print('PlaceManager has empty build_id!!!')
+            return
+        if event.type == pygame.MOUSEBUTTONUP:
+            self.place_func(event.pos, self.build_id)
+
+    def draw_ui(self, screen):
+        self.sprite.rect.center = pygame.mouse.get_pos()
+        self.group.draw(screen)
+
+    def update(self, *args):
+        pass
+
+
 class ClientWait:
     def play(self, screen=pygame.display.set_mode((0, 0), pygame.FULLSCREEN), ip='localhost'):
         pygame.mouse.set_visible(True)
@@ -283,7 +314,7 @@ class ClientWait:
 
     def game_screen(self, screen, client, game):
         def place(mouse_pos, clazz):
-            client.send(f'1_{get_class_id(clazz)}_{mouse_pos[0] - camera.off_x}_{mouse_pos[1] - camera.off_y}')
+            client.send(f'1_{clazz}_{mouse_pos[0] - camera.off_x}_{mouse_pos[1] - camera.off_y}')
 
         def listen(cmd, args):
             # 0 - Game Started
@@ -321,6 +352,25 @@ class ClientWait:
             else:
                 print('Taken message:', cmd, args)
 
+        managers = {}
+        current_manager = 'main'
+
+        main_manager = UIManager(screen.get_size())
+        build_button = UIButton(pygame.Rect(5, 5, 50, 50), 'Build', main_manager)
+
+        build_manager = UIManager(screen.get_size())
+        UIButton(pygame.Rect(5, 5, 50, 50), 'Back', build_manager, object_id='back')
+        build_i = 0
+        for build_id, clazz in UNIT_TYPES.items():
+            if clazz.placeable:
+                b = UIButton(pygame.Rect(55 + 55 * build_i, 5, 50, 50), clazz.name, build_manager, object_id='place')
+                b.id = build_id
+                build_i += 1
+
+        managers['place'] = PlaceManager(place)
+        managers['main'] = main_manager
+        managers['build'] = build_manager
+
         font = pygame.font.Font(None, 50)
         client.setEventCallback(listen)
         time.sleep(1)
@@ -333,6 +383,17 @@ class ClientWait:
 
         while running and client.connected:
             for event in pygame.event.get():
+                managers[current_manager].process_events(event)
+
+                if event.type == pygame.USEREVENT:
+                    if event.user_type == pygame_gui.UI_BUTTON_PRESSED:
+                        if event.ui_object_id == 'back':
+                            current_manager = 'main'
+                        elif event.ui_object_id == 'place':
+                            managers['place'].set_build(event.ui_element.id)
+                            current_manager = 'place'
+                        elif event.ui_element == build_button:
+                            current_manager = 'build'
 
                 if event.type == pygame.QUIT:
                     running = False
@@ -342,18 +403,6 @@ class ClientWait:
 
                 if current_area.update(event, game, camera, client):
                     continue
-
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    if not current_area.active:
-                        current_area.x, current_area.y = event.pos
-
-                if event.type == pygame.MOUSEBUTTONUP:
-                    if event.button == 1:
-                        place(event.pos, Soldier)
-                    elif event.button == 2:
-                        place(event.pos, Mine)
-                    elif event.button == 3:
-                        place(event.pos, Archer)
 
                 if event.type in [CLIENT_EVENT_UPDATE, CLIENT_EVENT_SEC]:
                     if event.type == CLIENT_EVENT_UPDATE:
@@ -373,6 +422,8 @@ class ClientWait:
 
             text = font.render(str(game.info.money), 1, (100, 255, 100))
             screen.blit(text, (5, 5))
+            managers[current_manager].update(1 / 60)
+            managers[current_manager].draw_ui(screen)
 
             pygame.display.flip()
             clock.tick(60)
@@ -381,18 +432,10 @@ class ClientWait:
 
 
 def main():
-    client = Client()
     pygame.init()
     with open('settings.txt', 'r') as settings:
         size = list(map(int, settings.readline().split()))
-    screen = pygame.display.set_mode(size)
-    game = Game()
-    client.start_thread()
-
-    # Screens
-    waiting_screen(screen, client, game)
-    game_screen(screen, client, game)
-
+    ClientWait().play(pygame.display.set_mode(size))
     # End
     pygame.quit()
 

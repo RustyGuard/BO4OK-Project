@@ -22,15 +22,18 @@ def main_screen():
     res = None
     while res is None:
         for event in pygame.event.get():
+            manager.process_events(event)
+            print(event)
             if event.type == pygame.QUIT:
                 res = -1
             if event.type == pygame.USEREVENT:
                 if event.user_type == pygame_gui.UI_BUTTON_PRESSED:
                     if event.ui_element == client_button:
-                        res = 0
+                        print('0')
+                        #res = 0
                     elif event.ui_element == server_button:
-                        res = 1
-            manager.process_events(event)
+                        print('1')
+                        #res = 1
         manager.update(1.0 / 60.0)
         screen.fill((0, 125, 255))
         manager.draw_ui(screen)
