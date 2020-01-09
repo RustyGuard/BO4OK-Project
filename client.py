@@ -61,6 +61,8 @@ class Client:
                             self.callback(cmd, args, *self.call_args)
                         command_buffer = command_buffer[splitter + 1:]
                         splitter = command_buffer.find(';')
+                        while not self.callback:
+                            pass
             except Exception as ex:
                 print('[READ THREAD]', ex)
                 print('[READ THREAD] NO LONGER READING FROM SERVER!')
@@ -140,56 +142,6 @@ class Game:
                 return spr
 
 
-def waiting_screen(screen, client, game):
-    players_info = [0, 0]
-
-    def read(cmd, args):
-        print(cmd, args)
-        if cmd == '0':
-            game.info.id = int(args[0])
-            game.start()
-            print(f'Game started. Our id is {game.info.id}')
-        if cmd == '10':
-            players_info[0] = int(args[0])
-            players_info[1] = int(args[1])
-            print(players_info)
-
-    client.setEventCallback(read)
-    clock = pygame.time.Clock()
-    running = True
-    t, c = 0, 0
-    font = pygame.font.Font(None, 30)
-    while running and not game.started:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-        screen.fill((125, 125, 0))
-        text = font.render(f'{players_info[0]}/{players_info[1]} players.', 1, (255, 255, 100))
-        screen.blit(text, (100, 75))
-
-        t += 1
-        c += 1
-        if t > 150:
-            t = 0
-        if c > 360:
-            c = 0
-        color = pygame.Color('red')
-        hsva = color.hsva
-        color.hsva = (c, hsva[1], hsva[2], hsva[3])
-        for i in range(6):
-            if i * 20 < t < i * 20 + 60:
-                pygame.draw.ellipse(screen, color, (100 + i * 20, 100, 15, 15))
-        pygame.draw.rect(screen, pygame.Color('brown'), (100, 100, 6 * 20 - 5, 15), 1)
-
-        pygame.display.flip()
-        clock.tick(60)
-    print('Ended')
-    if not running:
-        client.disconnect('App closed.')
-        pygame.quit()
-        exit(0)
-
-
 class SelectArea:
     def __init__(self):
         self.x = 0
@@ -222,110 +174,210 @@ class SelectArea:
         test.rect = pygame.Rect(self.x, self.y, self.width, self.height)
         return pygame.sprite.spritecollide(test, group, False)
 
+    def update(self, event, game, camera, client):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if not self.active:
+                self.x, self.y = event.pos
+            return False
 
-def game_screen(screen, client, game):
-    def place(mouse_pos, clazz):
-        client.send(f'1_{get_class_id(clazz)}_{mouse_pos[0] - camera.off_x}_{mouse_pos[1] - camera.off_y}')
-
-    def listen(cmd, args):
-        # 0 - Game Started
-        # 1 - Add entity of [type] at [x, y] with [id]
-        # 2 - Retarget entity of [type] at [x, y] with [id]
-        # 3 - Update Player Info
-        # 10 - Tell player count [curr, max]
-        print(cmd, args)
-        if cmd == '1':
-            type, x, y, id, id_player = int(args[0]), int(args[1]), int(args[2]), int(args[3]), int(args[4])
-            game.addEntity(type, x, y, id, id_player, camera, args[5::])
-        elif cmd == '2':
-            if args[0] == str(TARGET_MOVE):
-                id, x, y = int(args[1]), int(args[2]), int(args[3])
-                game.retarget(id, x, y)
-            elif args[0] == str(TARGET_ATTACK):
-                id, other_id = int(args[1]), int(args[2])
-                en = game.find_with_id(id)
-                if en:
-                    en.set_target(TARGET_ATTACK, game.find_with_id(other_id))
+        if event.type == pygame.MOUSEBUTTONUP:
+            if event.button == 1:
+                if self.active:
+                    for spr in self.find_intersect(game.sprites):
+                        if spr.has_target and spr.player_id == game.info.id:
+                            client.send(
+                                f'2_{spr.id}_{event.pos[0] - camera.off_x}_{event.pos[1] - camera.off_y}')
+                    self.clear()
+                elif self.width != 0 and self.height != 0:
+                    self.active = True
                 else:
-                    print('No object with id:', id)
-            elif args[0] == str(TARGET_NONE):
-                id = int(args[1])
-                en = game.find_with_id(id)
-                if en:
-                    en.set_target(TARGET_NONE, None)
-                else:
-                    print('No object with id:', id)
-        elif cmd == '3':  # Update Player Info
-            if args[0] == '1':  # Money
-                game.info.money = float(args[1])
-        elif cmd == '4':
-            game.find_with_id(int(args[0])).kill()
-        else:
-            print('Taken message:', cmd, args)
+                    return False
+                return True
 
-    font = pygame.font.Font(None, 50)
-    client.setEventCallback(listen)
-    time.sleep(1)
-    clock = pygame.time.Clock()
-    running = True
-    current_area = SelectArea()
-    pygame.time.set_timer(CLIENT_EVENT_UPDATE, 1000 // 60)
-    pygame.time.set_timer(CLIENT_EVENT_SEC, 1000 // 1)
-    camera = Camera(game.sprites)
+        if event.type == pygame.MOUSEMOTION:
+            if pygame.mouse.get_pressed()[0] == 1 and not self.active:
+                self.mouse_moved(*event.rel)
+                return True
+        return False
 
-    while running and client.connected:
-        for event in pygame.event.get():
 
-            if event.type == pygame.QUIT:
-                running = False
+class ClientWait:
+    def play(self, screen=pygame.display.set_mode((0, 0), pygame.FULLSCREEN), ip='localhost'):
+        pygame.mouse.set_visible(True)
+        client = Client(ip)
+        pygame.init()
+        if not client.connected:
+            return False
 
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if not current_area.active:
-                    current_area.x, current_area.y = event.pos
+        game = Game()
+        client.start_thread()
 
-            if event.type == pygame.MOUSEBUTTONUP:
-                if event.button == 2:
-                    place(event.pos, Mine)
-                elif event.button == 3:
-                    place(event.pos, Archer)
+        # Screens
+        if not self.waiting_screen(screen, client, game):
+            return False
+        if not self.game_screen(screen, client, game):
+            return False
+        return True
 
-                if event.button == 1:
-                    if current_area.active:
-                        for spr in current_area.find_intersect(game.sprites):
-                            if spr.has_target and spr.player_id == game.info.id:
-                                client.send(f'2_{spr.id}_{event.pos[0] - camera.off_x}_{event.pos[1] - camera.off_y}')
-                        current_area.clear()
-                    elif current_area.width != 0 and current_area.height != 0:
-                        current_area.active = True
+    def waiting_screen(self, screen, client, game):
+        players_info = [0, 0]
+
+        def read(cmd, args):
+            print(cmd, args)
+            if cmd == '0':
+                game.info.id = int(args[0])
+                game.start()
+                print(f'Game started. Our id is {game.info.id}')
+            if cmd == '10':
+                players_info[0] = int(args[0])
+                players_info[1] = int(args[1])
+                print(players_info)
+
+        client.setEventCallback(read)
+        clock = pygame.time.Clock()
+        running = True
+        font = pygame.font.Font(None, 50)
+        SIRCLE_SIZE = 100
+        SIRCLE_SPACE = 15
+        OFFSET_X = 600
+        OFFSET_Y = 500
+        MIN_HUE = 180
+        MAX_HUE = 255
+        t, hue_bool, c = 0, True, MIN_HUE + 5
+        while running and not game.started:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                elif event.type == pygame.KEYUP:
+                    if event.key == pygame.K_ESCAPE:
+                        running = False
+            screen.fill((58, 117, 196))
+            text = font.render(f'{players_info[0]}/{players_info[1]} players.', 1, (200, 200, 200))
+            screen.blit(text, (OFFSET_X, OFFSET_Y - SIRCLE_SIZE / 2))
+
+            t += 1
+            if hue_bool:
+                c += 1
+            else:
+                c -= 1
+            if t > 150:
+                t = 0
+            if c > MAX_HUE or c < MIN_HUE:
+                hue_bool = not hue_bool
+            color = pygame.Color('red')
+            hsva = color.hsva
+            color.hsva = (c, hsva[1], hsva[2], hsva[3])
+            for i in range(6):
+                if i * 20 < t < i * 20 + 60:
+                    pygame.draw.ellipse(screen, color, (OFFSET_X + i * (SIRCLE_SIZE + SIRCLE_SPACE), OFFSET_Y, SIRCLE_SIZE, SIRCLE_SIZE))
+                    pygame.draw.ellipse(screen, (128, 128, 128), (OFFSET_X + i * (SIRCLE_SIZE + SIRCLE_SPACE), OFFSET_Y, SIRCLE_SIZE, SIRCLE_SIZE), 1)
+            pygame.draw.rect(screen, (192, 192, 192), (OFFSET_X, OFFSET_Y, 6 * (SIRCLE_SIZE + SIRCLE_SPACE) - 5, SIRCLE_SIZE), 2)
+
+            pygame.display.flip()
+            clock.tick(60)
+        print('Ended')
+        if not running:
+            client.disconnect('App closed.')
+            return False
+        return True
+
+    def game_screen(self, screen, client, game):
+        def place(mouse_pos, clazz):
+            client.send(f'1_{get_class_id(clazz)}_{mouse_pos[0] - camera.off_x}_{mouse_pos[1] - camera.off_y}')
+
+        def listen(cmd, args):
+            # 0 - Game Started
+            # 1 - Add entity of [type] at [x, y] with [id]
+            # 2 - Retarget entity of [type] at [x, y] with [id]
+            # 3 - Update Player Info
+            # 10 - Tell player count [curr, max]
+            print(cmd, args)
+            if cmd == '1':
+                type, x, y, id, id_player = int(args[0]), int(args[1]), int(args[2]), int(args[3]), int(args[4])
+                game.addEntity(type, x, y, id, id_player, camera, args[5::])
+            elif cmd == '2':
+                if args[0] == str(TARGET_MOVE):
+                    id, x, y = int(args[1]), int(args[2]), int(args[3])
+                    game.retarget(id, x, y)
+                elif args[0] == str(TARGET_ATTACK):
+                    id, other_id = int(args[1]), int(args[2])
+                    en = game.find_with_id(id)
+                    if en:
+                        en.set_target(TARGET_ATTACK, game.find_with_id(other_id))
                     else:
+                        print('No object with id:', id)
+                elif args[0] == str(TARGET_NONE):
+                    id = int(args[1])
+                    en = game.find_with_id(id)
+                    if en:
+                        en.set_target(TARGET_NONE, None)
+                    else:
+                        print('No object with id:', id)
+            elif cmd == '3':  # Update Player Info
+                if args[0] == '1':  # Money
+                    game.info.money = float(args[1])
+            elif cmd == '4':
+                game.find_with_id(int(args[0])).kill()
+            else:
+                print('Taken message:', cmd, args)
+
+        font = pygame.font.Font(None, 50)
+        client.setEventCallback(listen)
+        time.sleep(1)
+        clock = pygame.time.Clock()
+        running = True
+        current_area = SelectArea()
+        pygame.time.set_timer(CLIENT_EVENT_UPDATE, 1000 // 60)
+        pygame.time.set_timer(CLIENT_EVENT_SEC, 1000 // 1)
+        camera = Camera(game.sprites)
+
+        while running and client.connected:
+            for event in pygame.event.get():
+
+                if event.type == pygame.QUIT:
+                    running = False
+                if event.type == pygame.KEYUP:
+                    if event.key == pygame.K_ESCAPE:
+                        running = False
+
+                if current_area.update(event, game, camera, client):
+                    continue
+
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if not current_area.active:
+                        current_area.x, current_area.y = event.pos
+
+                if event.type == pygame.MOUSEBUTTONUP:
+                    if event.button == 1:
                         place(event.pos, Soldier)
+                    elif event.button == 2:
+                        place(event.pos, Mine)
+                    elif event.button == 3:
+                        place(event.pos, Archer)
 
-            if event.type == pygame.MOUSEMOTION:
-                if pygame.mouse.get_pressed()[0] == 1 and not current_area.active:
-                    current_area.mouse_moved(*event.rel)
+                if event.type in [CLIENT_EVENT_UPDATE, CLIENT_EVENT_SEC]:
+                    if event.type == CLIENT_EVENT_UPDATE:
+                        if pygame.key.get_pressed()[pygame.K_w]:
+                            camera.move(0, 1)
+                        if pygame.key.get_pressed()[pygame.K_s]:
+                            camera.move(0, -1)
+                        if pygame.key.get_pressed()[pygame.K_a]:
+                            camera.move(1, 0)
+                        if pygame.key.get_pressed()[pygame.K_d]:
+                            camera.move(-1, 0)
+                    game.update(event, game)
 
-            if event.type in [CLIENT_EVENT_UPDATE, CLIENT_EVENT_SEC]:
-                if event.type == CLIENT_EVENT_UPDATE:
-                    if pygame.key.get_pressed()[pygame.K_w]:
-                        camera.move(0, 1)
-                    if pygame.key.get_pressed()[pygame.K_s]:
-                        camera.move(0, -1)
-                    if pygame.key.get_pressed()[pygame.K_a]:
-                        camera.move(1, 0)
-                    if pygame.key.get_pressed()[pygame.K_d]:
-                        camera.move(-1, 0)
-                game.update(event, game)
+            screen.fill((125, 125, 125))
+            game.drawSprites(screen)
+            current_area.draw(screen)
 
-        screen.fill((125, 125, 125))
-        game.drawSprites(screen)
-        current_area.draw(screen)
+            text = font.render(str(game.info.money), 1, (100, 255, 100))
+            screen.blit(text, (5, 5))
 
-        text = font.render(str(game.info.money), 1, (100, 255, 100))
-        screen.blit(text, (5, 5))
-
-        pygame.display.flip()
-        clock.tick(60)
-    client.disconnect('Application closed.')
+            pygame.display.flip()
+            clock.tick(60)
+        client.disconnect('Application closed.')
+        return False
 
 
 def main():
