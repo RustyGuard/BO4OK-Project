@@ -1,9 +1,25 @@
+import threading
+
 from ip import Ip
 import pygame
 
+from server import Server, ServerGame
+
+
+def read(cmd, args, client):
+    print(cmd, args, client)
+
+
+def connect_player(client):
+    Play.instance.game.add_player(client)
+    print(client)
+
 
 class Play:
+    instance = None
+
     def play(self, screen=pygame.display.set_mode((0, 0), pygame.FULLSCREEN)):
+        Play.instance = self
         background = pygame.image.load('sprite-games/play/Основа.png')
         pygame.init()
         screen.blit(background, (0, 0))
@@ -33,6 +49,13 @@ class Play:
             def get_event(self, event):
                 if self.rect.collidepoint(event.pos):
                     if self.name == "host":
+                        Play.instance.server = Server()
+                        Play.instance.game = ServerGame(Play.instance.server)
+                        Play.instance.server.callback = read
+                        Play.instance.server.connected_callback = connect_player
+                        thread = threading.Thread(target=Play.instance.server.thread_connection, daemon=True)
+                        thread.start()
+
                         # сдесь клиент должен сделать хост сервера,
                         # если всё удачно то его состояние(self.condition) должно стать HOST
                         # self.condition = "HOST"

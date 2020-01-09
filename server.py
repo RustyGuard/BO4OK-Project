@@ -233,20 +233,7 @@ def main():
     server.connected_callback = connect_player
     thread = threading.Thread(target=server.thread_connection, daemon=True)
     thread.start()
-    screen = pygame.display.set_mode((300, 300))
     clock = pygame.time.Clock()
-    while thread.is_alive():
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                exit(0)
-            if event.type in [SERVER_EVENT_UPDATE, SERVER_EVENT_SEC]:
-                game.update(event, game)
-                if event.type == SERVER_EVENT_SEC:
-                    update_players_info()
-        screen.fill((0, 125, 255))
-        pygame.display.flip()
-        clock.tick(60)
 
     running = True
     pygame.time.set_timer(SERVER_EVENT_UPDATE, 1000 // 60)
