@@ -174,9 +174,36 @@ class SelectArea:
         test.rect = pygame.Rect(self.x, self.y, self.width, self.height)
         return pygame.sprite.spritecollide(test, group, False)
 
+    def update(self, event, game, camera, client):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if not self.active:
+                self.x, self.y = event.pos
+            return False
+
+        if event.type == pygame.MOUSEBUTTONUP:
+            if event.button == 1:
+                if self.active:
+                    for spr in self.find_intersect(game.sprites):
+                        if spr.has_target and spr.player_id == game.info.id:
+                            client.send(
+                                f'2_{spr.id}_{event.pos[0] - camera.off_x}_{event.pos[1] - camera.off_y}')
+                    self.clear()
+                elif self.width != 0 and self.height != 0:
+                    self.active = True
+                else:
+                    return False
+                return True
+
+        if event.type == pygame.MOUSEMOTION:
+            if pygame.mouse.get_pressed()[0] == 1 and not self.active:
+                self.mouse_moved(*event.rel)
+                return True
+        return False
+
 
 class ClientWait:
     def play(self, screen=pygame.display.set_mode((0, 0), pygame.FULLSCREEN), ip='localhost'):
+        pygame.mouse.set_visible(True)
         client = Client(ip)
         pygame.init()
         if not client.connected:
@@ -309,32 +336,24 @@ class ClientWait:
 
                 if event.type == pygame.QUIT:
                     running = False
+                if event.type == pygame.KEYUP:
+                    if event.key == pygame.K_ESCAPE:
+                        running = False
+
+                if current_area.update(event, game, camera, client):
+                    continue
 
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if not current_area.active:
                         current_area.x, current_area.y = event.pos
 
                 if event.type == pygame.MOUSEBUTTONUP:
-                    if event.button == 2:
+                    if event.button == 1:
+                        place(event.pos, Soldier)
+                    elif event.button == 2:
                         place(event.pos, Mine)
                     elif event.button == 3:
                         place(event.pos, Archer)
-
-                    if event.button == 1:
-                        if current_area.active:
-                            for spr in current_area.find_intersect(game.sprites):
-                                if spr.has_target and spr.player_id == game.info.id:
-                                    client.send(
-                                        f'2_{spr.id}_{event.pos[0] - camera.off_x}_{event.pos[1] - camera.off_y}')
-                            current_area.clear()
-                        elif current_area.width != 0 and current_area.height != 0:
-                            current_area.active = True
-                        else:
-                            place(event.pos, Soldier)
-
-                if event.type == pygame.MOUSEMOTION:
-                    if pygame.mouse.get_pressed()[0] == 1 and not current_area.active:
-                        current_area.mouse_moved(*event.rel)
 
                 if event.type in [CLIENT_EVENT_UPDATE, CLIENT_EVENT_SEC]:
                     if event.type == CLIENT_EVENT_UPDATE:
@@ -358,7 +377,7 @@ class ClientWait:
             pygame.display.flip()
             clock.tick(60)
         client.disconnect('Application closed.')
-        return True
+        return False
 
 
 def main():

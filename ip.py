@@ -36,6 +36,7 @@ class Ip:
                     if self.name == "OK":
                         if client.ClientWait().play(screen, ip if ip != '' else 'localhost'):
                             return "connect"
+                        pygame.mouse.set_visible(False)
                         # сдесь клиент должен подключится к введённому айпи(ip), если удачно должен вернуть "connect",
                         # если нет - то "not_connect"
                         return "not_connect"
