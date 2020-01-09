@@ -360,7 +360,6 @@ class ClientWait:
 
         font = pygame.font.Font(None, 50)
         client.setEventCallback(listen)
-        time.sleep(1)
         clock = pygame.time.Clock()
         running = True
         camera = Camera(game.sprites)

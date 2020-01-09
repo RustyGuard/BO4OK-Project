@@ -1,15 +1,18 @@
+import pickle
 import socket
 import threading
+from copy import deepcopy
 from threading import Lock
 
 import pygame
 from pygame import sprite
 from pygame.sprite import Group, Sprite
-from constants import SERVER_EVENT_SEC, SERVER_EVENT_UPDATE
+from constants import SERVER_EVENT_SEC, SERVER_EVENT_UPDATE, SERVER_EVENT_SYNC
 
 from units import get_class_id, UNIT_TYPES, TARGET_MOVE
 
 NEED_PLAYERS = 1
+MAX_PLAYERS = 10
 
 CURRENT_ID = 0
 ID_LOCK = Lock()
@@ -30,6 +33,7 @@ class ClientConnection:
     def __init__(self, addr, conn):
         self.addr, self.conn = addr, conn
         self.id = ClientConnection.curr_id
+        self.ready = False
         ClientConnection.curr_id += 1
         self.connected = True
 
@@ -37,6 +41,14 @@ class ClientConnection:
         if self.connected:
             try:
                 self.conn.send((msg + ';').encode())
+            except Exception as ex:
+                print('[ClientConnection::send]', ex)
+                self.connected = False
+
+    def send_bytes(self, msg):
+        if self.connected:
+            try:
+                self.conn.send(msg + b';')
             except Exception as ex:
                 print('[ClientConnection::send]', ex)
                 self.connected = False
@@ -60,6 +72,16 @@ class Server:
             if c != client:
                 c.send(msg)
 
+    def is_ready(self):
+        if not self.waiting:
+            return True
+        if len(self.clients) <= 0:
+            return False
+        for i in self.clients:
+            if not i.ready:
+                return False
+        return True
+
     def thread_connection(self):
         server = self.ip
         port = 5556
@@ -72,16 +94,15 @@ class Server:
         s.listen(1)
         print("Waiting for a connection, Server Started")
 
-        while self.connected < NEED_PLAYERS:
+        while self.connected < MAX_PLAYERS:
             print("[CONNECT] Finding connection!")
             conn, addr = s.accept()
+            if self.is_ready():
+                break
             self.connected += 1
-            print(f"[CONNECT] Connected [{self.connected}/{NEED_PLAYERS}]!")
+            print(f"[CONNECT] Connected [{self.connected}/{MAX_PLAYERS}]!")
             self.authentication(conn, addr)
-            self.send_all(f'10_{self.connected}_{NEED_PLAYERS}')
-
-        for c in self.clients:
-            c.send(f'0_{c.id}')
+            self.send_all(f'10_{self.connected}_{MAX_PLAYERS}')
         self.waiting = False
         print('Everybody connected.')
 
@@ -116,8 +137,8 @@ class Server:
                 print('[PLAYER THREAD ERROR] from client:', client.id, ex)
                 self.clients.remove(client)
                 self.connected -= 1
-                print(f"[CONNECT] Disconnected [{self.connected}/{NEED_PLAYERS}]!")
-                self.send_all(f'10_{self.connected}_{NEED_PLAYERS}')
+                print(f"[CONNECT] Disconnected [{self.connected}/{MAX_PLAYERS}]!")
+                self.send_all(f'10_{self.connected}_{MAX_PLAYERS}')
                 return
 
 
@@ -168,11 +189,13 @@ class ServerGame:
         self.lock.release()
 
     def create_entity(self, clazz, x, y, player_id, *args):
+        self.lock.acquire()
         print(x, y)
         building = clazz(x, y, get_curr_id(), player_id, *args)
         self.server.send_all(
             f'1_{get_class_id(clazz)}_{str(x)}_{str(y)}_{building.id}_{player_id}{building.get_args()}')
         self.all_sprites.add(building)
+        self.lock.release()
 
     def get_intersect(self, spr):
         return pygame.sprite.spritecollide(spr, self.all_sprites, False)
@@ -206,6 +229,12 @@ def place_on_map():
 
 
 def main():
+    def pre_read(cmd, args, client):
+        print(cmd, args)
+        if cmd == '10':  # Player is ready
+            print(client, 'ready')
+            client.ready = True
+
     def read(cmd, args, client):
         print(cmd, args)
         if cmd == '1':
@@ -229,23 +258,35 @@ def main():
     print('\n\tYour ip is:', socket.gethostbyname(socket.gethostname()), '\n')
     server = Server()
     game = ServerGame(server)
-    server.callback = read
+    server.callback = pre_read
     server.connected_callback = connect_player
     thread = threading.Thread(target=server.thread_connection, daemon=True)
     thread.start()
+
+    while not server.is_ready():
+        pass
+    for c in server.clients:
+        c.send(f'0_{c.id}')
+
     clock = pygame.time.Clock()
 
+    server.callback = read
     running = True
     pygame.time.set_timer(SERVER_EVENT_UPDATE, 1000 // 60)
     pygame.time.set_timer(SERVER_EVENT_SEC, 1000 // 1)
+    pygame.time.set_timer(SERVER_EVENT_SYNC, 10000)
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            if event.type in [SERVER_EVENT_UPDATE, SERVER_EVENT_SEC]:
+            elif event.type in [SERVER_EVENT_UPDATE, SERVER_EVENT_SEC]:
                 game.update(event, game)
                 if event.type == SERVER_EVENT_SEC:
                     update_players_info()
+            elif event.type == SERVER_EVENT_SYNC:
+                game.lock.acquire()
+                print('Sync')
+                game.lock.release()
         clock.tick(60)
 
 
