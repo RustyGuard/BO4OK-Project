@@ -308,7 +308,8 @@ def main(screen):
             elif event.type == SERVER_EVENT_SYNC:
                 game.lock.acquire()
                 print('Sync')
-                game.lock.release()if event.type == pygame.QUIT:
+                game.lock.release()
+            if event.type == pygame.QUIT:
                 return
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_ESCAPE:
