@@ -365,19 +365,21 @@ class ClientWait:
             elif cmd == '9':
                 en = game.find_with_id(int(args[3]))
                 if en is None:
-                    clazz_id = input(args[0])
+                    print('Wasn"t', args)
+                    clazz_id = int(args[0])
                     if UNIT_TYPES[clazz_id] == Arrow:
                         en = UNIT_TYPES[int(args[0])](0, 0, 0, 0, 0)
                     else:
                         en = UNIT_TYPES[int(args[0])](0, 0, 0, 0)
                     en.offsetx = camera.off_x
                     en.offsety = camera.off_y
-                    en.update_rect()
                     game.sprites.add(en)
                     if en.is_building:
                         game.buildings.add(en)
 
                 en.set_update_args(args, game)
+                en.update_rect()
+                return
             else:
                 print('Taken message:', cmd, args)
 
