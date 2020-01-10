@@ -10,7 +10,7 @@ from pygame_gui import UIManager
 from pygame_gui.elements import UIButton
 
 from constants import CLIENT_EVENT_SEC, CLIENT_EVENT_UPDATE
-from units import Mine, Soldier, get_class_id, UNIT_TYPES, TARGET_MOVE, TARGET_ATTACK, TARGET_NONE, Archer
+from units import Mine, Soldier, get_class_id, UNIT_TYPES, TARGET_MOVE, TARGET_ATTACK, TARGET_NONE, Archer, Arrow
 
 
 class Client:
@@ -309,9 +309,12 @@ class ClientWait:
             color.hsva = (c, hsva[1], hsva[2], hsva[3])
             for i in range(6):
                 if i * 20 < t < i * 20 + 60:
-                    pygame.draw.ellipse(screen, color, (OFFSET_X + i * (SIRCLE_SIZE + SIRCLE_SPACE), OFFSET_Y, SIRCLE_SIZE, SIRCLE_SIZE))
-                    pygame.draw.ellipse(screen, (128, 128, 128), (OFFSET_X + i * (SIRCLE_SIZE + SIRCLE_SPACE), OFFSET_Y, SIRCLE_SIZE, SIRCLE_SIZE), 1)
-            pygame.draw.rect(screen, (192, 192, 192), (OFFSET_X, OFFSET_Y, 6 * (SIRCLE_SIZE + SIRCLE_SPACE) - 5, SIRCLE_SIZE), 2)
+                    pygame.draw.ellipse(screen, color, (
+                    OFFSET_X + i * (SIRCLE_SIZE + SIRCLE_SPACE), OFFSET_Y, SIRCLE_SIZE, SIRCLE_SIZE))
+                    pygame.draw.ellipse(screen, (128, 128, 128), (
+                    OFFSET_X + i * (SIRCLE_SIZE + SIRCLE_SPACE), OFFSET_Y, SIRCLE_SIZE, SIRCLE_SIZE), 1)
+            pygame.draw.rect(screen, (192, 192, 192),
+                             (OFFSET_X, OFFSET_Y, 6 * (SIRCLE_SIZE + SIRCLE_SPACE) - 5, SIRCLE_SIZE), 2)
 
             pygame.display.flip()
             clock.tick(60)
@@ -359,6 +362,22 @@ class ClientWait:
                     return
             elif cmd == '4':
                 game.find_with_id(int(args[0])).kill()
+            elif cmd == '9':
+                en = game.find_with_id(int(args[3]))
+                if en is None:
+                    clazz_id = input(args[0])
+                    if UNIT_TYPES[clazz_id] == Arrow:
+                        en = UNIT_TYPES[int(args[0])](0, 0, 0, 0, 0)
+                    else:
+                        en = UNIT_TYPES[int(args[0])](0, 0, 0, 0)
+                    en.offsetx = camera.off_x
+                    en.offsety = camera.off_y
+                    en.update_rect()
+                    game.sprites.add(en)
+                    if en.is_building:
+                        game.buildings.add(en)
+
+                en.set_update_args(args, game)
             else:
                 print('Taken message:', cmd, args)
 

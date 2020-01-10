@@ -319,7 +319,7 @@ def main(screen):
     running = True
     pygame.time.set_timer(SERVER_EVENT_UPDATE, 1000 // 60)
     pygame.time.set_timer(SERVER_EVENT_SEC, 1000 // 1)
-    pygame.time.set_timer(SERVER_EVENT_SYNC, 30000)
+    pygame.time.set_timer(SERVER_EVENT_SYNC, 10000)
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -330,7 +330,8 @@ def main(screen):
                     update_players_info()
             elif event.type == SERVER_EVENT_SYNC:
                 game.lock.acquire()
-                print('Sync')
+                for spr in game.all_sprites:
+                    spr.send_updated(game)
                 game.lock.release()
             elif event.type == pygame.QUIT:
                 return
