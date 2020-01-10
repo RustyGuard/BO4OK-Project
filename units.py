@@ -87,6 +87,26 @@ class Unit(Sprite):
             return self.y
         raise Exception('Noooooo way!!!')
 
+    def get_update_args(self, arr):
+        arr.append(str(get_class_id(type(self))))
+        arr.append(str(int(self.x)))
+        arr.append(str(int(self.y)))
+        arr.append(str(self.id))
+        arr.append(str(self.player_id))
+        arr.append(str(self.health))
+        return arr
+
+    def set_update_args(self, arr, game):
+        arr.pop(0)
+        self.x = float(arr.pop(0))
+        self.y = float(arr.pop(0))
+        self.id = int(arr.pop(0))
+        self.player_id = int(arr.pop(0))
+        self.health = float(arr.pop(0))
+
+    def send_updated(self, game):
+        game.server.send_all('9_' + '_'.join(self.get_update_args([])))
+
 
 class TwistUnit(Unit):
     def __init__(self, x, y, id, player_id, default_image):
@@ -116,6 +136,15 @@ class TwistUnit(Unit):
 
     def move_to_angle(self, speed, game):
         self.move(math.cos(math.radians(self.angle)) * speed, math.sin(math.radians(self.angle)) * speed, game)
+
+    def get_update_args(self, arr):
+        super().get_update_args(arr)
+        arr.append(str(self.angle))
+        return arr
+
+    def set_update_args(self, arr, game):
+        super().set_update_args(arr, game)
+        self.set_angle(int(arr.pop(0)))
 
 
 class Mine(Unit):
@@ -254,6 +283,27 @@ class Fighter(TwistUnit):
     def close_to_attack(self, distance=1):
         return 2 * abs(self.target[1][0] - self.x) <= self.rect.width + self.target[1].rect.width + distance \
                and 2 * abs(self.target[1][1] - self.y) <= self.rect.height + self.target[1].rect.height + distance
+
+    def get_update_args(self, arr):
+        super().get_update_args(arr)
+        arr.append(str(self.target[0]))
+        if self.target[0] == TARGET_MOVE:
+            arr.append(str(self.target[1][0]))
+            arr.append(str(self.target[1][1]))
+        elif self.target[0] == TARGET_ATTACK:
+            arr.append(str(self.target[1].id))
+        return arr
+
+    def set_update_args(self, arr, game):
+        super().set_update_args(arr, game)
+        target = int(arr.pop(0))
+        second = None
+        arr.append(str(self.target[0]))
+        if target == TARGET_MOVE:
+            second = int(arr.pop(0)), int(arr.pop(0))
+        elif target == TARGET_ATTACK:
+            second = game.find_with_id(int(arr.pop(0)))
+        self.target = (target, second)
 
 
 class Archer(Fighter):
