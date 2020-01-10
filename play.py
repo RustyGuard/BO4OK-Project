@@ -144,12 +144,6 @@ class Play:
                     if self.name == "host":
                         server.main(screen)
                         pygame.mouse.set_visible(False)
-                        # Play.instance.server = Server()
-                        # Play.instance.game = ServerGame(Play.instance.server)
-                        # Play.instance.server.callback = read
-                        # Play.instance.server.connected_callback = connect_player
-                        # thread = threading.Thread(target=Play.instance.server.thread_connection, daemon=True)
-                        # thread.start()
                         Play.condition = "HOST"
                         Play.readiness = True
                     if self.name == "connect":
@@ -182,34 +176,14 @@ class Play:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     exit()
-                if not Play.readiness:
-                    if event.type == pygame.MOUSEMOTION:
-                        for button in all_buttons:
-                            button.get_anim(event)
-                    if event.type == pygame.MOUSEBUTTONDOWN:
-                        for button in all_buttons:
-                            a = button.get_event(event)
-                            if a:
-                                return
-                else:
-                    if Play.readiness:
-                        if event.type == pygame.MOUSEMOTION:
-                            for button in cancel_buttons:
-                                button.get_anim(event)
-                        if event.type == pygame.MOUSEBUTTONDOWN:
-                            for button in cancel_buttons:
-                                a = button.get_event(event)
-                                if a:
-                                    Play.readiness = False
-                    else:
-                        if event.type == pygame.MOUSEMOTION:
-                            for button in ready_buttons:
-                                button.get_anim(event)
-                        if event.type == pygame.MOUSEBUTTONDOWN:
-                            for button in ready_buttons:
-                                a = button.get_event(event)
-                                if a:
-                                    Play.readiness = True
+                if event.type == pygame.MOUSEMOTION:
+                    for button in all_buttons:
+                        button.get_anim(event)
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    for button in all_buttons:
+                        a = button.get_event(event)
+                        if a:
+                            return
                 if event.type == pygame.KEYDOWN:
                     if event.unicode in "ёйцукенгшщзхъфывапролджэячсмить" \
                                         "бюqwertyuiopasdfghjklzxcvbnm1234567890" or \
@@ -221,12 +195,6 @@ class Play:
             screen.blit(background, (0, 0))
             all_buttons.draw(screen)
             cursor.rect.topleft = pygame.mouse.get_pos()
-            if Play.condition != "user":
-                if Play.readiness:
-                    cancel_buttons.draw(screen)
-                else:
-                    if Play.condition == "client":
-                        ready_buttons.draw(screen)
             screen.blit(font.render(Play.nicname, 1, (255, 255, 255)), (810, 810))
             all_cursor.draw(screen)
             pygame.display.flip()

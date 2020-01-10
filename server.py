@@ -237,6 +237,7 @@ def place_on_map():
 
 
 def main(screen):
+    pygame.mouse.set_visible(0)
     connect_info = [0, 0]
 
     def pre_read(cmd, args, client):
@@ -288,26 +289,85 @@ def main(screen):
     thread = threading.Thread(target=server.thread_connection, daemon=True)
     thread.start()
     font = pygame.font.Font(None, 50)
+    background = pygame.image.load('sprite-games/play/Основа.png')
+    pygame.mouse.set_visible(0)
+    image = {"host": (330, 183),
+             "connect": (330, 386),
+             "back": (330, 784),
+             "ready": (1311, 784),
+             "cancel": (1311, 784)}
 
+    class Button(pygame.sprite.Sprite):
+        def __init__(self, group, name, image1=None):
+            super().__init__(group)
+            if image1:
+                self.stok_image = pygame.image.load(f'sprite-games/play/anim/{name}.png')
+            else:
+                self.stok_image = pygame.image.load(f'sprite-games/play/{name}.png')
+            self.anim = pygame.image.load(f'sprite-games/play/anim/{name}.png')
+            self.name = name
+            self.image = self.stok_image
+            self.rect = self.image.get_rect()
+            self.rect.topleft = image[name]
+
+        def get_anim(self, event):
+            if self.rect.collidepoint(event.pos):
+                self.image = self.anim
+            else:
+                if self.image == self.anim:
+                    self.image = self.stok_image
+
+        def get_event(self, event):
+            if self.rect.collidepoint(event.pos):
+                if self.name == "back" or self.name == "cancel":
+                    return True
+
+    class Cursor(pygame.sprite.Sprite):
+        def __init__(self, group):
+            super().__init__(group)
+            self.image = pygame.image.load('sprite-games/menu/cursor.png')
+            self.rect = self.image.get_rect()
+
+    all_buttons = pygame.sprite.Group()
+    for n, i in enumerate(image):
+        if n < 3:
+            if n == 0:
+                Button(all_buttons, i, 1)
+            else:
+                Button(all_buttons, i)
+    cancel_buttons = pygame.sprite.Group()
+    Button(cancel_buttons, "cancel")
+    all_cursor = pygame.sprite.Group()
+    cursor = Cursor(all_cursor)
+    pygame.mouse.set_visible(0)
     while not server.is_ready():
+        pygame.mouse.set_visible(0)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return
-            if event.type == pygame.KEYUP:
-                if event.key == pygame.K_ESCAPE:
-                    return
-        screen.fill((50, 150, 255))
-
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                for button in cancel_buttons:
+                    a = button.get_event(event)
+                    if a:
+                        return
+            if event.type == pygame.MOUSEMOTION:
+                for button in cancel_buttons:
+                    button.get_anim(event)
+        pygame.mouse.set_visible(0)
+        screen.blit(background, (0, 0))
         # Отрисовка информации!
         text = font.render(f'Сообщите ip остальным игрокам:', 1, (200, 200, 200))
-        screen.blit(text, (5, 5))
+        screen.blit(text, (650, 310)) #5
         text = font.render(f'[{server_ip}]', 1, (255, 5, 5))
-        screen.blit(text, (5, 50))
+        screen.blit(text, (650, 355))#50
         text = font.render(f'Подключено [{connect_info[0]}/{MAX_PLAYERS}]', 1, (200, 200, 200))
-        screen.blit(text, (5, 100))
+        screen.blit(text, (650, 405))#100
         text = font.render(f'Готово: [{connect_info[1]}]', 1, (200, 200, 200))
-        screen.blit(text, (5, 150))
-
+        screen.blit(text, (650, 455))#150
+        all_buttons.draw(screen)
+        cursor.rect.topleft = pygame.mouse.get_pos()
+        cancel_buttons.draw(screen)
+        all_cursor.draw(screen)
         pygame.display.flip()
 
     for c in server.clients:
@@ -345,5 +405,5 @@ def main(screen):
 
 if __name__ == '__main__':
     pygame.init()
-    main(pygame.display.set_mode((500, 500)))
+    main(pygame.display.set_mode((1000, 1000)))
     print('\n\tServer closed.\n')
