@@ -233,7 +233,7 @@ class Fighter(TwistUnit):
         area.rect.center = self.rect.center
         current = None
         for spr in game.get_intersect(area):
-            if spr != self and spr.player_id != self.player_id and not spr.is_projectile:
+            if spr != self and self.is_valid_enemy(spr):
                 if current is None:
                     current = (spr, math.sqrt((spr.x - self.x) ** 2 + (spr.x - self.x) ** 2))
                 else:
@@ -245,6 +245,9 @@ class Fighter(TwistUnit):
             game.server.send_all(f'2_{TARGET_ATTACK}_{self.id}_{current[0].id}')
             return True
         return False
+
+    def is_valid_enemy(self, enemy):
+        return enemy.player_id != self.player_id and not enemy.is_projectile
 
     def turn_around(self):
         angle_diff = self.target_angle - self.angle
