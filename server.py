@@ -179,27 +179,27 @@ class ServerGame:
     def update(self, *args):
         self.all_sprites.update(*args)
 
-    def place(self, build_class, x, y, player_id):
+    def place(self, build_class, x, y, player_id, *args, ignore_space=False, ignore_money=False):
         self.lock.acquire()
         player = self.players[player_id]
-        if player.money >= build_class.cost:
-            building = build_class(x, y, get_curr_id(), player_id)
-            if not sprite.spritecollideany(building, self.all_sprites):
-                player.money -= build_class.cost
+        if ignore_money or player.money >= build_class.cost:
+            building = build_class(x, y, get_curr_id(), player_id, *args)
+            if ignore_space or (not sprite.spritecollideany(building, self.all_sprites)):
+                if not ignore_money:
+                    player.money -= build_class.cost
+                    player.client.send(f'3_1_{player.money}')
                 self.server.send_all(
                     f'1_{get_class_id(build_class)}_{x}_{y}_{building.id}_{player_id}{building.get_args()}')
                 self.all_sprites.add(building)
                 if building.is_building:
                     self.buildings.add(building)
-                player.client.send(f'3_1_{player.money}')
-                print(f'Success {player.money}')
             else:
                 print(f'No place {player.money}')
         else:
             print(f'No money {player.money}/{build_class.cost}')
         self.lock.release()
 
-    def create_entity(self, clazz, x, y, player_id, *args):
+    def create_entity(self, clazz, x, y, player_id, *args):  # Use place instead
         self.lock.acquire()
         building = clazz(x, y, get_curr_id(), player_id, *args)
         self.server.send_all(

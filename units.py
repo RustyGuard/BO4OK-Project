@@ -1,4 +1,5 @@
 import math
+from random import randint
 
 import pygame
 from pygame import Color
@@ -471,13 +472,14 @@ class Fortress(Unit):
 class ProductingBuild(Unit):
     def __init__(self, x, y, id, player_id, time=5):
         self.time = time
-        self.units_tray = [Archer]  # для примера
+        self.units_tray = [Archer, Soldier]  # для примера
         super().__init__(x, y, id, player_id)
 
     def create_unit(self, game, clazz):
-        if self.units_tray:
-            # откорректировать появление рядом с казармой
-            game.place(clazz, int(self.x) - 80, int(self.y) - 80, self.player_id)
+        # откорректировать появление рядом с казармой
+        if clazz is not None:
+            game.place(clazz, int(self.x) - randint(30, 120), int(self.y) - randint(-50, 50),
+                       self.player_id, ignore_space=True, ignore_money=False)
 
     def update(self, *args):
         if not self.is_alive():
@@ -485,12 +487,11 @@ class ProductingBuild(Unit):
                 args[1].kill(self)
                 return
         # кривая реализация тренировки юнитов за время
-        if args[0].type == SERVER_EVENT_SEC and self.time != 0:
+        if args[0].type == SERVER_EVENT_SEC and self.time > 0 and self.units_tray:
             self.time -= 1
         elif self.time == 0:
             self.time = 5
-            # вместо self.units_tray[0] нужно self.units_tray.pop(0)
-            self.create_unit(args[1], self.units_tray[0])
+            self.create_unit(args[1], self.units_tray.pop(0))
 
 
 class Casern(ProductingBuild):
