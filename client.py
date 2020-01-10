@@ -281,17 +281,28 @@ class ClientWait:
         OFFSET_Y = 500
         MIN_HUE = 180
         MAX_HUE = 255
+
+        manager = UIManager(screen.get_size(), 'theme.json')
+        ready_button = UIButton(
+            pygame.Rect(OFFSET_X, OFFSET_Y + SIRCLE_SIZE + 25, 6 * (SIRCLE_SIZE + SIRCLE_SPACE) - 5, SIRCLE_SIZE),
+            'Готов.', manager)
         t, hue_bool, c = 0, True, MIN_HUE + 5
         while running and not game.started:
             for event in pygame.event.get():
+                manager.process_events(event)
                 if event.type == pygame.QUIT:
                     running = False
                 elif event.type == pygame.KEYUP:
                     if event.key == pygame.K_ESCAPE:
                         running = False
-                    elif event.key == pygame.K_r:
+                elif event.type == pygame.USEREVENT:
+                    if event.ui_element == ready_button:
                         client.send('10')
+                        ready_button.disable()
+
+            manager.update(1 / 60)
             screen.fill((58, 117, 196))
+            manager.draw_ui(screen)
             text = font.render(f'{players_info[0]}/{players_info[1]} players.', 1, (200, 200, 200))
             screen.blit(text, (OFFSET_X, OFFSET_Y - SIRCLE_SIZE / 2))
 
@@ -310,9 +321,9 @@ class ClientWait:
             for i in range(6):
                 if i * 20 < t < i * 20 + 60:
                     pygame.draw.ellipse(screen, color, (
-                    OFFSET_X + i * (SIRCLE_SIZE + SIRCLE_SPACE), OFFSET_Y, SIRCLE_SIZE, SIRCLE_SIZE))
+                        OFFSET_X + i * (SIRCLE_SIZE + SIRCLE_SPACE), OFFSET_Y, SIRCLE_SIZE, SIRCLE_SIZE))
                     pygame.draw.ellipse(screen, (128, 128, 128), (
-                    OFFSET_X + i * (SIRCLE_SIZE + SIRCLE_SPACE), OFFSET_Y, SIRCLE_SIZE, SIRCLE_SIZE), 1)
+                        OFFSET_X + i * (SIRCLE_SIZE + SIRCLE_SPACE), OFFSET_Y, SIRCLE_SIZE, SIRCLE_SIZE), 1)
             pygame.draw.rect(screen, (192, 192, 192),
                              (OFFSET_X, OFFSET_Y, 6 * (SIRCLE_SIZE + SIRCLE_SPACE) - 5, SIRCLE_SIZE), 2)
 

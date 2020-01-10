@@ -148,6 +148,7 @@ class Player:
     def __init__(self, client):
         self.client = client
         self.money = 150.0
+        self.wood = 100
         self.id = self.client.id
 
 
