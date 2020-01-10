@@ -308,7 +308,14 @@ def main(screen):
             elif event.type == SERVER_EVENT_SYNC:
                 game.lock.acquire()
                 print('Sync')
-                game.lock.release()
+                game.lock.release()if event.type == pygame.QUIT:
+                return
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_ESCAPE:
+                    return
+        screen.fill((195, 195, 250))
+        # Отрисовка информации!
+        pygame.display.flip()
         clock.tick(60)
 
 
