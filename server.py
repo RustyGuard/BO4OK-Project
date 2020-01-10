@@ -149,7 +149,7 @@ class Player:
         self.client = client
         self.money = 150.0
         self.wood = 100
-        self.id = self.client.id
+        self.id = -1
 
 
 class ServerGame:
@@ -160,10 +160,11 @@ class ServerGame:
         self.players = {}
         self.server = server
 
-    def add_player(self, client):
+    def add_player(self, client, id):
         self.lock.acquire()
         p = Player(client)
-        self.players[p.id] = p
+        p.id = id
+        self.players[id] = p
         self.lock.release()
 
     def remove_player(self, client):
@@ -264,13 +265,11 @@ def main(screen):
 
     def connect_player(client):
         connect_info[0] += 1
-        game.add_player(client)
 
     def disconnect_player(client):
         if client.ready:
             connect_info[1] -= 1
         connect_info[0] -= 1
-        game.remove_player(client)
 
     def update_players_info():
         for pl in game.players.values():
@@ -371,8 +370,9 @@ def main(screen):
         all_cursor.draw(screen)
         pygame.display.flip()
 
-    for c in server.clients:
-        c.send(f'0_{c.id}')
+    for i, c in enumerate(server.clients):
+        game.add_player(c, i)
+        c.send(f'0_{i}')
 
     clock = pygame.time.Clock()
 

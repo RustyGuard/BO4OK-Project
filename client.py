@@ -9,7 +9,7 @@ from pygame.sprite import Group, Sprite
 from pygame_gui import UIManager
 from pygame_gui.elements import UIButton
 
-from constants import CLIENT_EVENT_SEC, CLIENT_EVENT_UPDATE
+from constants import CLIENT_EVENT_SEC, CLIENT_EVENT_UPDATE, COLOR_LIST
 from units import Mine, Soldier, get_class_id, UNIT_TYPES, TARGET_MOVE, TARGET_ATTACK, TARGET_NONE, Archer, Arrow
 
 
@@ -77,7 +77,6 @@ class Client:
 class PlayerInfo:
     def __init__(self):
         self.money = 150.0
-        self.color = (0, 0, 0)
         self.id = None
 
 
@@ -86,7 +85,6 @@ class Camera:
         self.sprites = sprites
         self.off_x = 0
         self.off_y = 0
-        self.zoom = 1
 
     def move(self, x, y):
         if x != 0 or y != 0:
@@ -168,7 +166,7 @@ class SelectArea:
 
     def draw_ui(self, screen):
         if self.width != 0 and self.height != 0:
-            pygame.draw.rect(screen, pygame.Color('blue'), (self.x, self.y, self.width, self.height), 2)
+            pygame.draw.rect(screen, COLOR_LIST[self.game.info.id], (self.x, self.y, self.width, self.height), 2)
 
     def find_intersect(self, group):
         test = pygame.sprite.Sprite()

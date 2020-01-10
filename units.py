@@ -1,6 +1,7 @@
 import math
 
 import pygame
+from pygame import Color
 from pygame.rect import Rect
 from pygame.sprite import Sprite
 from constants import SERVER_EVENT_SEC, SERVER_EVENT_UPDATE, CLIENT_EVENT_SEC, CLIENT_EVENT_UPDATE
