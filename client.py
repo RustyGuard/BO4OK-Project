@@ -5,6 +5,8 @@ from threading import Lock
 
 import pygame
 import pygame_gui
+from pygame import Color
+from pygame.rect import Rect
 from pygame.sprite import Group, Sprite
 from pygame_gui import UIManager
 from pygame_gui.elements import UIButton
@@ -347,6 +349,7 @@ class ClientWait:
             if cmd == '1':
                 type, x, y, id, id_player = int(args[0]), int(args[1]), int(args[2]), int(args[3]), int(args[4])
                 game.addEntity(type, x, y, id, id_player, camera, args[5::])
+                return
             elif cmd == '2':
                 if args[0] == str(TARGET_MOVE):
                     id, x, y = int(args[1]), int(args[2]), int(args[3])
@@ -365,12 +368,18 @@ class ClientWait:
                         en.set_target(TARGET_NONE, None)
                     else:
                         print('No object with id:', id)
+                return
             elif cmd == '3':  # Update Player Info
                 if args[0] == '1':  # Money
                     game.info.money = float(args[1])
                     return
             elif cmd == '4':
                 game.find_with_id(int(args[0])).kill()
+            elif cmd == '5':
+                en = game.find_with_id(int(args[0]))
+                en.health = int(args[1])
+                en.max_health = int(args[2])
+                return
             elif cmd == '9':
                 en = game.find_with_id(int(args[3]))
                 if en is None:
@@ -461,6 +470,13 @@ class ClientWait:
 
             screen.fill((125, 125, 125))
             game.drawSprites(screen)
+            for spr in game.sprites:
+                if spr.is_projectile:
+                    continue
+                rect = Rect(spr.rect.left, spr.rect.top - 5, spr.rect.width, 5)
+                pygame.draw.rect(screen, Color('red'), rect)
+                rect.width = rect.width * spr.health / spr.max_health
+                pygame.draw.rect(screen, Color('green'), rect)
 
             text = font.render(str(game.info.money), 1, (100, 255, 100))
             screen.blit(text, (5, 50))

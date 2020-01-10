@@ -108,6 +108,10 @@ class Unit(Sprite):
     def send_updated(self, game):
         game.server.send_all('9_' + '_'.join(self.get_update_args([])))
 
+    def take_damage(self, dmg, game):
+        self.health -= dmg
+        game.server.send_all(f'5_{self.id}_{self.health}_{self.max_health}')
+
 
 class TwistUnit(Unit):
     def __init__(self, x, y, id, player_id, default_image):
@@ -192,7 +196,7 @@ class Arrow(TwistUnit):
                     # print('Arrow disappears.')
                 for spr in args[1].get_intersect(self):
                     if spr != self and spr.player_id != self.player_id and not spr.is_projectile:
-                        spr.health -= 5
+                        spr.take_damage(Arrow.damage, args[1])
                         args[1].kill(self)
                         return
 
@@ -266,9 +270,9 @@ class Fighter(TwistUnit):
                 self.add_angle(1)
         return False
 
-    def single_attack(self):
+    def single_attack(self, game):
         if self.delay <= 0:
-            self.target[1].health -= self.damage
+            self.target[1].take_damage(self.damage, game)
             self.delay += self.delay_time
             # print('Awww', self.target[1].id, self.target[1].health)
 
@@ -418,7 +422,7 @@ class Soldier(Fighter):
                 if self.turn_around():
                     if near:
                         if args[0].type == SERVER_EVENT_UPDATE:
-                            self.single_attack()
+                            self.single_attack(args[1])
                     else:
                         self.move_to_angle(1, args[1])
                 elif not near:
