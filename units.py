@@ -122,7 +122,6 @@ class Mine(Unit):
     cost = 100.0
     placeable = True
     name = 'Mine'
-    placeable = True
     mine = pygame.image.load('sprite-games/building/mine/mine.png')
     image = mine
 
@@ -259,11 +258,12 @@ class Fighter(TwistUnit):
 
 class Archer(Fighter):
     cost = 15.0
-    placeable = False
+    placeable = True
     name = 'Archer'
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/warrior/archer/{team_id[i]}.png'))
+    image = images[0]
 
     def __init__(self, x, y, id, player_id):
         self.image = Archer.images[player_id]
@@ -322,10 +322,11 @@ class Archer(Fighter):
 class Soldier(Fighter):
     cost = 10.0
     name = 'Soldier'
-    placeable = False
+    placeable = True
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/warrior/soldier/{team_id[i]}.png'))
+    image = images[0]
 
     def __init__(self, x, y, id, player_id):
         self.image = Soldier.images[player_id]

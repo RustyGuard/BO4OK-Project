@@ -62,6 +62,7 @@ class Server:
         self.waiting = True
         self.callback = None
         self.connected_callback = None
+        self.disconnected_callback = None
 
     def send_all(self, msg):
         for c in self.clients:
@@ -136,6 +137,7 @@ class Server:
             except Exception as ex:
                 print('[PLAYER THREAD ERROR] from client:', client.id, ex)
                 self.clients.remove(client)
+                self.disconnected_callback(client)
                 self.connected -= 1
                 print(f"[CONNECT] Disconnected [{self.connected}/{MAX_PLAYERS}]!")
                 self.send_all(f'10_{self.connected}_{MAX_PLAYERS}')
@@ -158,15 +160,22 @@ class ServerGame:
         self.server = server
 
     def add_player(self, client):
-        p = Player(client)
         self.lock.acquire()
+        p = Player(client)
         self.players[p.id] = p
         self.lock.release()
 
-    def update(self, *args):
+    def remove_player(self, client):
         self.lock.acquire()
-        self.all_sprites.update(*args)
+        for i, j in self.players.items():
+            if j.client == client:
+                p = i
+                break
+        self.players.pop(p, None)
         self.lock.release()
+
+    def update(self, *args):
+        self.all_sprites.update(*args)
 
     def place(self, build_class, x, y, player_id):
         self.lock.acquire()
@@ -190,7 +199,6 @@ class ServerGame:
 
     def create_entity(self, clazz, x, y, player_id, *args):
         self.lock.acquire()
-        print(x, y)
         building = clazz(x, y, get_curr_id(), player_id, *args)
         self.server.send_all(
             f'1_{get_class_id(clazz)}_{str(x)}_{str(y)}_{building.id}_{player_id}{building.get_args()}')
@@ -229,9 +237,12 @@ def place_on_map():
 
 
 def main(screen):
+    connect_info = [0, 0]
+
     def pre_read(cmd, args, client):
         print(cmd, args)
         if cmd == '10':  # Player is ready
+            connect_info[1] += 1
             print(client, 'ready')
             client.ready = True
 
@@ -250,7 +261,14 @@ def main(screen):
             print('Invalid command')
 
     def connect_player(client):
+        connect_info[0] += 1
         game.add_player(client)
+
+    def disconnect_player(client):
+        if client.ready:
+            connect_info[1] -= 1
+        connect_info[0] -= 1
+        game.remove_player(client)
 
     def update_players_info():
         for pl in game.players.values():
@@ -266,6 +284,7 @@ def main(screen):
     game = ServerGame(server)
     server.callback = pre_read
     server.connected_callback = connect_player
+    server.disconnected_callback = disconnect_player
     thread = threading.Thread(target=server.thread_connection, daemon=True)
     thread.start()
     font = pygame.font.Font(None, 50)
@@ -280,10 +299,14 @@ def main(screen):
         screen.fill((50, 150, 255))
 
         # Отрисовка информации!
-        text_top = font.render(f'Сообщите ip остальным игрокам:', 1, (200, 200, 200))
-        text_bottom = font.render(f'[{server_ip}]', 1, (255, 5, 5))
-        screen.blit(text_top, (5, 5))
-        screen.blit(text_bottom, (5, 50))
+        text = font.render(f'Сообщите ip остальным игрокам:', 1, (200, 200, 200))
+        screen.blit(text, (5, 5))
+        text = font.render(f'[{server_ip}]', 1, (255, 5, 5))
+        screen.blit(text, (5, 50))
+        text = font.render(f'Подключено [{connect_info[0]}/{MAX_PLAYERS}]', 1, (200, 200, 200))
+        screen.blit(text, (5, 100))
+        text = font.render(f'Готово: [{connect_info[1]}]', 1, (200, 200, 200))
+        screen.blit(text, (5, 150))
 
         pygame.display.flip()
 
@@ -296,7 +319,7 @@ def main(screen):
     running = True
     pygame.time.set_timer(SERVER_EVENT_UPDATE, 1000 // 60)
     pygame.time.set_timer(SERVER_EVENT_SEC, 1000 // 1)
-    pygame.time.set_timer(SERVER_EVENT_SYNC, 10000)
+    pygame.time.set_timer(SERVER_EVENT_SYNC, 30000)
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -309,9 +332,9 @@ def main(screen):
                 game.lock.acquire()
                 print('Sync')
                 game.lock.release()
-            if event.type == pygame.QUIT:
+            elif event.type == pygame.QUIT:
                 return
-            if event.type == pygame.KEYUP:
+            elif event.type == pygame.KEYUP:
                 if event.key == pygame.K_ESCAPE:
                     return
         screen.fill((195, 195, 250))
@@ -323,4 +346,4 @@ def main(screen):
 if __name__ == '__main__':
     pygame.init()
     main(pygame.display.set_mode((500, 500)))
-    print('Server closed.')
+    print('\n\tServer closed.\n')

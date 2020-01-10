@@ -222,9 +222,10 @@ class PlaceManager:
         self.build_id = build_id
         self.sprite.image = UNIT_TYPES[self.build_id].image
         self.sprite.rect = self.sprite.image.get_rect()
+        print('Now id is', build_id)
 
     def process_events(self, event):
-        if not self.build_id:
+        if self.build_id is None:
             print('PlaceManager has empty build_id!!!')
             return
         if event.type == pygame.MOUSEBUTTONUP:
@@ -239,7 +240,7 @@ class PlaceManager:
 
 
 class ClientWait:
-    def play(self, screen=pygame.display.set_mode((0, 0), pygame.FULLSCREEN), ip='localhost'):
+    def play(self, screen=pygame.display.set_mode((0, 0)), ip='localhost'):
         pygame.mouse.set_visible(True)
         client = Client(ip)
         pygame.init()
@@ -355,6 +356,7 @@ class ClientWait:
             elif cmd == '3':  # Update Player Info
                 if args[0] == '1':  # Money
                     game.info.money = float(args[1])
+                    return
             elif cmd == '4':
                 game.find_with_id(int(args[0])).kill()
             else:
