@@ -255,14 +255,20 @@ def main(screen):
     def update_players_info():
         for pl in game.players.values():
             pl.client.send(f'3_1_{pl.money}')
-    print('\n\tYour ip is:', socket.gethostbyname(socket.gethostname()), '\n')
+
+    with open('server_setting.txt') as settings:
+        server_ip = settings.readline()
+        if server_ip == 'auto':
+            server_ip = socket.gethostbyname(socket.gethostname())
+    print('\n\tYour ip is:', server_ip, '\n')
     pygame.mouse.set_visible(True)
-    server = Server()
+    server = Server(server_ip)
     game = ServerGame(server)
     server.callback = pre_read
     server.connected_callback = connect_player
     thread = threading.Thread(target=server.thread_connection, daemon=True)
     thread.start()
+    font = pygame.font.Font(None, 50)
 
     while not server.is_ready():
         for event in pygame.event.get():
@@ -271,8 +277,14 @@ def main(screen):
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_ESCAPE:
                     return
-        screen.fill((195, 195, 195))
+        screen.fill((50, 150, 255))
+
         # Отрисовка информации!
+        text_top = font.render(f'Сообщите ip остальным игрокам:', 1, (200, 200, 200))
+        text_bottom = font.render(f'[{server_ip}]', 1, (255, 5, 5))
+        screen.blit(text_top, (5, 5))
+        screen.blit(text_bottom, (5, 50))
+
         pygame.display.flip()
 
     for c in server.clients:
@@ -302,5 +314,5 @@ def main(screen):
 
 if __name__ == '__main__':
     pygame.init()
-    main(pygame.display.set_mode((200, 200)))
+    main(pygame.display.set_mode((500, 500)))
     print('Server closed.')
