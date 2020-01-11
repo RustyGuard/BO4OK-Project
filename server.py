@@ -298,7 +298,6 @@ def main(screen):
         if server_ip == 'auto':
             server_ip = socket.gethostbyname(socket.gethostname())
     print('\n\tYour ip is:', server_ip, '\n')
-    pygame.mouse.set_visible(True)
     server = Server(server_ip)
     game = ServerGame(server)
     server.callback = pre_read
@@ -400,6 +399,7 @@ def main(screen):
     pygame.time.set_timer(SERVER_EVENT_UPDATE, 1000 // 60)
     pygame.time.set_timer(SERVER_EVENT_SEC, 1000 // 1)
     pygame.time.set_timer(SERVER_EVENT_SYNC, 10000)
+    background = pygame.image.load('sprite-games/menu/background.png')
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -418,7 +418,7 @@ def main(screen):
             elif event.type == pygame.KEYUP:
                 if event.key == pygame.K_ESCAPE:
                     return
-        screen.fill((195, 195, 250))
+        screen.blit(background, (0, 0))
         # Отрисовка информации!
         pygame.display.flip()
         clock.tick(60)

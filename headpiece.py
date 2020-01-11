@@ -22,6 +22,9 @@ class Headpiece:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
+                if event.type == pygame.KEYUP:
+                    if event.key == pygame.K_ESCAPE:
+                        return
             if Bo4ok_rect[0] < 232:
                 Bo4ok_rect[0] += 10
                 Potick1_rect[0] += 10

@@ -283,7 +283,7 @@ class ProductManager:
 
 class ClientWait:
     def play(self, screen=pygame.display.set_mode((0, 0)), ip='localhost'):
-        pygame.mouse.set_visible(True)
+        pygame.mouse.set_visible(0)
         client = Client(ip)
         pygame.init()
         if not client.connected:
@@ -323,13 +323,19 @@ class ClientWait:
         OFFSET_X = 600
         OFFSET_Y = 500
         MIN_HUE = 180
-        MAX_HUE = 255
 
         manager = UIManager(screen.get_size(), 'theme.json')
         ready_button = UIButton(
-            pygame.Rect(OFFSET_X, OFFSET_Y + SIRCLE_SIZE + 25, 6 * (SIRCLE_SIZE + SIRCLE_SPACE) - 5, SIRCLE_SIZE),
+            pygame.Rect(OFFSET_X, OFFSET_Y + SIRCLE_SIZE - 100, 6 * (SIRCLE_SIZE + SIRCLE_SPACE) - 5, SIRCLE_SIZE),
             'Готов.', manager)
-        t, hue_bool, c = 0, True, MIN_HUE + 5
+        background = pygame.image.load('sprite-games/menu/background.png')
+        a1 = pygame.image.load('sprite-games/play/ожидание/1.png')
+        a2 = pygame.image.load('sprite-games/play/ожидание/2.png')
+        a3 = pygame.image.load('sprite-games/play/ожидание/3.png')
+        a4 = pygame.image.load('sprite-games/play/ожидание/4.png')
+        aa = [a1, a2, a3, a4]
+        a = 0
+        image1 = pygame.image.load('sprite-games/menu/cursor.png')
         while running and not game.started:
             for event in pygame.event.get():
                 manager.process_events(event)
@@ -344,32 +350,15 @@ class ClientWait:
                         ready_button.disable()
 
             manager.update(1 / 60)
-            screen.fill((58, 117, 196))
+            screen.blit(background, (0, 0))
             manager.draw_ui(screen)
             text = font.render(f'{players_info[0]}/{players_info[1]} players.', 1, (200, 200, 200))
             screen.blit(text, (OFFSET_X, OFFSET_Y - SIRCLE_SIZE / 2))
-
-            t += 1
-            if hue_bool:
-                c += 1
-            else:
-                c -= 1
-            if t > 150:
-                t = 0
-            if c > MAX_HUE or c < MIN_HUE:
-                hue_bool = not hue_bool
-            color = pygame.Color('red')
-            hsva = color.hsva
-            color.hsva = (c, hsva[1], hsva[2], hsva[3])
-            for i in range(6):
-                if i * 20 < t < i * 20 + 60:
-                    pygame.draw.ellipse(screen, color, (
-                        OFFSET_X + i * (SIRCLE_SIZE + SIRCLE_SPACE), OFFSET_Y, SIRCLE_SIZE, SIRCLE_SIZE))
-                    pygame.draw.ellipse(screen, (128, 128, 128), (
-                        OFFSET_X + i * (SIRCLE_SIZE + SIRCLE_SPACE), OFFSET_Y, SIRCLE_SIZE, SIRCLE_SIZE), 1)
-            pygame.draw.rect(screen, (192, 192, 192),
-                             (OFFSET_X, OFFSET_Y, 6 * (SIRCLE_SIZE + SIRCLE_SPACE) - 5, SIRCLE_SIZE), 2)
-
+            screen.blit(aa[a // 10], (OFFSET_X + 250, OFFSET_Y - SIRCLE_SIZE / 2))
+            screen.blit(image1, pygame.mouse.get_pos())
+            a += 1
+            if a == 40:
+                a = 0
             pygame.display.flip()
             clock.tick(60)
         print('Ended')
@@ -482,6 +471,7 @@ class ClientWait:
         managers['build'] = build_manager
         managers['retarget'] = current_area
         managers['product'] = ProductManager(screen)
+        image1 = pygame.image.load('sprite-games/menu/cursor.png')
 
         while running and client.connected:
             for event in pygame.event.get():
@@ -555,6 +545,7 @@ class ClientWait:
             screen.blit(text, (5, 100))
             managers[current_manager].update(1 / 60)
             managers[current_manager].draw_ui(screen)
+            screen.blit(image1, pygame.mouse.get_pos())
 
             pygame.display.flip()
             clock.tick(60)

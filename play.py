@@ -55,10 +55,8 @@ class Play:
                         print(Play.nicname)
                         print(ip)
                         ClientWait().play(screen, ip if ip != '' else 'localhost')
-                        pygame.mouse.set_visible(False)
-                        # сдесь клиент должен подключится к введённому айпи(ip), если удачно должен вернуть "connect",
-                        # если нет - то "not_connect"
-                        return "not_connect"
+                        pygame.mouse.set_visible(0)
+                        return "back"
                     if self.name == "back":
                         return "back"
 
@@ -143,9 +141,9 @@ class Play:
                 if self.rect.collidepoint(event.pos):
                     if self.name == "host":
                         server.main(screen)
-                        pygame.mouse.set_visible(False)
                         Play.condition = "HOST"
                         Play.readiness = True
+                        pygame.mouse.set_visible(0)
                     if self.name == "connect":
                         Play.ip(screen)
                     if self.name == "back" or self.name == "cancel":
@@ -176,6 +174,9 @@ class Play:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     exit()
+                if event.type == pygame.KEYUP:
+                    if event.key == pygame.K_ESCAPE:
+                        return
                 if event.type == pygame.MOUSEMOTION:
                     for button in all_buttons:
                         button.get_anim(event)
