@@ -10,7 +10,7 @@ from pygame import sprite
 from pygame.sprite import Group, Sprite
 from constants import SERVER_EVENT_SEC, SERVER_EVENT_UPDATE, SERVER_EVENT_SYNC, SCREEN_WIDTH, SCREEN_HEIGHT
 
-from units import get_class_id, UNIT_TYPES, TARGET_MOVE, Fortress
+from units import get_class_id, UNIT_TYPES, TARGET_MOVE, Fortress, Mine
 
 NEED_PLAYERS = 1
 MAX_PLAYERS = 10
@@ -183,12 +183,12 @@ class ServerGame:
     def place(self, build_class, x, y, player_id, *args, ignore_space=False, ignore_money=False,
               ignore_fort_level=False):
         self.lock.acquire()
-        player = self.players[player_id]
         if ignore_fort_level or build_class.required_level <= Fortress.get_player_level(player_id):
-            if ignore_money or player.money >= build_class.cost:
+            if ignore_money or self.players[player_id].money >= build_class.cost:
                 building = build_class(x, y, get_curr_id(), player_id, *args)
                 if ignore_space or (not sprite.spritecollideany(building, self.all_sprites)):
                     if not ignore_money:
+                        player = self.players[player_id]
                         player.money -= build_class.cost
                         player.client.send(f'3_1_{player.money}')
                     self.server.send_all(
@@ -197,20 +197,16 @@ class ServerGame:
                     if building.is_building:
                         self.buildings.add(building)
                 else:
-                    print(f'No place {player.money}')
+                    print(f'No place {build_class}')
+                    building = None
             else:
-                print(f'No money {player.money}/{build_class.cost}')
+                print(f'No money {player_id} {build_class} {build_class.cost}')
+                building = None
         else:
             print(f'No fortress level', build_class.required_level)
+            building = None
         self.lock.release()
-
-    def create_entity(self, clazz, x, y, player_id, *args):  # Use place instead
-        self.lock.acquire()
-        building = clazz(x, y, get_curr_id(), player_id, *args)
-        self.server.send_all(
-            f'1_{get_class_id(clazz)}_{str(x)}_{str(y)}_{building.id}_{player_id}{building.get_args()}')
-        self.all_sprites.add(building)
-        self.lock.release()
+        return building
 
     def get_intersect(self, spr):
         return pygame.sprite.spritecollide(spr, self.all_sprites, False)
@@ -240,11 +236,19 @@ class ServerGame:
 
 
 def place_fortresses(game):
+    players_count = 0
     for player_id, player in game.players.items():
-        x, y = randint(0, 10000), randint(0, 10000)
-        game.place(Fortress, x, y, player_id,
-                   ignore_space=True, ignore_money=True, ignore_fort_level=True)
+        players_count += 1
+        x, y = randint(0, 1000), randint(0, 1000)
+        while game.place(Fortress, x, y, player_id, ignore_money=True, ignore_fort_level=True) is None:
+            x, y = randint(0, 1000), randint(0, 1000)
+            print('Not enough place for Fortress')
         player.client.send(f'6_{-x + SCREEN_WIDTH // 2}_{-y + SCREEN_HEIGHT // 2}')
+    for _ in range(players_count * 3):
+        x, y = randint(0, 2000), randint(0, 2000)
+        while game.place(Mine, x, y, -1, ignore_money=True, ignore_fort_level=True) is None:
+            x, y = randint(0, 2000), randint(0, 2000)
+            print('Not enough place for Mine')
 
 
 def main(screen):
@@ -269,6 +273,9 @@ def main(screen):
                 server.send_all(f'2_{TARGET_MOVE}_{id}_{x}_{y}')
             else:
                 print(f'Entity[{id}] has not got a "target"')
+        elif cmd == '3':
+            game.find_with_id(int(args[0])).add_to_queque(UNIT_TYPES[int(args[1])])
+            print('Product', args)
         else:
             print('Invalid command')
 

@@ -12,7 +12,8 @@ from pygame_gui.elements import UIButton
 
 from constants import CLIENT_EVENT_SEC, CLIENT_EVENT_UPDATE, COLOR_LIST, CAMERA_MIN_SPEED, CAMERA_MAX_SPEED, \
     CAMERA_STEP_FASTER, CAMERA_STEP_SLOWER
-from units import Mine, Soldier, get_class_id, UNIT_TYPES, TARGET_MOVE, TARGET_ATTACK, TARGET_NONE, Archer, Arrow
+from units import Mine, Soldier, get_class_id, UNIT_TYPES, TARGET_MOVE, TARGET_ATTACK, TARGET_NONE, Archer, Arrow, \
+    ProductingBuild
 
 
 class Client:
@@ -254,6 +255,28 @@ class PlaceManager:
         pass
 
 
+class ProductManager:
+    def __init__(self, screen):
+        self.manager = UIManager(screen.get_size())
+        self.spr = None
+
+    def set_building(self, spr):
+        self.manager.clear_and_reset()
+        for i, clazz in enumerate(spr.valid_types):
+            b = UIButton(pygame.Rect(55 + 55 * i, 5, 50, 50), clazz.name, self.manager, object_id='product')
+            b.build_id = spr.id
+            b.class_id = get_class_id(clazz)
+
+    def process_events(self, event):
+        self.manager.process_events(event)
+
+    def draw_ui(self, screen):
+        self.manager.draw_ui(screen)
+
+    def update(self, *args):
+        self.manager.update(*args)
+
+
 class ClientWait:
     def play(self, screen=pygame.display.set_mode((0, 0)), ip='localhost'):
         pygame.mouse.set_visible(True)
@@ -449,9 +472,22 @@ class ClientWait:
         managers['main'] = main_manager
         managers['build'] = build_manager
         managers['retarget'] = current_area
+        managers['product'] = ProductManager(screen)
 
         while running and client.connected:
             for event in pygame.event.get():
+
+                if event.type == pygame.MOUSEBUTTONUP:
+                    collided = False
+                    for spr in game.buildings:
+                        if spr.rect.collidepoint(event.pos) and issubclass(type(spr), ProductingBuild):
+                            print('FFFFFF')
+                            managers['product'].set_building(spr)
+                            current_manager = 'product'
+                            collided = True
+                            break
+                    if collided:
+                        continue
                 managers[current_manager].process_events(event)
 
                 if event.type == pygame.USEREVENT:
@@ -461,6 +497,9 @@ class ClientWait:
                         elif event.ui_object_id == 'place':
                             managers['place'].set_build(event.ui_element.id)
                             current_manager = 'place'
+                        elif event.ui_object_id == 'product':
+                            btn = event.ui_element
+                            client.send(f'3_{btn.build_id}_{btn.class_id}')
                         elif event.ui_element == build_button:
                             current_manager = 'build'
                         elif event.ui_element == retarget_button:
@@ -498,6 +537,8 @@ class ClientWait:
                 pygame.draw.rect(screen, Color('red'), rect)
                 rect.width = rect.width * spr.health / spr.max_health
                 pygame.draw.rect(screen, Color('green'), rect)
+                rect.width = spr.rect.width
+                pygame.draw.rect(screen, Color('black'), rect, 1)
 
             text = font.render(str(game.info.money), 1, (100, 255, 100))
             screen.blit(text, (5, 50))

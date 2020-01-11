@@ -154,8 +154,8 @@ class TwistUnit(Unit):
 
 
 class Mine(Unit):
-    cost = 100.0
-    placeable = True
+    cost = 10000.0
+    placeable = False
     name = 'Mine'
     mine = pygame.image.load('sprite-games/building/mine/mine.png')
     image = mine
@@ -164,15 +164,13 @@ class Mine(Unit):
     def __init__(self, x, y, id, player_id):
         self.image = Mine.mine
         super().__init__(x, y, id, player_id)
+        self.max_health = 1000
+        self.health = self.max_health
 
     def update(self, *args):
-        if not self.is_alive():
-            if args[0].type == SERVER_EVENT_UPDATE:
+        if args[0].type == SERVER_EVENT_UPDATE:
+            if not self.is_alive():
                 args[1].kill(self)
-                return
-        if args:
-            if args[0].type == SERVER_EVENT_SEC:
-                args[1].players[self.player_id].money += 5
 
 
 class Arrow(TwistUnit):
@@ -234,17 +232,17 @@ class Fighter(TwistUnit):
         if self.target_angle < 0:
             self.target_angle += 360
 
-    def find_new_target(self, game):
+    def find_new_target(self, game, radius=1500):
         area = Sprite()
-        area.rect = Rect(0, 0, 1500, 1500)
+        area.rect = Rect(0, 0, radius, radius)
         area.rect.center = self.rect.center
         current = None
         for spr in game.get_intersect(area):
             if spr != self and self.is_valid_enemy(spr):
                 if current is None:
-                    current = (spr, math.sqrt((spr.x - self.x) ** 2 + (spr.x - self.x) ** 2))
+                    current = (spr, math.sqrt((spr.x - self.x) ** 2 + (spr.y - self.y) ** 2))
                 else:
-                    dist = math.sqrt((spr.x - self.x) ** 2 + (spr.x - self.x) ** 2)
+                    dist = math.sqrt((spr.x - self.x) ** 2 + (spr.y - self.y) ** 2)
                     if dist < current[1]:
                         current = (spr, dist)
         if current:
@@ -276,12 +274,14 @@ class Fighter(TwistUnit):
         if self.delay <= 0:
             self.target[1].take_damage(self.damage, game)
             self.delay += self.delay_time
-            # print('Awww', self.target[1].id, self.target[1].health)
+            return True
+        return False
 
     def throw_projectile(self, game, clazz):
         if self.delay <= 0:
             self.delay += self.delay_time
-            game.create_entity(clazz, int(self.x), int(self.y), self.player_id, int(self.angle))
+            game.place(clazz, int(self.x), int(self.y), self.player_id, int(self.angle),
+                       ignore_space=True, ignore_money=True, ignore_fort_level=True)
 
     def mass_attack(self, game):
         pass
@@ -446,7 +446,120 @@ class Soldier(Fighter):
                 return
 
 
-class Fortress(Unit):
+class Worker(Fighter):
+    cost = 5.0
+    name = 'Worker'
+    placeable = True
+    images = []
+    for i in range(10):
+        images.append(pygame.image.load(f'sprite-games/warrior/working/{team_id[i]}.png'))
+    image = images[0]
+    required_level = 1  # Will be removed
+
+    def __init__(self, x, y, id, player_id):
+        self.image = Worker.images[player_id]
+
+        super().__init__(x, y, id, player_id, Worker.images[player_id])
+        self.damage = 1
+        self.money = 0
+        self.capacity = 50
+
+    def update(self, *args):
+        if not args:
+            return
+        if args[0].type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
+            if self.target[0] == TARGET_MOVE:
+                if args[0].type == SERVER_EVENT_UPDATE:
+                    xr = self.target[1][0] - self.x
+                    yr = self.target[1][1] - self.y
+                    if math.sqrt(xr * xr + yr * yr) < 40:
+                        args[1].server.send_all(f'2_{TARGET_NONE}_{self.id}')
+                        self.set_target(TARGET_NONE, None)
+                        return
+                self.find_target_angle()
+                if self.turn_around():
+                    self.move_to_angle(1, args[1])
+                else:
+                    self.move_to_angle(0.5, args[1])
+
+            elif self.target[0] == TARGET_ATTACK:
+                if args[0].type == SERVER_EVENT_UPDATE and not self.target[1].is_alive():
+                    args[1].server.send_all(f'2_{TARGET_NONE}_{self.id}')
+                    self.set_target(TARGET_NONE, None)
+                    return
+
+                self.find_target_angle()
+                if args[0].type == SERVER_EVENT_UPDATE:
+                    self.update_delay()
+                near = self.close_to_attack()
+                if self.turn_around():
+                    if near:
+                        if args[0].type == SERVER_EVENT_UPDATE:
+                            if type(self.target[1]) == Mine:
+                                if self.single_attack(args[1]):
+                                    self.money += 10
+                                    if self.money >= self.capacity:
+                                        self.money = self.capacity
+                                        self.find_new_target(args[1], 3000)
+                                        return
+                            elif type(self.target[1]) == Fortress:
+                                args[1].players[self.player_id].money += self.money
+                                self.money = 0
+                                self.find_new_target(args[1], 3000)
+                                return
+                    else:
+                        self.move_to_angle(1, args[1])
+                elif not near:
+                    self.move_to_angle(0.5, args[1])
+
+            elif self.target[0] == TARGET_NONE:
+                if args[0].type == SERVER_EVENT_UPDATE:
+                    self.find_new_target(args[1], 3000)
+
+        if not self.is_alive():
+            if args[0].type == SERVER_EVENT_UPDATE:
+                args[1].kill(self)
+                return
+
+    def is_valid_enemy(self, enemy):
+        if self.money < self.capacity:
+            return type(enemy) == Mine
+        else:
+            return type(enemy) == Fortress and enemy.player_id == self.player_id
+
+
+class ProductingBuild(Unit):
+    def __init__(self, x, y, id, player_id, delay, valid_types):
+        self.time = delay
+        self.delay = delay
+        self.units_tray = []  # для примера
+        self.valid_types = valid_types
+        super().__init__(x, y, id, player_id)
+
+    def add_to_queque(self, clazz):
+        if clazz in self.valid_types:
+            self.units_tray.append(clazz)
+
+    def create_unit(self, game, clazz):
+        # откорректировать появление рядом с казармой
+        if clazz is not None:
+            game.place(clazz, int(self.x) - randint(30, 120), int(self.y) - randint(-50, 50),
+                       self.player_id, ignore_space=True, ignore_money=False, ignore_fort_level=True)
+
+    def update(self, *args):
+        if not self.is_alive():
+            if args[0].type == SERVER_EVENT_UPDATE:
+                args[1].kill(self)
+                return
+        # кривая реализация тренировки юнитов за время
+        if args[0].type == SERVER_EVENT_SEC and self.time > 0 and self.units_tray:
+            self.time -= 1
+        elif self.time == 0:
+            self.time = self.delay
+            self.create_unit(args[1], self.units_tray.pop(0))
+
+
+class Fortress(ProductingBuild):
     name = 'Fortress'
     placeable = True
     cost = 150.0
@@ -470,13 +583,11 @@ class Fortress(Unit):
         self.image = Fortress.images[player_id]
         self.level = 1
         self.workers_tray = 0
-        super().__init__(x, y, id, player_id)
+        super().__init__(x, y, id, player_id, 2, [Worker])
         Fortress.instances.append(self)
 
-    def create_worker(self):
-        pass  # нужен класс рабочего
-
     def update(self, *args):
+        super().update(*args)
         if not self.is_alive():
             if args[0].type == SERVER_EVENT_UPDATE:
                 args[1].kill(self)
@@ -485,31 +596,6 @@ class Fortress(Unit):
     def kill(self):
         Fortress.instances.remove(self)
         super().kill()
-
-
-class ProductingBuild(Unit):
-    def __init__(self, x, y, id, player_id, time=5):
-        self.time = time
-        self.units_tray = [Archer, Soldier]  # для примера
-        super().__init__(x, y, id, player_id)
-
-    def create_unit(self, game, clazz):
-        # откорректировать появление рядом с казармой
-        if clazz is not None:
-            game.place(clazz, int(self.x) - randint(30, 120), int(self.y) - randint(-50, 50),
-                       self.player_id, ignore_space=True, ignore_money=False)
-
-    def update(self, *args):
-        if not self.is_alive():
-            if args[0].type == SERVER_EVENT_UPDATE:
-                args[1].kill(self)
-                return
-        # кривая реализация тренировки юнитов за время
-        if args[0].type == SERVER_EVENT_SEC and self.time > 0 and self.units_tray:
-            self.time -= 1
-        elif self.time == 0:
-            self.time = 5
-            self.create_unit(args[1], self.units_tray.pop(0))
 
 
 class Casern(ProductingBuild):
@@ -522,9 +608,9 @@ class Casern(ProductingBuild):
     image = images[0]
     required_level = 1
 
-    def __init__(self, x, y, id, player_id, time=5):
+    def __init__(self, x, y, id, player_id):
         self.image = Casern.images[player_id]
-        super().__init__(x, y, id, player_id, time)
+        super().__init__(x, y, id, player_id, 5, [Archer, Soldier])
 
 
 UNIT_TYPES = {
@@ -533,7 +619,8 @@ UNIT_TYPES = {
     2: Archer,
     3: Arrow,
     4: Casern,
-    5: Fortress
+    5: Fortress,
+    6: Worker
 }
 
 
