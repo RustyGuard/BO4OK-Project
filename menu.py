@@ -2,9 +2,9 @@ from headpiece import Headpiece
 from play import Play
 import pygame
 
-# pygame.mixer.init()
-# pygame.mixer.music.load('1.mp3')
-# pygame.mixer.music.play(-1)
+pygame.mixer.init()
+pygame.mixer.music.load('3.mp3')
+pygame.mixer.music.play(-1)
 background = pygame.image.load('sprite-games/menu/background.png')
 pygame.init()
 screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
