@@ -16,8 +16,7 @@
         "path": "sprite-games/menu/test/play_selected.png"
       },
       "disabled_image": {
-        "path": "data/images/buttons.png",
-        "sub_surface_rect": "96,0,32,32"
+        "path": "sprite-games/menu/test/play.png"
       }
     }
   }

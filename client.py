@@ -341,7 +341,7 @@ class ClientWait:
         OFFSET_X = 600
         OFFSET_Y = 500
 
-        manager = UIManager(screen.get_size(), 'theme.json')
+        manager = UIManager(screen.get_size(), 'sprite-games/themes/theme.json')
         ready_button = UIButton(
             pygame.Rect(OFFSET_X, OFFSET_Y + SIRCLE_SIZE - 100, 355, 91),
             '', manager, object_id='ready')
