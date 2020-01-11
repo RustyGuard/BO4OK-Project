@@ -154,7 +154,6 @@ class TwistUnit(Unit):
 
 
 class Mine(Unit):
-    cost = 10000.0
     placeable = False
     name = 'Mine'
     mine = pygame.image.load('sprite-games/building/mine/mine.png')
@@ -193,9 +192,8 @@ class Arrow(TwistUnit):
                 self.time -= 1
                 if self.time <= 0:
                     args[1].kill(self)
-                    # print('Arrow disappears.')
                 for spr in args[1].get_intersect(self):
-                    if spr != self and spr.player_id != self.player_id and not spr.is_projectile:
+                    if spr.player_id != -1 and spr != self and spr.player_id != self.player_id and not spr.is_projectile:
                         spr.take_damage(Arrow.damage, args[1])
                         args[1].kill(self)
                         return
@@ -252,22 +250,23 @@ class Fighter(TwistUnit):
         return False
 
     def is_valid_enemy(self, enemy):
-        return enemy.player_id != self.player_id and not enemy.is_projectile
+        return enemy.player_id != -1 and enemy.player_id != self.player_id and not enemy.is_projectile
 
-    def turn_around(self):
+    def turn_around(self, speed=1):
         angle_diff = self.target_angle - self.angle
         if angle_diff == 0:
             return True
+        speed = min(speed, abs(angle_diff))
         if angle_diff < 0:
             if abs(angle_diff) >= 180:
-                self.add_angle(1)
+                self.add_angle(speed)
             else:
-                self.add_angle(-1)
+                self.add_angle(-speed)
         elif angle_diff > 0:
             if abs(angle_diff) >= 180:
-                self.add_angle(-1)
+                self.add_angle(-speed)
             else:
-                self.add_angle(1)
+                self.add_angle(speed)
         return False
 
     def single_attack(self, game):
@@ -317,8 +316,8 @@ class Fighter(TwistUnit):
 
 
 class Archer(Fighter):
-    cost = 15.0
-    placeable = True
+    cost = (1.0, 1.0)
+    placeable = False
     name = 'Archer'
     images = []
     for i in range(10):
@@ -348,7 +347,7 @@ class Archer(Fighter):
                         self.set_target(TARGET_NONE, None)
                         return
                 self.find_target_angle()
-                if self.turn_around():
+                if self.turn_around(3):
                     self.move_to_angle(1, args[1])
                 else:
                     self.move_to_angle(0.5, args[1])
@@ -363,7 +362,7 @@ class Archer(Fighter):
                 if args[0].type == SERVER_EVENT_UPDATE:
                     self.update_delay()
                 near = self.close_to_attack(1000)
-                if self.turn_around():
+                if self.turn_around(3):
                     if near:
                         if args[0].type == SERVER_EVENT_UPDATE:
                             self.throw_projectile(args[1], Arrow)
@@ -381,9 +380,9 @@ class Archer(Fighter):
 
 
 class Soldier(Fighter):
-    cost = 10.0
+    cost = (5.0, 0.0)
     name = 'Soldier'
-    placeable = True
+    placeable = False
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/warrior/soldier/{team_id[i]}.png'))
@@ -408,7 +407,7 @@ class Soldier(Fighter):
                         self.set_target(TARGET_NONE, None)
                         return
                 self.find_target_angle()
-                if self.turn_around():
+                if self.turn_around(2):
                     self.move_to_angle(1, args[1])
                 else:
                     self.move_to_angle(0.5, args[1])
@@ -423,7 +422,7 @@ class Soldier(Fighter):
                 if args[0].type == SERVER_EVENT_UPDATE:
                     self.update_delay()
                 near = self.close_to_attack()
-                if self.turn_around():
+                if self.turn_around(2):
                     if near:
                         if args[0].type == SERVER_EVENT_UPDATE:
                             self.single_attack(args[1])
@@ -447,9 +446,9 @@ class Soldier(Fighter):
 
 
 class Worker(Fighter):
-    cost = 5.0
+    cost = (5.0, 0.0)
     name = 'Worker'
-    placeable = True
+    placeable = False
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/warrior/working/{team_id[i]}.png'))
@@ -463,6 +462,12 @@ class Worker(Fighter):
         self.damage = 1
         self.money = 0
         self.capacity = 50
+        self.agred = False
+
+    def take_damage(self, dmg, game):
+        super().take_damage(dmg, game)
+        self.agred = True
+        self.find_new_target(game, 2000)
 
     def update(self, *args):
         if not args:
@@ -486,6 +491,7 @@ class Worker(Fighter):
                 if args[0].type == SERVER_EVENT_UPDATE and not self.target[1].is_alive():
                     args[1].server.send_all(f'2_{TARGET_NONE}_{self.id}')
                     self.set_target(TARGET_NONE, None)
+                    self.agred = False
                     return
 
                 self.find_target_angle()
@@ -507,6 +513,8 @@ class Worker(Fighter):
                                 self.money = 0
                                 self.find_new_target(args[1], 3000)
                                 return
+                            else:
+                                self.single_attack(args[1])
                     else:
                         self.move_to_angle(1, args[1])
                 elif not near:
@@ -522,10 +530,13 @@ class Worker(Fighter):
                 return
 
     def is_valid_enemy(self, enemy):
-        if self.money < self.capacity:
-            return type(enemy) == Mine
+        if not self.agred:
+            if self.money < self.capacity:
+                return type(enemy) == Mine
+            else:
+                return type(enemy) == Fortress and enemy.player_id == self.player_id
         else:
-            return type(enemy) == Fortress and enemy.player_id == self.player_id
+            return super().is_valid_enemy(enemy)
 
 
 class ProductingBuild(Unit):
@@ -541,9 +552,9 @@ class ProductingBuild(Unit):
             self.units_tray.append(clazz)
 
     def create_unit(self, game, clazz):
-        # откорректировать появление рядом с казармой
         if clazz is not None:
-            game.place(clazz, int(self.x) - randint(30, 120), int(self.y) - randint(-50, 50),
+            game.place(clazz, int(self.x) - randint(self.rect.width // 2 + 25, self.rect.width + self.rect.width // 2),
+                       int(self.y) - randint(-50, 50),
                        self.player_id, ignore_space=True, ignore_money=False, ignore_fort_level=True)
 
     def update(self, *args):
@@ -551,7 +562,6 @@ class ProductingBuild(Unit):
             if args[0].type == SERVER_EVENT_UPDATE:
                 args[1].kill(self)
                 return
-        # кривая реализация тренировки юнитов за время
         if args[0].type == SERVER_EVENT_SEC and self.time > 0 and self.units_tray:
             self.time -= 1
         elif self.time == 0:
@@ -562,7 +572,7 @@ class ProductingBuild(Unit):
 class Fortress(ProductingBuild):
     name = 'Fortress'
     placeable = True
-    cost = 150.0
+    cost = (1.0, 0.0)
     levels_info = [(150.0, True, False, False), (200.0, True, True, False), (300.0, True, True, True)]
     images = []
     for i in range(10):
@@ -571,12 +581,19 @@ class Fortress(ProductingBuild):
     required_level = 1
 
     instances = []
+
     @staticmethod
     def get_player_level(player_id):
         max_level = 0
+        to_remove = []
         for inst in Fortress.instances:
+            if not inst.is_alive():
+                to_remove.append(inst)
+                continue
             if inst.player_id == player_id and inst.level > max_level:
                 max_level = inst.level
+        for i in to_remove:
+            Fortress.instances.remove(i)
         return max_level
 
     def __init__(self, x, y, id, player_id):
@@ -593,15 +610,11 @@ class Fortress(ProductingBuild):
                 args[1].kill(self)
                 return
 
-    def kill(self):
-        Fortress.instances.remove(self)
-        super().kill()
-
 
 class Casern(ProductingBuild):
     placeable = True
     name = 'Casern'
-    cost = 100.0
+    cost = (1.0, 0.0)
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/building/casern/{team_id[i]}.png'))

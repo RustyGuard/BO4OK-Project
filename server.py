@@ -184,13 +184,15 @@ class ServerGame:
               ignore_fort_level=False):
         self.lock.acquire()
         if ignore_fort_level or build_class.required_level <= Fortress.get_player_level(player_id):
-            if ignore_money or self.players[player_id].money >= build_class.cost:
+            if ignore_money or (self.players[player_id].money >= build_class.cost[0]
+                                and self.players[player_id].wood >= build_class.cost[1]):
                 building = build_class(x, y, get_curr_id(), player_id, *args)
                 if ignore_space or (not sprite.spritecollideany(building, self.all_sprites)):
                     if not ignore_money:
                         player = self.players[player_id]
-                        player.money -= build_class.cost
-                        player.client.send(f'3_1_{player.money}')
+                        player.money -= build_class.cost[0]
+                        player.wood -= build_class.cost[1]
+                        player.client.send(f'3_1_{player.money}_{player.wood}')
                     self.server.send_all(
                         f'1_{get_class_id(build_class)}_{x}_{y}_{building.id}_{player_id}{building.get_args()}')
                     self.all_sprites.add(building)
@@ -289,7 +291,7 @@ def main(screen):
 
     def update_players_info():
         for pl in game.players.values():
-            pl.client.send(f'3_1_{pl.money}')
+            pl.client.send(f'3_1_{pl.money}_{pl.wood}')
 
     with open('server_setting.txt') as settings:
         server_ip = settings.readline()

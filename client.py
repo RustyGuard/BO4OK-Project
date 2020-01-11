@@ -83,6 +83,7 @@ class Client:
 class PlayerInfo:
     def __init__(self):
         self.money = 150.0
+        self.wood = 100.0
         self.id = None
 
 
@@ -262,6 +263,7 @@ class ProductManager:
 
     def set_building(self, spr):
         self.manager.clear_and_reset()
+        self.spr = spr
         for i, clazz in enumerate(spr.valid_types):
             b = UIButton(pygame.Rect(55 + 55 * i, 5, 50, 50), clazz.name, self.manager, object_id='product')
             b.build_id = spr.id
@@ -271,6 +273,8 @@ class ProductManager:
         self.manager.process_events(event)
 
     def draw_ui(self, screen):
+        if self.spr is not None:
+            pygame.draw.rect(screen, COLOR_LIST[self.spr.player_id], self.spr.rect, 1)
         self.manager.draw_ui(screen)
 
     def update(self, *args):
@@ -411,9 +415,12 @@ class ClientWait:
             elif cmd == '3':  # Update Player Info
                 if args[0] == '1':  # Money
                     game.info.money = float(args[1])
+                    game.info.wood = float(args[2])
                     return
             elif cmd == '4':
-                game.find_with_id(int(args[0])).kill()
+                en = game.find_with_id(int(args[0]))
+                if en is not None:
+                    en.kill()
             elif cmd == '5':
                 en = game.find_with_id(int(args[0]))
                 en.health = int(args[1])
@@ -423,6 +430,7 @@ class ClientWait:
                 camera.set_pos(int(args[0]), int(args[1]))
                 print(camera.off_x, camera.off_y)
             elif cmd == '9':
+                game.lock.acquire()
                 en = game.find_with_id(int(args[3]))
                 if en is None:
                     print('Wasn"t', args)
@@ -439,6 +447,7 @@ class ClientWait:
 
                 en.set_update_args(args, game)
                 en.update_rect()
+                game.lock.release()
                 return
             else:
                 print('Taken message:', cmd, args)
@@ -477,11 +486,11 @@ class ClientWait:
         while running and client.connected:
             for event in pygame.event.get():
 
-                if event.type == pygame.MOUSEBUTTONUP:
+                if event.type == pygame.MOUSEBUTTONUP and current_manager == 'main':
                     collided = False
                     for spr in game.buildings:
-                        if spr.rect.collidepoint(event.pos) and issubclass(type(spr), ProductingBuild):
-                            print('FFFFFF')
+                        if spr.player_id == game.info.id and spr.rect.collidepoint(event.pos) \
+                                and issubclass(type(spr), ProductingBuild):
                             managers['product'].set_building(spr)
                             current_manager = 'product'
                             collided = True
@@ -531,7 +540,7 @@ class ClientWait:
             screen.fill((125, 125, 125))
             game.drawSprites(screen)
             for spr in game.sprites:
-                if spr.is_projectile:
+                if spr.is_projectile or spr.health == spr.max_health:
                     continue
                 rect = Rect(spr.rect.left, spr.rect.top - 5, spr.rect.width, 5)
                 pygame.draw.rect(screen, Color('red'), rect)
@@ -542,6 +551,8 @@ class ClientWait:
 
             text = font.render(str(game.info.money), 1, (100, 255, 100))
             screen.blit(text, (5, 50))
+            text = font.render(str(game.info.wood), 1, Color('burlywood'))
+            screen.blit(text, (5, 100))
             managers[current_manager].update(1 / 60)
             managers[current_manager].draw_ui(screen)
 
