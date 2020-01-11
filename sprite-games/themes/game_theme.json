@@ -1,0 +1,72 @@
+{
+  "build_button": {
+    "misc": {
+      "shape": "ellipse"
+    },
+    "images": {
+      "normal_image": {
+        "path": "sprite-games/menu/build.png"
+      }
+    }
+  },
+  "retarget_button": {
+    "misc": {
+      "shape": "ellipse"
+    },
+    "images": {
+      "normal_image": {
+        "path": "sprite-games/menu/retarget.png"
+      }
+    }
+  },
+  "place_4": {
+    "misc": {
+      "shape": "ellipse"
+    },
+    "images": {
+      "normal_image": {
+        "path": "sprite-games/building/casern/casern_icon.png"
+      }
+    }
+  },
+  "place_5": {
+    "misc": {
+      "shape": "ellipse"
+    },
+    "images": {
+      "normal_image": {
+        "path": "sprite-games/building/fortress/fortress_icon.png"
+      }
+    }
+  },
+  "product_0": {
+    "misc": {
+      "shape": "ellipse"
+    },
+    "images": {
+      "normal_image": {
+        "path": "sprite-games/warrior/soldier/black.png"
+      }
+    }
+  },
+  "product_2": {
+    "misc": {
+      "shape": "ellipse"
+    },
+    "images": {
+      "normal_image": {
+        "path": "sprite-games/warrior/archer/black.png"
+      }
+    }
+  },
+  "product_6": {
+    "misc": {
+      "shape": "ellipse"
+    },
+    "images": {
+      "normal_image": {
+        "path": "sprite-games/warrior/working/black.png"
+      }
+    }
+  }
+}

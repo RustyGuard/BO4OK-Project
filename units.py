@@ -317,7 +317,7 @@ class Fighter(TwistUnit):
 class Archer(Fighter):
     cost = (1.0, 1.0)
     placeable = False
-    name = 'Archer'
+    name = 'Лучник'
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/warrior/archer/{team_id[i]}.png'))
@@ -380,7 +380,7 @@ class Archer(Fighter):
 
 class Soldier(Fighter):
     cost = (5.0, 0.0)
-    name = 'Soldier'
+    name = 'Воин'
     placeable = False
     images = []
     for i in range(10):
@@ -446,7 +446,7 @@ class Soldier(Fighter):
 
 class Worker(Fighter):
     cost = (5.0, 0.0)
-    name = 'Worker'
+    name = 'Рабочий'
     placeable = False
     images = []
     for i in range(10):
@@ -575,7 +575,7 @@ class ProductingBuild(Unit):
 
 
 class Fortress(ProductingBuild):
-    name = 'Fortress'
+    name = 'Крепость'
     placeable = True
     cost = (1.0, 0.0)
     levels_info = [(150.0, True, False, False), (200.0, True, True, False), (300.0, True, True, True)]
@@ -618,7 +618,7 @@ class Fortress(ProductingBuild):
 
 class Casern(ProductingBuild):
     placeable = True
-    name = 'Casern'
+    name = 'Казарма'
     cost = (1.0, 0.0)
     images = []
     for i in range(10):

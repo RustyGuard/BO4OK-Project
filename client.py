@@ -8,10 +8,10 @@ from pygame import Color
 from pygame.rect import Rect
 from pygame.sprite import Group, Sprite
 from pygame_gui import UIManager
-from pygame_gui.elements import UIButton
+from pygame_gui.elements import UIButton, UILabel
 
 from constants import CLIENT_EVENT_SEC, CLIENT_EVENT_UPDATE, COLOR_LIST, CAMERA_MIN_SPEED, CAMERA_MAX_SPEED, \
-    CAMERA_STEP_FASTER, CAMERA_STEP_SLOWER
+    CAMERA_STEP_FASTER, CAMERA_STEP_SLOWER, SCREEN_WIDTH
 from units import Mine, Soldier, get_class_id, UNIT_TYPES, TARGET_MOVE, TARGET_ATTACK, TARGET_NONE, Archer, Arrow, \
     ProductingBuild, Worker, STATE_DIG, STATE_FIGHT, STATE_BUILD, STATE_CHOP
 
@@ -173,7 +173,7 @@ class SelectArea:
         self.game = game
         self.camera = camera
         self.client = client
-        self.manager = UIManager(pygame.display.get_surface().get_size())
+        self.manager = UIManager(pygame.display.get_surface().get_size(), 'sprite-games/themes/game_theme.json')
         UIButton(Rect(5, 5, 50, 50), 'DIG', self.manager, object_id='retarget').type = STATE_DIG
         UIButton(Rect(55, 5, 50, 50), 'FIGHT', self.manager, object_id='retarget').type = STATE_FIGHT
         UIButton(Rect(110, 5, 50, 50), 'CHOP', self.manager, object_id='retarget').type = STATE_CHOP
@@ -277,14 +277,20 @@ class PlaceManager:
 
 class ProductManager:
     def __init__(self, screen):
-        self.manager = UIManager(screen.get_size())
+        self.manager = UIManager(screen.get_size(), 'sprite-games/themes/game_theme.json')
         self.spr = None
 
     def set_building(self, spr):
         self.manager.clear_and_reset()
         self.spr = spr
         for i, clazz in enumerate(spr.valid_types):
-            b = UIButton(pygame.Rect(55 + 55 * i, 5, 50, 50), clazz.name, self.manager, object_id='product')
+            r1 = Rect(SCREEN_WIDTH - 65, 45 + 75 * i, 50, 50)
+            b = UIButton(r1, '', self.manager,
+                         object_id=f'product_{get_class_id(clazz)}')
+            r2 = Rect(0, 0, 75, 25)
+            r2.centery = r1.centery
+            r2.right = r1.left
+            UILabel(r2, clazz.name, self.manager)
             b.build_id = spr.id
             b.class_id = get_class_id(clazz)
 
@@ -470,16 +476,32 @@ class ClientWait:
         managers = {}
         current_manager = 'main'
 
-        main_manager = UIManager(screen.get_size())
-        build_button = UIButton(pygame.Rect(5, 5, 75, 50), 'Build', main_manager)
-        retarget_button = UIButton(pygame.Rect(80, 5, 75, 50), 'Retarget', main_manager)
+        main_manager = UIManager(screen.get_size(), 'sprite-games/themes/game_theme.json')
+        r1 = Rect(SCREEN_WIDTH - 85, 45, 75, 75)
+        build_button = UIButton(r1, '', main_manager, object_id='build_button')
+        r2 = Rect(0, 0, 75, 25)
+        r2.centery = r1.centery
+        r2.right = r1.left
+        UILabel(r2, 'Построить', main_manager)
+        r1 = Rect(SCREEN_WIDTH - 85, 130, 75, 75)
+        retarget_button = UIButton(r1, '', main_manager, object_id='retarget_button')
+        r2 = Rect(0, 0, 75, 25)
+        r2.centery = r1.centery
+        r2.right = r1.left
+        UILabel(r2, 'Назначить', main_manager)
 
-        build_manager = UIManager(screen.get_size())
-        UIButton(pygame.Rect(5, 5, 50, 50), 'Back', build_manager, object_id='back')
+        build_manager = UIManager(screen.get_size(), 'sprite-games/themes/game_theme.json')
+        # UIButton(pygame.Rect(5, 5, 50, 50), 'Back', build_manager, object_id='back')
         build_i = 0
         for build_id, clazz in UNIT_TYPES.items():
             if clazz.placeable:
-                b = UIButton(pygame.Rect(55 + 55 * build_i, 5, 50, 50), clazz.name, build_manager, object_id='place')
+                r1 = Rect(SCREEN_WIDTH - 65, 45 + 75 * build_i, 50, 50)
+                b = UIButton(r1, '', build_manager,
+                             object_id=f'place_{build_id}')
+                r2 = Rect(0, 0, 65, 25)
+                r2.centery = r1.centery
+                r2.right = r1.left
+                UILabel(r2, clazz.name, build_manager)
                 b.id = build_id
                 build_i += 1
 
@@ -510,10 +532,10 @@ class ClientWait:
                     if event.user_type == pygame_gui.UI_BUTTON_PRESSED:
                         if event.ui_object_id == 'back':
                             current_manager = 'main'
-                        elif event.ui_object_id == 'place':
+                        elif event.ui_object_id.startswith('place'):
                             managers['place'].set_build(event.ui_element.id)
                             current_manager = 'place'
-                        elif event.ui_object_id == 'product':
+                        elif event.ui_object_id.startswith('product'):
                             btn = event.ui_element
                             client.send(f'3_{btn.build_id}_{btn.class_id}')
                         elif event.ui_element == build_button:
@@ -574,7 +596,7 @@ def main():
     pygame.init()
     with open('settings.txt', 'r') as settings:
         size = list(map(int, settings.readline().split()))
-    ClientWait().play(pygame.display.set_mode(size))
+    ClientWait().play(pygame.display.set_mode(size, pygame.FULLSCREEN))
     # End
     pygame.quit()
 
