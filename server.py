@@ -10,7 +10,7 @@ from pygame import sprite
 from pygame.sprite import Group, Sprite
 from constants import SERVER_EVENT_SEC, SERVER_EVENT_UPDATE, SERVER_EVENT_SYNC, SCREEN_WIDTH, SCREEN_HEIGHT
 
-from units import get_class_id, UNIT_TYPES, TARGET_MOVE, Fortress, Mine
+from units import get_class_id, UNIT_TYPES, TARGET_MOVE, Fortress, Mine, Worker
 
 NEED_PLAYERS = 1
 MAX_PLAYERS = 10
@@ -87,24 +87,28 @@ class Server:
     def thread_connection(self):
         server = self.ip
         port = 5556
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
-            s.bind((server, port))
+            self.s.bind((server, port))
         except socket.error as e:
             print(str(e))
 
-        s.listen(1)
+        self.s.listen(1)
         print("Waiting for a connection, Server Started")
 
         while self.connected < MAX_PLAYERS:
-            print("[CONNECT] Finding connection!")
-            conn, addr = s.accept()
-            if self.is_ready():
-                break
-            self.connected += 1
-            print(f"[CONNECT] Connected [{self.connected}/{MAX_PLAYERS}]!")
-            self.authentication(conn, addr)
-            self.send_all(f'10_{self.connected}_{MAX_PLAYERS}')
+            try:
+                print("[CONNECT] Finding connection!")
+                conn, addr = self.s.accept()
+                if self.is_ready():
+                    break
+                self.connected += 1
+                print(f"[CONNECT] Connected [{self.connected}/{MAX_PLAYERS}]!")
+                self.authentication(conn, addr)
+                self.send_all(f'10_{self.connected}_{MAX_PLAYERS}')
+            except Exception as ex:
+                print(ex)
+                return
         self.waiting = False
         print('Everybody connected.')
 
@@ -123,7 +127,7 @@ class Server:
 
     def player_input_thread(self, client):
         command_buffer = ''
-        while True:
+        while self.connected:
             try:
                 command_buffer += client.conn.recv(1024).decode()
                 splitter = command_buffer.find(';')
@@ -165,6 +169,7 @@ class ServerGame:
         self.lock.acquire()
         p = Player(client)
         p.id = id
+        p.client.id = id
         self.players[id] = p
         self.lock.release()
 
@@ -278,6 +283,11 @@ def main(screen):
         elif cmd == '3':
             game.find_with_id(int(args[0])).add_to_queque(UNIT_TYPES[int(args[1])])
             print('Product', args)
+        elif cmd == '4':
+            en = game.find_with_id(int(args[0]))
+            if type(en) == Worker and en.player_id == client.id:
+                en.state = int(args[1])
+                en.find_new_target(game, 3000)
         else:
             print('Invalid command')
 
@@ -367,6 +377,8 @@ def main(screen):
                 for button in cancel_buttons:
                     a = button.get_event(event)
                     if a:
+                        server.s.close()
+                        server.connected = False
                         return
             if event.type == pygame.MOUSEMOTION:
                 for button in cancel_buttons:
@@ -403,7 +415,9 @@ def main(screen):
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
+                server.s.close()
+                server.connected = False
+                return
             elif event.type in [SERVER_EVENT_UPDATE, SERVER_EVENT_SEC]:
                 game.update(event, game)
                 if event.type == SERVER_EVENT_SEC:
@@ -413,10 +427,10 @@ def main(screen):
                 for spr in game.all_sprites:
                     spr.send_updated(game)
                 game.lock.release()
-            elif event.type == pygame.QUIT:
-                return
             elif event.type == pygame.KEYUP:
                 if event.key == pygame.K_ESCAPE:
+                    server.s.close()
+                    server.connected = False
                     return
         screen.fill((195, 195, 250))
         # Отрисовка информации!

@@ -13,7 +13,7 @@ from pygame_gui.elements import UIButton
 from constants import CLIENT_EVENT_SEC, CLIENT_EVENT_UPDATE, COLOR_LIST, CAMERA_MIN_SPEED, CAMERA_MAX_SPEED, \
     CAMERA_STEP_FASTER, CAMERA_STEP_SLOWER
 from units import Mine, Soldier, get_class_id, UNIT_TYPES, TARGET_MOVE, TARGET_ATTACK, TARGET_NONE, Archer, Arrow, \
-    ProductingBuild
+    ProductingBuild, Worker, STATE_DIG, STATE_FIGHT, STATE_BUILD, STATE_CHOP
 
 
 class Client:
@@ -173,6 +173,11 @@ class SelectArea:
         self.game = game
         self.camera = camera
         self.client = client
+        self.manager = UIManager(pygame.display.get_surface().get_size())
+        UIButton(Rect(5, 5, 50, 50), 'DIG', self.manager, object_id='retarget').type = STATE_DIG
+        UIButton(Rect(55, 5, 50, 50), 'FIGHT', self.manager, object_id='retarget').type = STATE_FIGHT
+        UIButton(Rect(110, 5, 50, 50), 'CHOP', self.manager, object_id='retarget').type = STATE_CHOP
+        UIButton(Rect(165, 5, 50, 50), 'BUILD', self.manager, object_id='retarget').type = STATE_BUILD
 
     def mouse_moved(self, x, y):
         self.width += x
@@ -186,6 +191,8 @@ class SelectArea:
     def draw_ui(self, screen):
         if self.width != 0 and self.height != 0:
             pygame.draw.rect(screen, COLOR_LIST[self.game.info.id], (self.x, self.y, self.width, self.height), 2)
+        if self.active:
+            self.manager.draw_ui(screen)
 
     def find_intersect(self, group):
         test = pygame.sprite.Sprite()
@@ -199,13 +206,16 @@ class SelectArea:
         return pygame.sprite.spritecollide(test, group, False)
 
     def process_events(self, event):
+        if self.active:
+            self.manager.process_events(event)
+
         if event.type == pygame.MOUSEBUTTONDOWN:
             if not self.active:
                 self.x, self.y = event.pos
             return False
 
         if event.type == pygame.MOUSEBUTTONUP:
-            if event.button == 1:
+            if event.button == 3:
                 if self.active:
                     for spr in self.find_intersect(self.game.sprites):
                         if spr.has_target and spr.player_id == self.game.info.id:
@@ -218,14 +228,23 @@ class SelectArea:
                     return False
                 return True
 
+        if event.type == pygame.USEREVENT:
+            if event.user_type == pygame_gui.UI_BUTTON_PRESSED:
+                if event.ui_object_id == 'retarget':
+                    for spr in self.find_intersect(self.game.sprites):
+                        if type(spr) == Worker and spr.player_id == self.game.info.id:
+                            self.client.send(f'4_{spr.id}_{event.ui_element.type}')
+                    self.clear()
+
         if event.type == pygame.MOUSEMOTION:
-            if pygame.mouse.get_pressed()[0] == 1 and not self.active:
+            if pygame.mouse.get_pressed()[2] == 1 and not self.active:
                 self.mouse_moved(*event.rel)
                 return True
         return False
 
     def update(self, *args):
-        pass
+        if self.active:
+            self.manager.update(*args)
 
 
 class PlaceManager:
