@@ -8,10 +8,10 @@ from pygame.sprite import Sprite
 from constants import SERVER_EVENT_SEC, SERVER_EVENT_UPDATE, CLIENT_EVENT_SEC, CLIENT_EVENT_UPDATE
 
 # States
-STATE_IDLE = 0
-STATE_TURN_AROUND = 1
-STATE_MOVE = 2
-STATE_ATTACK = 3
+STATE_DIG = 0
+STATE_FIGHT = 1
+STATE_BUILD = 2
+STATE_CHOP = 3
 
 TARGET_MOVE = 0
 TARGET_ATTACK = 1
@@ -35,7 +35,6 @@ class Unit(Sprite):
         self.offsetx = 0
         self.offsety = 0
         self.has_target = False
-        self.state = STATE_IDLE
         self.max_health = 100
         self.health = 100
         self.live = True
@@ -461,12 +460,13 @@ class Worker(Fighter):
         super().__init__(x, y, id, player_id, Worker.images[player_id])
         self.damage = 1
         self.money = 0
+        self.wood = 0
         self.capacity = 50
-        self.agred = False
+        self.state = STATE_DIG
 
     def take_damage(self, dmg, game):
         super().take_damage(dmg, game)
-        self.agred = True
+        self.state = STATE_FIGHT
         self.find_new_target(game, 2000)
 
     def update(self, *args):
@@ -491,7 +491,7 @@ class Worker(Fighter):
                 if args[0].type == SERVER_EVENT_UPDATE and not self.target[1].is_alive():
                     args[1].server.send_all(f'2_{TARGET_NONE}_{self.id}')
                     self.set_target(TARGET_NONE, None)
-                    self.agred = False
+                    self.state = STATE_DIG
                     return
 
                 self.find_target_angle()
@@ -508,7 +508,7 @@ class Worker(Fighter):
                                         self.money = self.capacity
                                         self.find_new_target(args[1], 3000)
                                         return
-                            elif type(self.target[1]) == Fortress:
+                            elif type(self.target[1]) == Fortress and self.player_id == self.target[1].player_id:
                                 args[1].players[self.player_id].money += self.money
                                 self.money = 0
                                 self.find_new_target(args[1], 3000)
@@ -522,6 +522,7 @@ class Worker(Fighter):
 
             elif self.target[0] == TARGET_NONE:
                 if args[0].type == SERVER_EVENT_UPDATE:
+                    print('NONE')
                     self.find_new_target(args[1], 3000)
 
         if not self.is_alive():
@@ -529,13 +530,17 @@ class Worker(Fighter):
                 args[1].kill(self)
                 return
 
+    def is_full(self):
+        return self.money * 0.5 + self.wood > 25
+
     def is_valid_enemy(self, enemy):
-        if not self.agred:
-            if self.money < self.capacity:
-                return type(enemy) == Mine
-            else:
-                return type(enemy) == Fortress and enemy.player_id == self.player_id
-        else:
+        if self.is_full():
+            return type(enemy) == Fortress and enemy.player_id == self.player_id
+        if self.state == STATE_DIG:
+            return type(enemy) == Mine
+        # elif self.state == STATE_CHOP:
+            # return type(enemy) == Tree
+        elif self.state == STATE_FIGHT:
             return super().is_valid_enemy(enemy)
 
 
