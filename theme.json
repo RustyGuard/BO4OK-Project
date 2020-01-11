@@ -1,7 +1,24 @@
 {
-  "defaults": {
-    "colours": {
-      "normal_bg": "#024A68,#0047ab,90"
+  "ready": {
+    "misc": {
+      "shape": "ellipce",
+      "text_horiz_alignment": "left",
+      "text_vert_alignment": "top"
+    },
+    "images": {
+      "normal_image": {
+        "path": "sprite-games/menu/test/play.png"
+      },
+      "hovered_image": {
+        "path": "sprite-games/menu/test/play_howered.png"
+      },
+      "selected_image": {
+        "path": "sprite-games/menu/test/play_selected.png"
+      },
+      "disabled_image": {
+        "path": "data/images/buttons.png",
+        "sub_surface_rect": "96,0,32,32"
+      }
     }
   }
 }

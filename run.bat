@@ -1,2 +1,2 @@
-E:\PythonEnvironment\Scripts\python.exe client.py
+E:\PythonEnvironment\Scripts\python.exe menu.py
 PAUSE

@@ -338,15 +338,13 @@ class ClientWait:
         running = True
         font = pygame.font.Font(None, 50)
         SIRCLE_SIZE = 100
-        SIRCLE_SPACE = 15
         OFFSET_X = 600
         OFFSET_Y = 500
-        MIN_HUE = 180
 
         manager = UIManager(screen.get_size(), 'theme.json')
         ready_button = UIButton(
-            pygame.Rect(OFFSET_X, OFFSET_Y + SIRCLE_SIZE - 100, 6 * (SIRCLE_SIZE + SIRCLE_SPACE) - 5, SIRCLE_SIZE),
-            'Готов.', manager)
+            pygame.Rect(OFFSET_X, OFFSET_Y + SIRCLE_SIZE - 100, 355, 91),
+            '', manager, object_id='ready')
         background = pygame.image.load('sprite-games/menu/background.png')
         a1 = pygame.image.load('sprite-games/play/ожидание/1.png')
         a2 = pygame.image.load('sprite-games/play/ожидание/2.png')
