@@ -159,6 +159,7 @@ class Mine(Unit):
     name = 'Mine'
     mine = pygame.image.load('sprite-games/building/mine/mine.png')
     image = mine
+    required_level = 1
 
     def __init__(self, x, y, id, player_id):
         self.image = Mine.mine
@@ -323,6 +324,7 @@ class Archer(Fighter):
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/warrior/archer/{team_id[i]}.png'))
     image = images[0]
+    required_level = 1  # Will be removed
 
     def __init__(self, x, y, id, player_id):
         self.image = Archer.images[player_id]
@@ -386,6 +388,7 @@ class Soldier(Fighter):
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/warrior/soldier/{team_id[i]}.png'))
     image = images[0]
+    required_level = 1  # Will be removed
 
     def __init__(self, x, y, id, player_id):
         self.image = Soldier.images[player_id]
@@ -452,12 +455,23 @@ class Fortress(Unit):
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/building/fortress/{team_id[i]}.png'))
     image = images[0]
+    required_level = 1
+
+    instances = []
+    @staticmethod
+    def get_player_level(player_id):
+        max_level = 0
+        for inst in Fortress.instances:
+            if inst.player_id == player_id and inst.level > max_level:
+                max_level = inst.level
+        return max_level
 
     def __init__(self, x, y, id, player_id):
         self.image = Fortress.images[player_id]
-        self.level = 0
+        self.level = 1
         self.workers_tray = 0
         super().__init__(x, y, id, player_id)
+        Fortress.instances.append(self)
 
     def create_worker(self):
         pass  # нужен класс рабочего
@@ -467,6 +481,10 @@ class Fortress(Unit):
             if args[0].type == SERVER_EVENT_UPDATE:
                 args[1].kill(self)
                 return
+
+    def kill(self):
+        Fortress.instances.remove(self)
+        super().kill()
 
 
 class ProductingBuild(Unit):
@@ -502,6 +520,7 @@ class Casern(ProductingBuild):
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/building/casern/{team_id[i]}.png'))
     image = images[0]
+    required_level = 1
 
     def __init__(self, x, y, id, player_id, time=5):
         self.image = Casern.images[player_id]

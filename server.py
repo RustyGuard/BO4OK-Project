@@ -2,14 +2,15 @@ import pickle
 import socket
 import threading
 from copy import deepcopy
+from random import randint
 from threading import Lock
 
 import pygame
 from pygame import sprite
 from pygame.sprite import Group, Sprite
-from constants import SERVER_EVENT_SEC, SERVER_EVENT_UPDATE, SERVER_EVENT_SYNC
+from constants import SERVER_EVENT_SEC, SERVER_EVENT_UPDATE, SERVER_EVENT_SYNC, SCREEN_WIDTH, SCREEN_HEIGHT
 
-from units import get_class_id, UNIT_TYPES, TARGET_MOVE
+from units import get_class_id, UNIT_TYPES, TARGET_MOVE, Fortress
 
 NEED_PLAYERS = 1
 MAX_PLAYERS = 10
@@ -179,24 +180,28 @@ class ServerGame:
     def update(self, *args):
         self.all_sprites.update(*args)
 
-    def place(self, build_class, x, y, player_id, *args, ignore_space=False, ignore_money=False):
+    def place(self, build_class, x, y, player_id, *args, ignore_space=False, ignore_money=False,
+              ignore_fort_level=False):
         self.lock.acquire()
         player = self.players[player_id]
-        if ignore_money or player.money >= build_class.cost:
-            building = build_class(x, y, get_curr_id(), player_id, *args)
-            if ignore_space or (not sprite.spritecollideany(building, self.all_sprites)):
-                if not ignore_money:
-                    player.money -= build_class.cost
-                    player.client.send(f'3_1_{player.money}')
-                self.server.send_all(
-                    f'1_{get_class_id(build_class)}_{x}_{y}_{building.id}_{player_id}{building.get_args()}')
-                self.all_sprites.add(building)
-                if building.is_building:
-                    self.buildings.add(building)
+        if ignore_fort_level or build_class.required_level <= Fortress.get_player_level(player_id):
+            if ignore_money or player.money >= build_class.cost:
+                building = build_class(x, y, get_curr_id(), player_id, *args)
+                if ignore_space or (not sprite.spritecollideany(building, self.all_sprites)):
+                    if not ignore_money:
+                        player.money -= build_class.cost
+                        player.client.send(f'3_1_{player.money}')
+                    self.server.send_all(
+                        f'1_{get_class_id(build_class)}_{x}_{y}_{building.id}_{player_id}{building.get_args()}')
+                    self.all_sprites.add(building)
+                    if building.is_building:
+                        self.buildings.add(building)
+                else:
+                    print(f'No place {player.money}')
             else:
-                print(f'No place {player.money}')
+                print(f'No money {player.money}/{build_class.cost}')
         else:
-            print(f'No money {player.money}/{build_class.cost}')
+            print(f'No fortress level', build_class.required_level)
         self.lock.release()
 
     def create_entity(self, clazz, x, y, player_id, *args):  # Use place instead
@@ -234,8 +239,12 @@ class ServerGame:
         spr.kill()
 
 
-def place_on_map():
-    pass
+def place_fortresses(game):
+    for player_id, player in game.players.items():
+        x, y = randint(0, 10000), randint(0, 10000)
+        game.place(Fortress, x, y, player_id,
+                   ignore_space=True, ignore_money=True, ignore_fort_level=True)
+        player.client.send(f'6_{-x + SCREEN_WIDTH // 2}_{-y + SCREEN_HEIGHT // 2}')
 
 
 def main(screen):
@@ -357,13 +366,13 @@ def main(screen):
         screen.blit(background, (0, 0))
         # Отрисовка информации!
         text = font.render(f'Сообщите ip остальным игрокам:', 1, (200, 200, 200))
-        screen.blit(text, (650, 310)) #5
+        screen.blit(text, (650, 310))  # 5
         text = font.render(f'[{server_ip}]', 1, (255, 5, 5))
-        screen.blit(text, (650, 355))#50
+        screen.blit(text, (650, 355))  # 50
         text = font.render(f'Подключено [{connect_info[0]}/{MAX_PLAYERS}]', 1, (200, 200, 200))
-        screen.blit(text, (650, 405))#100
+        screen.blit(text, (650, 405))  # 100
         text = font.render(f'Готово: [{connect_info[1]}]', 1, (200, 200, 200))
-        screen.blit(text, (650, 455))#150
+        screen.blit(text, (650, 455))  # 150
         all_buttons.draw(screen)
         cursor.rect.topleft = pygame.mouse.get_pos()
         cancel_buttons.draw(screen)
@@ -378,6 +387,7 @@ def main(screen):
 
     server.callback = read
     running = True
+    place_fortresses(game)
     pygame.time.set_timer(SERVER_EVENT_UPDATE, 1000 // 60)
     pygame.time.set_timer(SERVER_EVENT_SEC, 1000 // 1)
     pygame.time.set_timer(SERVER_EVENT_SYNC, 10000)

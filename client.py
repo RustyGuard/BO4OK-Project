@@ -1,6 +1,5 @@
 import socket
 import threading
-import time
 from threading import Lock
 
 import pygame
@@ -11,7 +10,8 @@ from pygame.sprite import Group, Sprite
 from pygame_gui import UIManager
 from pygame_gui.elements import UIButton
 
-from constants import CLIENT_EVENT_SEC, CLIENT_EVENT_UPDATE, COLOR_LIST
+from constants import CLIENT_EVENT_SEC, CLIENT_EVENT_UPDATE, COLOR_LIST, CAMERA_MIN_SPEED, CAMERA_MAX_SPEED, \
+    CAMERA_STEP_FASTER, CAMERA_STEP_SLOWER
 from units import Mine, Soldier, get_class_id, UNIT_TYPES, TARGET_MOVE, TARGET_ATTACK, TARGET_NONE, Archer, Arrow
 
 
@@ -64,16 +64,19 @@ class Client:
                         if command != '':
                             command = command.split('_')
                             cmd, *args = command
-                            self.callback(cmd, args, *self.call_args)
+                            self.invoke(cmd, args)
                         command_buffer = command_buffer[splitter + 1:]
                         splitter = command_buffer.find(';')
-                        while not self.callback:
-                            pass
             except Exception as ex:
                 print('[READ THREAD]', ex)
                 print('[READ THREAD] NO LONGER READING FROM SERVER!')
                 self.disconnect(ex)
                 return
+
+    def invoke(self, cmd, args):
+        while self.callback is None:
+            pass
+        self.callback(cmd, args, *self.call_args)
 
 
 class PlayerInfo:
@@ -87,13 +90,25 @@ class Camera:
         self.sprites = sprites
         self.off_x = 0
         self.off_y = 0
+        self.speed = CAMERA_MIN_SPEED
 
     def move(self, x, y):
         if x != 0 or y != 0:
-            self.off_x += x
-            self.off_y += y
+            self.off_x += x * int(self.speed)
+            self.off_y += y * int(self.speed)
+            self.speed += CAMERA_STEP_FASTER
+            self.speed = min(CAMERA_MAX_SPEED, self.speed)
             for spr in self.sprites:
                 spr.set_offset(self.off_x, self.off_y)
+        else:
+            self.speed -= CAMERA_STEP_SLOWER
+            self.speed = max(CAMERA_MIN_SPEED, self.speed)
+
+    def set_pos(self, x, y):
+        self.off_x = x
+        self.off_y = y
+        for spr in self.sprites:
+            spr.set_offset(self.off_x, self.off_y)
 
 
 class Game:
@@ -263,6 +278,7 @@ class ClientWait:
         def read(cmd, args):
             print(cmd, args)
             if cmd == '0':
+                client.setEventCallback(None)
                 game.info.id = int(args[0])
                 game.start()
                 print(f'Game started. Our id is {game.info.id}')
@@ -380,6 +396,9 @@ class ClientWait:
                 en.health = int(args[1])
                 en.max_health = int(args[2])
                 return
+            elif cmd == '6':
+                camera.set_pos(int(args[0]), int(args[1]))
+                print(camera.off_x, camera.off_y)
             elif cmd == '9':
                 en = game.find_with_id(int(args[3]))
                 if en is None:
@@ -458,14 +477,16 @@ class ClientWait:
 
                 if event.type in [CLIENT_EVENT_UPDATE, CLIENT_EVENT_SEC]:
                     if event.type == CLIENT_EVENT_UPDATE:
+                        x_off, y_off = 0, 0
                         if pygame.key.get_pressed()[pygame.K_w]:
-                            camera.move(0, 1)
+                            y_off += 1
                         if pygame.key.get_pressed()[pygame.K_s]:
-                            camera.move(0, -1)
+                            y_off -= 1
                         if pygame.key.get_pressed()[pygame.K_a]:
-                            camera.move(1, 0)
+                            x_off += 1
                         if pygame.key.get_pressed()[pygame.K_d]:
-                            camera.move(-1, 0)
+                            x_off -= 1
+                        camera.move(x_off, y_off)
                     game.update(event, game)
 
             screen.fill((125, 125, 125))
