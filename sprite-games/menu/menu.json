@@ -1,0 +1,23 @@
+{
+  "ready": {
+    "misc": {
+      "shape": "ellipse",
+      "text_horiz_alignment": "left",
+      "text_vert_alignment": "top"
+    },
+    "images": {
+      "normal_image": {
+        "path": "sprite-games/menu/play.png"
+      },
+      "hovered_image": {
+        "path": "sprite-games/menu/anim/play.png"
+      },
+      "selected_image": {
+        "path": "sprite-games/menu/anim/play.png"
+      },
+      "disabled_image": {
+        "path": "sprite-games/menu/play.png"
+      }
+    }
+  }
+}
