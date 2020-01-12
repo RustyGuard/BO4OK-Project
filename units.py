@@ -5,13 +5,15 @@ import pygame
 from pygame import Color
 from pygame.rect import Rect
 from pygame.sprite import Sprite
-from constants import SERVER_EVENT_SEC, SERVER_EVENT_UPDATE, CLIENT_EVENT_SEC, CLIENT_EVENT_UPDATE
+from constants import SERVER_EVENT_SEC, SERVER_EVENT_UPDATE, CLIENT_EVENT_SEC, CLIENT_EVENT_UPDATE, WOOD_PER_PUNCH, \
+    MONEY_PER_PUNCH
 
 # States
 STATE_DIG = 0
 STATE_FIGHT = 1
 STATE_BUILD = 2
 STATE_CHOP = 3
+STATE_ANY_WORK = 4
 
 TARGET_MOVE = 0
 TARGET_ATTACK = 1
@@ -154,7 +156,7 @@ class TwistUnit(Unit):
 
 class Mine(Unit):
     placeable = False
-    name = 'Mine'
+    name = 'Шахта'
     mine = pygame.image.load('sprite-games/building/mine/mine.png')
     image = mine
     required_level = 1
@@ -462,7 +464,7 @@ class Worker(Fighter):
         self.money = 0
         self.wood = 0
         self.capacity = 50
-        self.state = STATE_DIG
+        self.state = STATE_ANY_WORK
 
     def take_damage(self, dmg, game):
         super().take_damage(dmg, game)
@@ -483,15 +485,16 @@ class Worker(Fighter):
                         return
                 self.find_target_angle()
                 if self.turn_around():
-                    self.move_to_angle(1, args[1])
+                    self.move_to_angle(1.5, args[1])
                 else:
-                    self.move_to_angle(0.5, args[1])
+                    self.move_to_angle(1, args[1])
 
             elif self.target[0] == TARGET_ATTACK:
                 if args[0].type == SERVER_EVENT_UPDATE and not self.target[1].is_alive():
                     args[1].server.send_all(f'2_{TARGET_NONE}_{self.id}')
                     self.set_target(TARGET_NONE, None)
-                    self.state = STATE_DIG
+                    if self.state == STATE_FIGHT:
+                        self.state = STATE_ANY_WORK
                     return
 
                 self.find_target_angle()
@@ -503,26 +506,32 @@ class Worker(Fighter):
                         if args[0].type == SERVER_EVENT_UPDATE:
                             if type(self.target[1]) == Mine:
                                 if self.single_attack(args[1]):
-                                    self.money += 10
-                                    if self.money >= self.capacity:
-                                        self.money = self.capacity
+                                    self.money += MONEY_PER_PUNCH
+                                    if self.is_full():
+                                        self.find_new_target(args[1], 3000)
+                                        return
+                            elif type(self.target[1]) == Tree:
+                                if self.single_attack(args[1]):
+                                    self.wood += WOOD_PER_PUNCH
+                                    if self.is_full():
                                         self.find_new_target(args[1], 3000)
                                         return
                             elif type(self.target[1]) == Fortress and self.player_id == self.target[1].player_id:
                                 args[1].players[self.player_id].money += self.money
+                                args[1].players[self.player_id].wood += self.wood
                                 self.money = 0
+                                self.wood = 0
                                 self.find_new_target(args[1], 3000)
                                 return
                             else:
                                 self.single_attack(args[1])
                     else:
-                        self.move_to_angle(1, args[1])
+                        self.move_to_angle(1.5, args[1])
                 elif not near:
-                    self.move_to_angle(0.5, args[1])
+                    self.move_to_angle(1, args[1])
 
             elif self.target[0] == TARGET_NONE:
                 if args[0].type == SERVER_EVENT_UPDATE:
-                    print('NONE')
                     self.find_new_target(args[1], 3000)
 
         if not self.is_alive():
@@ -531,15 +540,17 @@ class Worker(Fighter):
                 return
 
     def is_full(self):
-        return self.money * 0.5 + self.wood > 25
+        return self.money + self.wood * 5 > 50
 
     def is_valid_enemy(self, enemy):
         if self.is_full():
             return type(enemy) == Fortress and enemy.player_id == self.player_id
+        if self.state == STATE_ANY_WORK:
+            return type(enemy) in [Mine, Tree]
         if self.state == STATE_DIG:
             return type(enemy) == Mine
-        # elif self.state == STATE_CHOP:
-        # return type(enemy) == Tree
+        elif self.state == STATE_CHOP:
+            return type(enemy) == Tree
         elif self.state == STATE_FIGHT:
             return super().is_valid_enemy(enemy)
 
@@ -548,7 +559,7 @@ class ProductingBuild(Unit):
     def __init__(self, x, y, id, player_id, delay, valid_types):
         self.time = delay
         self.delay = delay
-        self.units_tray = []  # для примера
+        self.units_tray = []
         self.valid_types = valid_types
         super().__init__(x, y, id, player_id)
 
@@ -687,8 +698,24 @@ class ArcherTower(Fighter):
                 if args[0].type == SERVER_EVENT_UPDATE:
                     self.find_new_target(args[1])
 
-        elif args[0].type in [CLIENT_EVENT_SEC, SERVER_EVENT_SEC]:
-            pass
+
+class Tree(Unit):
+    placeable = False
+    name = 'Дерево'
+    tree = pygame.image.load('sprite-games/building/tree/tree.png')
+    image = tree
+    required_level = 1
+
+    def __init__(self, x, y, id, player_id):
+        self.image = Tree.tree
+        super().__init__(x, y, id, player_id)
+        self.max_health = 10
+        self.health = self.max_health
+
+    def update(self, *args):
+        if args[0].type == SERVER_EVENT_UPDATE:
+            if not self.is_alive():
+                args[1].kill(self)
 
 
 UNIT_TYPES = {
@@ -699,7 +726,8 @@ UNIT_TYPES = {
     4: Casern,
     5: Fortress,
     6: Worker,
-    7: ArcherTower
+    7: ArcherTower,
+    8: Tree
 }
 
 
