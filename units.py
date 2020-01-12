@@ -5,6 +5,8 @@ import pygame
 from pygame import Color
 from pygame.rect import Rect
 from pygame.sprite import Sprite
+from pygame.surface import Surface
+
 from constants import SERVER_EVENT_SEC, SERVER_EVENT_UPDATE, CLIENT_EVENT_SEC, CLIENT_EVENT_UPDATE, WOOD_PER_PUNCH, \
     MONEY_PER_PUNCH
 
@@ -645,15 +647,16 @@ class ArcherTower(Fighter):
     required_level = 1
 
     def __init__(self, x, y, id, player_id):
-        self.image = ArcherTower.images[player_id]
         self.archer_image = Archer.images[player_id]
+        self.tower_image = ArcherTower.images[player_id]
 
         super().__init__(x, y, id, player_id, ArcherTower.images[player_id])
+        self.update_image()
 
     def update_image(self):
-
-        rotated_archer = pygame.transform.rotate(self.archer_image, -self.angle)
-        self.image.blit(rotated_archer, (13, 13))
+        self.image = Surface(self.tower_image.get_rect().size, pygame.SRCALPHA)
+        self.image.blit(self.tower_image, (0, 0))
+        self.image.blit(pygame.transform.rotate(self.archer_image, -self.angle), (10, 10))
 
     def update(self, *args):
         if not args:
