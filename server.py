@@ -1,7 +1,6 @@
-import pickle
 import socket
 import threading
-from copy import deepcopy
+from math import radians, cos, sin
 from random import randint
 from threading import Lock
 
@@ -154,7 +153,7 @@ class Player:
         self.client = client
         self.money = 150.0
         self.wood = 100
-        self.id = -1
+        self.id = -2
 
 
 class ServerGame:
@@ -173,6 +172,40 @@ class ServerGame:
         self.players[id] = p
         self.lock.release()
 
+    def get_player_money(self, player_id):
+        pl = self.players.get(player_id)
+        if pl is None:
+            return 0
+        return pl.money
+
+    def get_player_wood(self, player_id):
+        pl = self.players.get(player_id)
+        if pl is None:
+            return 0
+        return pl.wood
+
+    def take_resources(self, player_id, costs):
+        pl = self.players.get(player_id)
+        if pl is None:
+            return
+        pl.money -= costs[0]
+        pl.wood -= costs[1]
+        pl.client.send(f'3_1_{pl.money}_{pl.wood}')
+
+    def give_resources(self, player_id, costs):
+        pl = self.players.get(player_id)
+        if pl is None:
+            return
+        pl.money += costs[0]
+        pl.wood += costs[1]
+        pl.client.send(f'3_1_{pl.money}_{pl.wood}')
+
+    def has_enought(self, player_id, costs):
+        pl = self.players.get(player_id)
+        if pl is None:
+            return False
+        return pl.money >= costs[0] and pl.wood >= costs[1]
+
     def remove_player(self, client):
         self.lock.acquire()
         for i, j in self.players.items():
@@ -189,15 +222,11 @@ class ServerGame:
               ignore_fort_level=False):
         self.lock.acquire()
         if ignore_fort_level or build_class.required_level <= Fortress.get_player_level(player_id):
-            if ignore_money or (self.players[player_id].money >= build_class.cost[0]
-                                and self.players[player_id].wood >= build_class.cost[1]):
+            if ignore_money or self.has_enought(player_id, build_class.cost):
                 building = build_class(x, y, get_curr_id(), player_id, *args)
                 if ignore_space or (not sprite.spritecollideany(building, self.all_sprites)):
                     if not ignore_money:
-                        player = self.players[player_id]
-                        player.money -= build_class.cost[0]
-                        player.wood -= build_class.cost[1]
-                        player.client.send(f'3_1_{player.money}_{player.wood}')
+                        self.take_resources(player_id, build_class.cost)
                     self.server.send_all(
                         f'1_{get_class_id(build_class)}_{x}_{y}_{building.id}_{player_id}{building.get_args()}')
                     self.all_sprites.add(building)
@@ -243,24 +272,28 @@ class ServerGame:
 
 
 def place_fortresses(game):
-    players_count = 0
+    print('Placing started.')
+    players_count = len(game.players.values())
+    angle = 0
     for player_id, player in game.players.items():
-        players_count += 1
-        x, y = randint(0, 1000), randint(0, 1000)
-        while game.place(Fortress, x, y, player_id, ignore_money=True, ignore_fort_level=True) is None:
-            x, y = randint(0, 1000), randint(0, 1000)
-            print('Not enough place for Fortress')
+        x, y = cos(radians(angle)), sin(radians(angle))
+        angle += 360 / players_count
+        x, y = int(x * 1000), int(y * 1000)
+        game.place(Fortress, x, y, player_id,
+                   ignore_money=True, ignore_fort_level=True, ignore_space=True)
         player.client.send(f'6_{-x + SCREEN_WIDTH // 2}_{-y + SCREEN_HEIGHT // 2}')
-    for _ in range(players_count * 3):
-        x, y = randint(0, 2000), randint(0, 2000)
-        while game.place(Mine, x, y, -1, ignore_money=True, ignore_fort_level=True) is None:
-            x, y = randint(0, 2000), randint(0, 2000)
-            print('Not enough place for Mine')
-    for _ in range(players_count * 7):
-        x, y = randint(0, 2000), randint(0, 2000)
-        while game.place(Tree, x, y, -1, ignore_money=True, ignore_fort_level=True) is None:
-            x, y = randint(0, 2000), randint(0, 2000)
-            print('Not enough place for Tree')
+
+        x, y = int(x * 1.25), int(y * 1.25)
+        game.place(Mine, x, y, -1,
+                   ignore_money=True, ignore_fort_level=True, ignore_space=True)
+
+        trees_left = 7
+        tree_x, tree_y = randint(x - 500, x + 500), randint(y - 500, y + 500)
+        while trees_left > 0:
+            if game.place(Tree, tree_x, tree_y, -1, ignore_money=True, ignore_fort_level=True) is not None:
+                trees_left -= 1
+            tree_x, tree_y = randint(x - 500, x + 500), randint(y - 500, y + 500)
+        print('Placing stopped.')
 
 
 def main(screen):
@@ -289,7 +322,6 @@ def main(screen):
             en = game.find_with_id(int(args[0]))
             if en is not None:
                 en.add_to_queque(UNIT_TYPES[int(args[1])])
-            print('Product', args)
         elif cmd == '4':
             en = game.find_with_id(int(args[0]))
             if type(en) == Worker and en.player_id == client.id:
