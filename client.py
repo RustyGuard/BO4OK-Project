@@ -589,7 +589,7 @@ class ClientWait:
 
             pygame.display.flip()
             game.lock.release()
-            print(clock.tick(60))
+            clock.tick(60)
         client.disconnect('Application closed.')
         return False
 

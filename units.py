@@ -640,7 +640,7 @@ class Casern(ProductingBuild):
 
     def __init__(self, x, y, id, player_id):
         self.image = Casern.images[player_id]
-        super().__init__(x, y, id, player_id, 5, [Archer, Soldier])
+        super().__init__(x, y, id, player_id, 5, [Archer, Soldier, Dragon])  # Драконы здесь временно
 
 
 class ArcherTower(Fighter):
@@ -719,6 +719,89 @@ class Tree(Unit):
                 args[1].kill(self)
 
 
+class Dragon(Fighter):
+    cost = (5.0, 0.0)
+    name = 'Дракон'
+    placeable = False
+    images = []
+    for i in range(10):
+        anim = (
+            pygame.image.load(f'sprite-games/warrior/dragon/{team_id[i]}.png'),
+            pygame.image.load(f'sprite-games/warrior/dragon/anim/{team_id[i]}.png')
+        )
+        images.append(anim)
+    image = images[0][0]
+    required_level = 1  # Will be removed
+
+    def __init__(self, x, y, id, player_id):
+        self.time = 0
+        self.anim_switch = 0
+        self.anim_tuple = Dragon.images[player_id]
+
+        super().__init__(x, y, id, player_id, Soldier.images[player_id])
+        self.update_image()
+
+    def update(self, *args):
+        if not args:
+            return
+        if not self.is_alive():
+            if args[0].type == SERVER_EVENT_UPDATE:
+                args[1].kill(self)
+                return
+        if args[0].type == CLIENT_EVENT_UPDATE:
+            self.time += 1
+            if self.time >= 45:
+                self.anim_switch = (self.anim_switch + 1) % 2
+                self.time = 0
+                self.update_image()
+
+        if args[0].type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
+            if self.target[0] == TARGET_MOVE:
+                if args[0].type == SERVER_EVENT_UPDATE:
+                    xr = self.target[1][0] - self.x
+                    yr = self.target[1][1] - self.y
+                    if math.sqrt(xr * xr + yr * yr) < 40:
+                        args[1].server.send_all(f'2_{TARGET_NONE}_{self.id}')
+                        self.set_target(TARGET_NONE, None)
+                        return
+                self.find_target_angle()
+                if self.turn_around(2):
+                    self.move_to_angle(1, args[1])
+                else:
+                    self.move_to_angle(0.5, args[1])
+
+            elif self.target[0] == TARGET_ATTACK:
+                if args[0].type == SERVER_EVENT_UPDATE and not self.target[1].is_alive():
+                    args[1].server.send_all(f'2_{TARGET_NONE}_{self.id}')
+                    self.set_target(TARGET_NONE, None)
+                    return
+
+                self.find_target_angle()
+                if args[0].type == SERVER_EVENT_UPDATE:
+                    self.update_delay()
+                near = self.close_to_attack()
+                if self.turn_around(2):
+                    if near:
+                        if args[0].type == SERVER_EVENT_UPDATE:
+                            self.single_attack(args[1])
+                    else:
+                        self.move_to_angle(1, args[1])
+                elif not near:
+                    self.move_to_angle(0.5, args[1])
+
+            elif self.target[0] == TARGET_NONE:
+                if args[0].type == SERVER_EVENT_UPDATE:
+                    self.find_new_target(args[1])
+
+        elif args[0].type in [CLIENT_EVENT_SEC, SERVER_EVENT_SEC]:
+            pass
+            # print('En', self.id, self.x, self.y)
+
+    def update_image(self):
+        rotated_image = pygame.transform.rotate(self.anim_tuple[self.anim_switch], -self.angle)
+        self.image = rotated_image
+
+
 UNIT_TYPES = {
     0: Soldier,
     1: Mine,
@@ -728,7 +811,8 @@ UNIT_TYPES = {
     5: Fortress,
     6: Worker,
     7: ArcherTower,
-    8: Tree
+    8: Tree,
+    9: Dragon
 }
 
 
