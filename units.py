@@ -661,14 +661,14 @@ class ArcherTower(Fighter):
                 return
         if args[0].type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
             if self.target[0] == TARGET_MOVE:
+                self.find_target_angle()
+                turned = self.turn_around(3)
+
                 if args[0].type == SERVER_EVENT_UPDATE:
-                    xr = self.target[1][0] - self.x
-                    yr = self.target[1][1] - self.y
-                    if math.sqrt(xr * xr + yr * yr) < 40:
+                    if turned:
                         args[1].server.send_all(f'2_{TARGET_NONE}_{self.id}')
                         self.set_target(TARGET_NONE, None)
                         return
-                self.find_target_angle()
 
             elif self.target[0] == TARGET_ATTACK:
                 if args[0].type == SERVER_EVENT_UPDATE and not self.target[1].is_alive():
@@ -679,11 +679,9 @@ class ArcherTower(Fighter):
                 self.find_target_angle()
                 if args[0].type == SERVER_EVENT_UPDATE:
                     self.update_delay()
-                near = self.close_to_attack(1000)
                 if self.turn_around(3):
-                    if near:
-                        if args[0].type == SERVER_EVENT_UPDATE:
-                            self.throw_projectile(args[1], Arrow)
+                    if args[0].type == SERVER_EVENT_UPDATE:
+                        self.throw_projectile(args[1], Arrow)
 
             elif self.target[0] == TARGET_NONE:
                 if args[0].type == SERVER_EVENT_UPDATE:

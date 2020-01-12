@@ -125,9 +125,7 @@ class Game:
         self.started = True
 
     def drawSprites(self, surface):
-        self.lock.acquire()
         self.sprites.draw(surface)
-        self.lock.release()
 
     def addEntity(self, type, x, y, id, player_id, camera, args):
         self.lock.acquire()
@@ -463,7 +461,7 @@ class ClientWait:
                 return
             else:
                 print('Taken message:', cmd, args)
-
+        # background = pygame.image.load('карта.png')
         font = pygame.font.Font(None, 50)
         client.setEventCallback(listen)
         clock = pygame.time.Clock()
@@ -567,6 +565,8 @@ class ClientWait:
                     game.update(event, game)
 
             screen.fill((125, 125, 125))
+            game.lock.acquire()
+            # screen.blit(background, (camera.off_x, camera.off_y))
             game.drawSprites(screen)
             for spr in game.sprites:
                 if spr.is_projectile or spr.health == spr.max_health:
@@ -587,7 +587,8 @@ class ClientWait:
             screen.blit(image1, pygame.mouse.get_pos())
 
             pygame.display.flip()
-            clock.tick(60)
+            game.lock.release()
+            print(clock.tick(60))
         client.disconnect('Application closed.')
         return False
 
