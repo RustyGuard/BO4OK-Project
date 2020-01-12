@@ -13,7 +13,7 @@ from pygame_gui.elements import UIButton, UILabel
 from constants import CLIENT_EVENT_SEC, CLIENT_EVENT_UPDATE, COLOR_LIST, CAMERA_MIN_SPEED, CAMERA_MAX_SPEED, \
     CAMERA_STEP_FASTER, CAMERA_STEP_SLOWER, SCREEN_WIDTH
 from units import Mine, Soldier, get_class_id, UNIT_TYPES, TARGET_MOVE, TARGET_ATTACK, TARGET_NONE, Archer, Arrow, \
-    ProductingBuild, Worker, STATE_DIG, STATE_FIGHT, STATE_BUILD, STATE_CHOP
+    ProductingBuild, Worker, STATE_DIG, STATE_FIGHT, STATE_BUILD, STATE_CHOP, STATE_ANY_WORK
 
 
 class Client:
@@ -176,6 +176,7 @@ class SelectArea:
         UIButton(Rect(55, 5, 50, 50), 'FIGHT', self.manager, object_id='retarget').type = STATE_FIGHT
         UIButton(Rect(110, 5, 50, 50), 'CHOP', self.manager, object_id='retarget').type = STATE_CHOP
         UIButton(Rect(165, 5, 50, 50), 'BUILD', self.manager, object_id='retarget').type = STATE_BUILD
+        UIButton(Rect(220, 5, 50, 50), 'ANY', self.manager, object_id='retarget').type = STATE_ANY_WORK
 
     def mouse_moved(self, x, y):
         self.width += x

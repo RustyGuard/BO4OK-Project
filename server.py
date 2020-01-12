@@ -10,7 +10,7 @@ from pygame import sprite
 from pygame.sprite import Group, Sprite
 from constants import SERVER_EVENT_SEC, SERVER_EVENT_UPDATE, SERVER_EVENT_SYNC, SCREEN_WIDTH, SCREEN_HEIGHT
 
-from units import get_class_id, UNIT_TYPES, TARGET_MOVE, Fortress, Mine, Worker
+from units import get_class_id, UNIT_TYPES, TARGET_MOVE, Fortress, Mine, Worker, Tree
 
 NEED_PLAYERS = 1
 MAX_PLAYERS = 10
@@ -256,6 +256,11 @@ def place_fortresses(game):
         while game.place(Mine, x, y, -1, ignore_money=True, ignore_fort_level=True) is None:
             x, y = randint(0, 2000), randint(0, 2000)
             print('Not enough place for Mine')
+    for _ in range(players_count * 7):
+        x, y = randint(0, 2000), randint(0, 2000)
+        while game.place(Tree, x, y, -1, ignore_money=True, ignore_fort_level=True) is None:
+            x, y = randint(0, 2000), randint(0, 2000)
+            print('Not enough place for Tree')
 
 
 def main(screen):
@@ -281,7 +286,9 @@ def main(screen):
             else:
                 print(f'Entity[{id}] has not got a "target"')
         elif cmd == '3':
-            game.find_with_id(int(args[0])).add_to_queque(UNIT_TYPES[int(args[1])])
+            en = game.find_with_id(int(args[0]))
+            if en is not None:
+                en.add_to_queque(UNIT_TYPES[int(args[1])])
             print('Product', args)
         elif cmd == '4':
             en = game.find_with_id(int(args[0]))
@@ -298,6 +305,9 @@ def main(screen):
         if client.ready:
             connect_info[1] -= 1
         connect_info[0] -= 1
+
+    def disconnect_player_game(client):
+        game.remove_player(client)
 
     def update_players_info():
         for pl in game.players.values():
@@ -406,13 +416,14 @@ def main(screen):
     clock = pygame.time.Clock()
 
     server.callback = read
+    server.disconnected_callback = disconnect_player_game
     running = True
     place_fortresses(game)
     pygame.time.set_timer(SERVER_EVENT_UPDATE, 1000 // 60)
     pygame.time.set_timer(SERVER_EVENT_SEC, 1000 // 1)
     pygame.time.set_timer(SERVER_EVENT_SYNC, 10000)
     background = pygame.image.load('sprite-games/menu/background.png')
-    while running:
+    while running and len(game.players) > 0:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 server.s.close()
