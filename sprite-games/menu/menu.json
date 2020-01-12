@@ -4,20 +4,20 @@
       "shape": "rounded_rectangle",
       "text_horiz_alignment": "left",
       "text_vert_alignment": "top",
-      "shape_corner_radius": "3"
+      "shape_corner_radius": "5"
     },
     "images": {
       "normal_image": {
-        "path": "sprite-games/menu/test/play.png"
+        "path": "sprite-games/menu/play.png"
       },
       "hovered_image": {
-        "path": "sprite-games/menu/test/play_howered.png"
+        "path": "sprite-games/menu/anim/play.png"
       },
       "selected_image": {
-        "path": "sprite-games/menu/test/play_selected.png"
+        "path": "sprite-games/menu/anim/play.png"
       },
       "disabled_image": {
-        "path": "sprite-games/menu/test/play.png"
+        "path": "sprite-games/menu/play.png"
       }
     }
   }
