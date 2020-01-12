@@ -136,7 +136,7 @@ class Game:
         self.sprites.add(en)
         if en.is_building:
             self.buildings.add(en)
-        print(f'Created entity of type [{type}] at [{x}, {y}] owner {player_id}')
+        # print(f'Created entity of type [{type}] at [{x}, {y}] owner {player_id}')
         self.lock.release()
 
     def get_intersect(self, sprite):
@@ -399,12 +399,12 @@ class ClientWait:
             # 2 - Retarget entity of [type] at [x, y] with [id]
             # 3 - Update Player Info
             # 10 - Tell player count [curr, max]
-            print(cmd, args)
+            # print(cmd, args)
             if cmd == '1':
-                print('Args', args)
                 type, x, y, id, id_player = int(args[0]), int(args[1]), int(args[2]), int(args[3]), int(args[4])
                 game.addEntity(type, x, y, id, id_player, camera, args[5::])
-            elif cmd == '2':
+            elif cmd == '2':  # Retarget
+                print(cmd, args)
                 if args[0] == str(TARGET_MOVE):
                     id, x, y = int(args[1]), int(args[2]), int(args[3])
                     game.retarget(id, x, y)

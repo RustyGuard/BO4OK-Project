@@ -221,9 +221,30 @@ class Fighter(TwistUnit):
         self.delay_time = 120
         self.damage = 10
 
-    def set_target(self, target_type, coord):
+    def move_to_point(self, event, game, straight_speed, turn_speed, twist_speed=1):
+        if event.type == SERVER_EVENT_UPDATE:
+            xr = self.target[1][0] - self.x
+            yr = self.target[1][1] - self.y
+            if math.sqrt(xr * xr + yr * yr) < 40:
+                self.set_target(TARGET_NONE, None, game)
+                return
+        self.find_target_angle()
+        if self.turn_around(twist_speed):
+            self.move_to_angle(straight_speed, game)
+        else:
+            self.move_to_angle(turn_speed, game)
+
+    def set_target(self, target_type, coord, game=None):
         # print(f'Entity[{self.id}] found a new target of [{target_type}] is [{coord}]')
         self.target = (target_type, coord)
+        if game is None:
+            return
+        if target_type == TARGET_ATTACK:
+            game.server.send_all(f'2_{TARGET_ATTACK}_{self.id}_{self.target[1].id}')
+        elif target_type == TARGET_NONE:
+            game.server.send_all(f'2_{TARGET_NONE}_{self.id}')
+        elif target_type == TARGET_MOVE:
+            game.server.send_all(f'2_{TARGET_MOVE}_{self.id}_{coord[0]}_{coord[1]}')
 
     def find_target_angle(self):
         self.target_angle = int(
@@ -245,8 +266,7 @@ class Fighter(TwistUnit):
                     if dist < current[1]:
                         current = (spr, dist)
         if current:
-            self.set_target(TARGET_ATTACK, current[0])
-            game.server.send_all(f'2_{TARGET_ATTACK}_{self.id}_{current[0].id}')
+            self.set_target(TARGET_ATTACK, current[0], game)
             return True
         return False
 
@@ -340,23 +360,11 @@ class Archer(Fighter):
                 return
         if args[0].type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
             if self.target[0] == TARGET_MOVE:
-                if args[0].type == SERVER_EVENT_UPDATE:
-                    xr = self.target[1][0] - self.x
-                    yr = self.target[1][1] - self.y
-                    if math.sqrt(xr * xr + yr * yr) < 40:
-                        args[1].server.send_all(f'2_{TARGET_NONE}_{self.id}')
-                        self.set_target(TARGET_NONE, None)
-                        return
-                self.find_target_angle()
-                if self.turn_around(3):
-                    self.move_to_angle(1, args[1])
-                else:
-                    self.move_to_angle(0.5, args[1])
+                self.move_to_point(args[0], args[1], 1, 0.5, 3)
 
             elif self.target[0] == TARGET_ATTACK:
                 if args[0].type == SERVER_EVENT_UPDATE and not self.target[1].is_alive():
-                    args[1].server.send_all(f'2_{TARGET_NONE}_{self.id}')
-                    self.set_target(TARGET_NONE, None)
+                    self.set_target(TARGET_NONE, None, args[1])
                     return
 
                 self.find_target_angle()
@@ -399,24 +407,14 @@ class Soldier(Fighter):
         if not args:
             return
         if args[0].type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
-            if self.target[0] == TARGET_MOVE:
-                if args[0].type == SERVER_EVENT_UPDATE:
-                    xr = self.target[1][0] - self.x
-                    yr = self.target[1][1] - self.y
-                    if math.sqrt(xr * xr + yr * yr) < 40:
-                        args[1].server.send_all(f'2_{TARGET_NONE}_{self.id}')
-                        self.set_target(TARGET_NONE, None)
-                        return
-                self.find_target_angle()
-                if self.turn_around(2):
-                    self.move_to_angle(1, args[1])
-                else:
-                    self.move_to_angle(0.5, args[1])
 
-            elif self.target[0] == TARGET_ATTACK:
+            if self.target[0] == TARGET_MOVE:
+                self.move_to_point(args[0], args[1], 1.5, 1, 2)
+                return
+
+            if self.target[0] == TARGET_ATTACK:
                 if args[0].type == SERVER_EVENT_UPDATE and not self.target[1].is_alive():
-                    args[1].server.send_all(f'2_{TARGET_NONE}_{self.id}')
-                    self.set_target(TARGET_NONE, None)
+                    self.set_target(TARGET_NONE, None, args[1])
                     return
 
                 self.find_target_angle()
@@ -478,24 +476,14 @@ class Worker(Fighter):
         if not args:
             return
         if args[0].type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
+
             if self.target[0] == TARGET_MOVE:
-                if args[0].type == SERVER_EVENT_UPDATE:
-                    xr = self.target[1][0] - self.x
-                    yr = self.target[1][1] - self.y
-                    if math.sqrt(xr * xr + yr * yr) < 40:
-                        args[1].server.send_all(f'2_{TARGET_NONE}_{self.id}')
-                        self.set_target(TARGET_NONE, None)
-                        return
-                self.find_target_angle()
-                if self.turn_around():
-                    self.move_to_angle(1.5, args[1])
-                else:
-                    self.move_to_angle(1, args[1])
+                self.move_to_point(args[0], args[1], 1.5, 1)
+                return
 
             elif self.target[0] == TARGET_ATTACK:
                 if args[0].type == SERVER_EVENT_UPDATE and not self.target[1].is_alive():
-                    args[1].server.send_all(f'2_{TARGET_NONE}_{self.id}')
-                    self.set_target(TARGET_NONE, None)
+                    self.set_target(TARGET_NONE, None, args[1])
                     if self.state == STATE_FIGHT:
                         self.state = STATE_ANY_WORK
                     return
@@ -681,13 +669,11 @@ class ArcherTower(Fighter):
 
                 if args[0].type == SERVER_EVENT_UPDATE:
                     if turned:
-                        args[1].server.send_all(f'2_{TARGET_NONE}_{self.id}')
-                        self.set_target(TARGET_NONE, None)
+                        self.set_target(TARGET_NONE, None, args[1])
                         return
 
             elif self.target[0] == TARGET_ATTACK:
                 if args[0].type == SERVER_EVENT_UPDATE and not self.target[1].is_alive():
-                    args[1].server.send_all(f'2_{TARGET_NONE}_{self.id}')
                     self.set_target(TARGET_NONE, None)
                     return
 
@@ -805,24 +791,14 @@ class Dragon(Fighter):
                 self.update_image()
 
         if args[0].type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
+
             if self.target[0] == TARGET_MOVE:
-                if args[0].type == SERVER_EVENT_UPDATE:
-                    xr = self.target[1][0] - self.x
-                    yr = self.target[1][1] - self.y
-                    if math.sqrt(xr * xr + yr * yr) < 40:
-                        args[1].server.send_all(f'2_{TARGET_NONE}_{self.id}')
-                        self.set_target(TARGET_NONE, None)
-                        return
-                self.find_target_angle()
-                if self.turn_around(2):
-                    self.move_to_angle(1, args[1])
-                else:
-                    self.move_to_angle(0.5, args[1])
+                self.move_to_point(args[0], args[1], 1, 0.5)
+                return
 
             elif self.target[0] == TARGET_ATTACK:
                 if args[0].type == SERVER_EVENT_UPDATE and not self.target[1].is_alive():
-                    args[1].server.send_all(f'2_{TARGET_NONE}_{self.id}')
-                    self.set_target(TARGET_NONE, None)
+                    self.set_target(TARGET_NONE, None, args[1])
                     return
 
                 self.find_target_angle()

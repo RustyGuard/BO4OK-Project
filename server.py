@@ -256,7 +256,7 @@ class ServerGame:
                 if i.has_target:
                     self.lock.acquire()
                     if i.player_id == client.id:
-                        i.set_target(TARGET_MOVE, (x, y))
+                        i.set_target(TARGET_MOVE, (x, y), self)
                     self.lock.release()
                     return True
         return False
@@ -313,11 +313,8 @@ def main(screen):
             game.place(UNIT_TYPES[int(args[0])], int(args[1]), int(args[2]), client.id)
         elif cmd == '2':
             id, x, y = list(map(int, args))
+            game.retarget(id, x, y, client)
             print('Retarget:', id, x, y)
-            if game.retarget(id, x, y, client):
-                server.send_all(f'2_{TARGET_MOVE}_{id}_{x}_{y}')
-            else:
-                print(f'Entity[{id}] has not got a "target"')
         elif cmd == '3':
             en = game.find_with_id(int(args[0]))
             if en is not None:
