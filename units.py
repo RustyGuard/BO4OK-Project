@@ -539,7 +539,7 @@ class Worker(Fighter):
         if self.state == STATE_DIG:
             return type(enemy) == Mine
         # elif self.state == STATE_CHOP:
-            # return type(enemy) == Tree
+        # return type(enemy) == Tree
         elif self.state == STATE_FIGHT:
             return super().is_valid_enemy(enemy)
 
@@ -631,6 +631,68 @@ class Casern(ProductingBuild):
         super().__init__(x, y, id, player_id, 5, [Archer, Soldier])
 
 
+class ArcherTower(Fighter):
+    cost = (1.0, 1.0)
+    placeable = True
+    name = 'Башня'
+    images = []
+    for i in range(10):
+        images.append(pygame.image.load(f'sprite-games/building/turret/{team_id[i]}.png'))
+    image = images[0]
+    required_level = 1
+
+    def __init__(self, x, y, id, player_id):
+        self.image = ArcherTower.images[player_id]
+        self.archer_image = Archer.images[player_id]
+
+        super().__init__(x, y, id, player_id, ArcherTower.images[player_id])
+
+    def update_image(self):
+
+        rotated_archer = pygame.transform.rotate(self.archer_image, -self.angle)
+        self.image.blit(rotated_archer, (13, 13))
+
+    def update(self, *args):
+        if not args:
+            return
+        if not self.is_alive():
+            if args[0].type == SERVER_EVENT_UPDATE:
+                args[1].kill(self)
+                return
+        if args[0].type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
+            if self.target[0] == TARGET_MOVE:
+                if args[0].type == SERVER_EVENT_UPDATE:
+                    xr = self.target[1][0] - self.x
+                    yr = self.target[1][1] - self.y
+                    if math.sqrt(xr * xr + yr * yr) < 40:
+                        args[1].server.send_all(f'2_{TARGET_NONE}_{self.id}')
+                        self.set_target(TARGET_NONE, None)
+                        return
+                self.find_target_angle()
+
+            elif self.target[0] == TARGET_ATTACK:
+                if args[0].type == SERVER_EVENT_UPDATE and not self.target[1].is_alive():
+                    args[1].server.send_all(f'2_{TARGET_NONE}_{self.id}')
+                    self.set_target(TARGET_NONE, None)
+                    return
+
+                self.find_target_angle()
+                if args[0].type == SERVER_EVENT_UPDATE:
+                    self.update_delay()
+                near = self.close_to_attack(1000)
+                if self.turn_around(3):
+                    if near:
+                        if args[0].type == SERVER_EVENT_UPDATE:
+                            self.throw_projectile(args[1], Arrow)
+
+            elif self.target[0] == TARGET_NONE:
+                if args[0].type == SERVER_EVENT_UPDATE:
+                    self.find_new_target(args[1])
+
+        elif args[0].type in [CLIENT_EVENT_SEC, SERVER_EVENT_SEC]:
+            pass
+
+
 UNIT_TYPES = {
     0: Soldier,
     1: Mine,
@@ -638,7 +700,8 @@ UNIT_TYPES = {
     3: Arrow,
     4: Casern,
     5: Fortress,
-    6: Worker
+    6: Worker,
+    7: ArcherTower
 }
 
 
