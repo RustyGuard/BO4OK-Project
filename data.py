@@ -6,7 +6,7 @@ cursor = pygame.image.load('sprite-games/menu/cursor.png')
 FPS = 60
 clock = pygame.time.Clock()
 nicname = ""
-
+instance = None
 
 class Button(pygame.sprite.Sprite):
     def __init__(self, group, name, image, way):
@@ -24,6 +24,15 @@ class Button(pygame.sprite.Sprite):
         else:
             if self.image == self.anim:
                 self.image = self.stok_image
+
+
+def read(cmd, args, client):
+    print(cmd, args, client)
+
+
+def connect_player(client):
+    instance.game.add_player(client)
+    print(client)
 
 
 def menu(screen):
@@ -168,6 +177,7 @@ def ip(screen):
 
 def play(screen):
     global cursor, FPS, clock, nicname
+    instance = None
     background = pygame.image.load('sprite-games/play/Основа.png')
     screen.blit(background, (0, 0))
     FPS = 60
