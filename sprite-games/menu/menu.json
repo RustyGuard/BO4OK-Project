@@ -1,9 +1,10 @@
 {
   "ready": {
     "misc": {
-      "shape": "ellipse",
+      "shape": "rounded_rectangle",
       "text_horiz_alignment": "left",
-      "text_vert_alignment": "top"
+      "text_vert_alignment": "top",
+      "shape_corner_radius": "5"
     },
     "images": {
       "normal_image": {
