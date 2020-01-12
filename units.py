@@ -508,17 +508,18 @@ class Worker(Fighter):
                                 if self.single_attack(args[1]):
                                     self.money += MONEY_PER_PUNCH
                                     if self.is_full():
+                                        print("I'm full")
                                         self.find_new_target(args[1], 3000)
                                         return
                             elif type(self.target[1]) == Tree:
                                 if self.single_attack(args[1]):
                                     self.wood += WOOD_PER_PUNCH
                                     if self.is_full():
+                                        print("I'm full")
                                         self.find_new_target(args[1], 3000)
                                         return
                             elif type(self.target[1]) == Fortress and self.player_id == self.target[1].player_id:
-                                args[1].players[self.player_id].money += self.money
-                                args[1].players[self.player_id].wood += self.wood
+                                args[1].give_resources(self.player_id, (self.money, self.wood))
                                 self.money = 0
                                 self.wood = 0
                                 self.find_new_target(args[1], 3000)
