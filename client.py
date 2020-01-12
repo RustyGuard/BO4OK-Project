@@ -401,9 +401,9 @@ class ClientWait:
             # 10 - Tell player count [curr, max]
             print(cmd, args)
             if cmd == '1':
+                print('Args', args)
                 type, x, y, id, id_player = int(args[0]), int(args[1]), int(args[2]), int(args[3]), int(args[4])
                 game.addEntity(type, x, y, id, id_player, camera, args[5::])
-                return
             elif cmd == '2':
                 if args[0] == str(TARGET_MOVE):
                     id, x, y = int(args[1]), int(args[2]), int(args[3])

@@ -342,8 +342,10 @@ def main(screen):
         game.remove_player(client)
 
     def update_players_info():
+        game.lock.acquire()
         for pl in game.players.values():
             pl.client.send(f'3_1_{pl.money}_{pl.wood}')
+        game.lock.release()
 
     with open('server_setting.txt') as settings:
         server_ip = settings.readline()

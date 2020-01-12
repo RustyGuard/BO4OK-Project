@@ -445,6 +445,9 @@ class Soldier(Fighter):
                 args[1].kill(self)
                 return
 
+    def is_valid_enemy(self, enemy):
+        return super().is_valid_enemy(enemy) and type(enemy) != Dragon
+
 
 class Worker(Fighter):
     cost = (5.0, 0.0)
@@ -553,7 +556,7 @@ class Worker(Fighter):
         elif self.state == STATE_CHOP:
             return type(enemy) == Tree
         elif self.state == STATE_FIGHT:
-            return super().is_valid_enemy(enemy)
+            return super().is_valid_enemy(enemy) and type(enemy) != Dragon
 
 
 class ProductingBuild(Unit):
@@ -719,6 +722,51 @@ class Tree(Unit):
                 args[1].kill(self)
 
 
+class FireProjectile(TwistUnit):
+    images = []
+    for i in range(1, 7):
+        images.append(pygame.image.load(f'sprite-games/warrior/dragon/Flame/{i}.png'))
+    damage = 1
+    name = 'Пламень'
+    placeable = False
+
+    def __init__(self, x, y, id, player_id, angle):
+        self.time = 0
+        self.current_state = 0
+        self.set_angle(int(angle))
+        super().__init__(x, y, id, player_id, None)
+        self.is_projectile = True
+        self.is_building = False
+        self.angle = int(angle)
+
+    def update(self, *args):
+        if args[0].type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
+            self.time += 1
+            if self.time >= 15:
+                self.time = 0
+                self.current_state += 1
+                if args[0].type == CLIENT_EVENT_UPDATE:
+                    self.current_state = min(5, self.current_state)
+                    self.update_image()
+                elif args[0].type == SERVER_EVENT_UPDATE:
+                    if self.current_state == 6:
+                        args[1].kill(self)
+                        print('Dead')
+                        return
+                    for spr in args[1].get_intersect(self):
+                        if (spr != self) and (not spr.is_projectile) \
+                                and (spr.player_id not in [self.player_id, -1]) and type(spr) != Dragon:
+                            spr.take_damage(FireProjectile.damage, args[1])
+
+    def get_args(self):
+        print(self.angle)
+        return f'_{self.angle}'
+
+    def update_image(self):
+        rotated_image = pygame.transform.rotate(FireProjectile.images[self.current_state], -self.angle)
+        self.image = rotated_image
+
+
 class Dragon(Fighter):
     cost = (5.0, 0.0)
     name = 'Дракон'
@@ -740,6 +788,7 @@ class Dragon(Fighter):
 
         super().__init__(x, y, id, player_id, Soldier.images[player_id])
         self.update_image()
+        self.delay = 45 * 10
 
     def update(self, *args):
         if not args:
@@ -783,7 +832,7 @@ class Dragon(Fighter):
                 if self.turn_around(2):
                     if near:
                         if args[0].type == SERVER_EVENT_UPDATE:
-                            self.single_attack(args[1])
+                            self.throw_projectile(args[1], FireProjectile)
                     else:
                         self.move_to_angle(1, args[1])
                 elif not near:
@@ -792,10 +841,6 @@ class Dragon(Fighter):
             elif self.target[0] == TARGET_NONE:
                 if args[0].type == SERVER_EVENT_UPDATE:
                     self.find_new_target(args[1])
-
-        elif args[0].type in [CLIENT_EVENT_SEC, SERVER_EVENT_SEC]:
-            pass
-            # print('En', self.id, self.x, self.y)
 
     def update_image(self):
         rotated_image = pygame.transform.rotate(self.anim_tuple[self.anim_switch], -self.angle)
@@ -812,7 +857,8 @@ UNIT_TYPES = {
     6: Worker,
     7: ArcherTower,
     8: Tree,
-    9: Dragon
+    9: Dragon,
+    10: FireProjectile
 }
 
 
