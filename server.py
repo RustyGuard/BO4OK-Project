@@ -9,7 +9,7 @@ from pygame import sprite
 from pygame.sprite import Group, Sprite
 from constants import SERVER_EVENT_SEC, SERVER_EVENT_UPDATE, SERVER_EVENT_SYNC, SCREEN_WIDTH, SCREEN_HEIGHT
 
-from units import get_class_id, UNIT_TYPES, TARGET_MOVE, Fortress, Mine, Worker, Tree
+from units import get_class_id, UNIT_TYPES, TARGET_MOVE, Fortress, Mine, Worker, Tree, UncompletedBuilding
 
 NEED_PLAYERS = 1
 MAX_PLAYERS = 10
@@ -244,6 +244,30 @@ class ServerGame:
         self.lock.release()
         return building
 
+    def place_building(self, build_class, x, y, player_id):
+        self.lock.acquire()
+        if build_class.required_level <= Fortress.get_player_level(player_id):
+            if self.has_enought(player_id, build_class.cost):
+                building = UncompletedBuilding(x, y, get_curr_id(), player_id, get_class_id(build_class))
+                if not sprite.spritecollideany(building, self.all_sprites):
+                    self.take_resources(player_id, build_class.cost)
+                    self.server.send_all(
+                        f'1_{get_class_id(UncompletedBuilding)}_{x}_{y}_{building.id}_{player_id}{building.get_args()}')
+                    self.all_sprites.add(building)
+                    if building.is_building:
+                        self.buildings.add(building)
+                else:
+                    print(f'No place {build_class}')
+                    building = None
+            else:
+                print(f'No money {player_id} {build_class} {build_class.cost}')
+                building = None
+        else:
+            print(f'No fortress level', build_class.required_level)
+            building = None
+        self.lock.release()
+        return building
+
     def get_intersect(self, spr):
         return pygame.sprite.spritecollide(spr, self.all_sprites, False)
 
@@ -310,7 +334,7 @@ def main(screen):
     def read(cmd, args, client):
         print(cmd, args)
         if cmd == '1':
-            game.place(UNIT_TYPES[int(args[0])], int(args[1]), int(args[2]), client.id)
+            game.place_building(UNIT_TYPES[int(args[0])], int(args[1]), int(args[2]), client.id)
         elif cmd == '2':
             id, x, y = list(map(int, args))
             game.retarget(id, x, y, client)

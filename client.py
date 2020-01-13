@@ -12,8 +12,8 @@ from pygame_gui.elements import UIButton, UILabel
 
 from constants import CLIENT_EVENT_SEC, CLIENT_EVENT_UPDATE, COLOR_LIST, CAMERA_MIN_SPEED, CAMERA_MAX_SPEED, \
     CAMERA_STEP_FASTER, CAMERA_STEP_SLOWER, SCREEN_WIDTH
-from units import Mine, Soldier, get_class_id, UNIT_TYPES, TARGET_MOVE, TARGET_ATTACK, TARGET_NONE, Archer, Arrow, \
-    ProductingBuild, Worker, STATE_DIG, STATE_FIGHT, STATE_BUILD, STATE_CHOP, STATE_ANY_WORK
+from units import get_class_id, UNIT_TYPES, TARGET_MOVE, TARGET_ATTACK, TARGET_NONE, Arrow, \
+    ProductingBuild, Worker, STATE_DIG, STATE_FIGHT, STATE_BUILD, STATE_CHOP, STATE_ANY_WORK, UncompletedBuilding
 
 
 class Client:
@@ -399,7 +399,7 @@ class ClientWait:
             # 2 - Retarget entity of [type] at [x, y] with [id]
             # 3 - Update Player Info
             # 10 - Tell player count [curr, max]
-            # print(cmd, args)
+            print(cmd, args)
             if cmd == '1':
                 type, x, y, id, id_player = int(args[0]), int(args[1]), int(args[2]), int(args[3]), int(args[4])
                 game.addEntity(type, x, y, id, id_player, camera, args[5::])
@@ -572,10 +572,11 @@ class ClientWait:
             for spr in game.sprites:
                 if spr.is_projectile or spr.health == spr.max_health:
                     continue
+                colors = ['gray', 'orange'] if type(spr) == UncompletedBuilding else ['red', 'green']
                 rect = Rect(spr.rect.left, spr.rect.top - 5, spr.rect.width, 5)
-                pygame.draw.rect(screen, Color('red'), rect)
+                pygame.draw.rect(screen, Color(colors[0]), rect)
                 rect.width = rect.width * spr.health / spr.max_health
-                pygame.draw.rect(screen, Color('green'), rect)
+                pygame.draw.rect(screen, Color(colors[1]), rect)
                 rect.width = spr.rect.width
                 pygame.draw.rect(screen, Color('black'), rect, 1)
 

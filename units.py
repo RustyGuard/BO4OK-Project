@@ -292,9 +292,9 @@ class Fighter(TwistUnit):
                 self.add_angle(speed)
         return False
 
-    def single_attack(self, game):
+    def single_attack(self, game, damage=None):
         if self.delay <= 0:
-            self.target[1].take_damage(self.damage, game)
+            self.target[1].take_damage(self.damage if damage is None else damage, game)
             self.delay += self.delay_time
             return True
         return False
@@ -501,16 +501,20 @@ class Worker(Fighter):
                                 if self.single_attack(args[1]):
                                     self.money += MONEY_PER_PUNCH
                                     if self.is_full():
-                                        print("I'm full")
                                         self.find_new_target(args[1], 3000)
                                         return
                             elif type(self.target[1]) == Tree:
                                 if self.single_attack(args[1]):
                                     self.wood += WOOD_PER_PUNCH
                                     if self.is_full():
-                                        print("I'm full")
                                         self.find_new_target(args[1], 3000)
                                         return
+                            elif type(self.target[1]) == UncompletedBuilding:
+                                if self.single_attack(args[1], -5):
+                                    if self.target[1].health >= self.target[1].max_health:
+                                        if not self.find_new_target(args[1], 3000):
+                                            self.set_target(TARGET_NONE, None)
+                                            return
                             elif type(self.target[1]) == Fortress and self.player_id == self.target[1].player_id:
                                 args[1].give_resources(self.player_id, (self.money, self.wood))
                                 self.money = 0
@@ -540,11 +544,13 @@ class Worker(Fighter):
         if self.is_full():
             return type(enemy) == Fortress and enemy.player_id == self.player_id
         if self.state == STATE_ANY_WORK:
-            return type(enemy) in [Mine, Tree]
+            return type(enemy) in [Mine, Tree, UncompletedBuilding]
         if self.state == STATE_DIG:
             return type(enemy) == Mine
         elif self.state == STATE_CHOP:
             return type(enemy) == Tree
+        elif self.state == STATE_BUILD:
+            return type(enemy) == UncompletedBuilding
         elif self.state == STATE_FIGHT:
             return super().is_valid_enemy(enemy) and type(enemy) != Dragon
 
@@ -652,6 +658,7 @@ class ArcherTower(Fighter):
 
         super().__init__(x, y, id, player_id, ArcherTower.images[player_id])
         self.update_image()
+        self.is_building = True
 
     def update_image(self):
         self.image = Surface(self.tower_image.get_rect().size, pygame.SRCALPHA)
@@ -826,6 +833,41 @@ class Dragon(Fighter):
         self.image = rotated_image
 
 
+class UncompletedBuilding(Unit):
+    placeable = False
+
+    def __init__(self, x, y, id, player_id, clazz_id):
+        self.clazz = UNIT_TYPES[int(clazz_id)]
+        self.image = UNIT_TYPES[int(clazz_id)].image
+        super().__init__(x, y, id, player_id)
+        self.health = 1
+        self.max_health = 100
+        self.completed = False
+
+    def update(self, *args):
+        if args is None:
+            return
+        if args[0].type == SERVER_EVENT_UPDATE:
+            if not self.is_alive():
+                args[1].kill(self)
+                return
+            if self.health >= self.max_health:
+                args[1].place(self.clazz, int(self.x), int(self.y), self.player_id,
+                              ignore_space=True, ignore_money=False, ignore_fort_level=True)
+                self.completed = True
+                print('Ready')
+
+    def get_args(self):
+        return f'_{get_class_id(self.clazz)}'
+
+    def take_damage(self, dmg, game):
+        if not self.completed:
+            super().take_damage(dmg, game)
+
+    def is_alive(self):
+        return super().is_alive() and not self.completed
+
+
 UNIT_TYPES = {
     0: Soldier,
     1: Mine,
@@ -837,7 +879,8 @@ UNIT_TYPES = {
     7: ArcherTower,
     8: Tree,
     9: Dragon,
-    10: FireProjectile
+    10: FireProjectile,
+    11: UncompletedBuilding
 }
 
 
