@@ -1,5 +1,5 @@
 import math
-from random import randint
+from random import randint, choice
 
 import pygame
 from pygame import Color
@@ -312,10 +312,10 @@ class Fighter(TwistUnit):
             return True
         return False
 
-    def throw_projectile(self, game, clazz):
+    def throw_projectile(self, game, clazz, spread=0):
         if self.delay <= 0:
             self.delay += self.delay_time
-            game.place(clazz, int(self.x), int(self.y), self.player_id, int(self.angle),
+            game.place(clazz, int(self.x), int(self.y), self.player_id, int(self.angle + choice([-spread, 0, spread])),
                        ignore_space=True, ignore_money=True, ignore_fort_level=True)
 
     def mass_attack(self, game):
@@ -668,7 +668,8 @@ class Casern(ProductingBuild):
 
     def __init__(self, x, y, id, player_id):
         self.image = Casern.images[player_id]
-        super().__init__(x, y, id, player_id, 5, [Archer, Soldier, Dragon])  # Драконы здесь временно
+        super().__init__(x, y, id, player_id, 5,
+                         [Archer, Soldier, Dragon, Ballista])  # Драконы и баллисты здесь временно
 
 
 class ArcherTower(Fighter):
@@ -897,6 +898,59 @@ class UncompletedBuilding(Unit):
         return super().is_alive() and not self.completed
 
 
+class Ballista(Fighter):
+    cost = (1.0, 1.0)
+    placeable = False
+    name = 'Баллиста'
+    images = []
+    for i in range(10):
+        images.append(pygame.image.load(f'sprite-games/warrior/ballista/{team_id[i]}.png'))
+    image = images[0]
+    required_level = 1  # Will be removed
+
+    def __init__(self, x, y, id, player_id):
+        self.image = Ballista.images[player_id]
+        self.delay_time = 30
+        super().__init__(x, y, id, player_id, Archer.images[player_id])
+
+    def update(self, *args):
+        if not args:
+            return
+        if not self.is_alive():
+            if args[0].type == SERVER_EVENT_UPDATE:
+                args[1].kill(self)
+                return
+        if args[0].type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
+            if self.target[0] == TARGET_MOVE:
+                self.move_to_point(args[0], args[1], 1, 0.5, 3)
+                # у лучника эти аргументы больше,думаю логично что баллиста более неповоротливая
+
+            elif self.target[0] == TARGET_ATTACK:
+                if args[0].type == SERVER_EVENT_UPDATE and not self.target[1].is_alive():
+                    self.set_target(TARGET_NONE, None, args[1])
+                    return
+
+                self.find_target_angle()
+                if args[0].type == SERVER_EVENT_UPDATE:
+                    self.update_delay()
+                near = self.close_to_attack(1000)
+                if self.turn_around(3):
+                    if near:
+                        if args[0].type == SERVER_EVENT_UPDATE:
+                            self.throw_projectile(args[1], Arrow, 15)  # Хз какой разброс ставить
+                    else:
+                        self.move_to_angle(1, args[1])
+                elif not near:
+                    self.move_to_angle(0.5, args[1])
+
+            elif self.target[0] == TARGET_NONE:
+                if args[0].type == SERVER_EVENT_UPDATE:
+                    self.find_new_target(args[1])
+
+        elif args[0].type in [CLIENT_EVENT_SEC, SERVER_EVENT_SEC]:
+            pass
+
+
 UNIT_TYPES = {
     0: Soldier,
     1: Mine,
@@ -909,7 +963,8 @@ UNIT_TYPES = {
     8: Tree,
     9: Dragon,
     10: FireProjectile,
-    11: UncompletedBuilding
+    11: UncompletedBuilding,
+    12: Ballista
 }
 
 
