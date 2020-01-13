@@ -282,16 +282,24 @@ class ProductManager:
     def set_building(self, spr):
         self.manager.clear_and_reset()
         self.spr = spr
-        for i, clazz in enumerate(spr.valid_types):
-            r1 = Rect(SCREEN_WIDTH - 65, 45 + 75 * i, 50, 50)
+        max_i = -1
+        if isinstance(type(spr), ProductingBuild):
+            for i, clazz in enumerate(spr.valid_types):
+                r1 = Rect(SCREEN_WIDTH - 65, 45 + 75 * i, 50, 50)
+                b = UIButton(r1, '', self.manager,
+                             object_id=f'product_{get_class_id(clazz)}')
+                r2 = Rect(0, 0, 75, 25)
+                r2.centery = r1.centery
+                r2.right = r1.left
+                UILabel(r2, clazz.name, self.manager)
+                b.build_id = spr.id
+                b.class_id = get_class_id(clazz)
+                max_i = i
+        if spr.can_upgraded:
+            r1 = Rect(SCREEN_WIDTH - 65, 45 + 75 * (max_i + 1), 50, 50)
             b = UIButton(r1, '', self.manager,
-                         object_id=f'product_{get_class_id(clazz)}')
-            r2 = Rect(0, 0, 75, 25)
-            r2.centery = r1.centery
-            r2.right = r1.left
-            UILabel(r2, clazz.name, self.manager)
+                         object_id=f'upgrade_{get_class_id(type(spr))}')
             b.build_id = spr.id
-            b.class_id = get_class_id(clazz)
 
     def process_events(self, event):
         self.manager.process_events(event)
@@ -440,6 +448,9 @@ class ClientWait:
             elif cmd == '6':
                 camera.set_pos(int(args[0]), int(args[1]))
                 print(camera.off_x, camera.off_y)
+            elif cmd == '7':
+                en = game.find_with_id(int(args[0]))
+                en.level = int(args[1])
             elif cmd == '9':
                 game.lock.acquire()
                 en = game.find_with_id(int(args[3]))
@@ -464,6 +475,7 @@ class ClientWait:
                 print('Taken message:', cmd, args)
         # background = pygame.image.load('карта.png')
         font = pygame.font.Font(None, 50)
+        small_font = pygame.font.Font(None, 25)
         client.setEventCallback(listen)
         clock = pygame.time.Clock()
         running = True
@@ -518,7 +530,7 @@ class ClientWait:
                     collided = False
                     for spr in game.buildings:
                         if spr.player_id == game.info.id and spr.rect.collidepoint(event.pos) \
-                                and issubclass(type(spr), ProductingBuild):
+                                and (issubclass(type(spr), ProductingBuild) or spr.can_upgraded):
                             managers['product'].set_building(spr)
                             current_manager = 'product'
                             collided = True
@@ -541,6 +553,8 @@ class ClientWait:
                             current_manager = 'build'
                         elif event.ui_element == retarget_button:
                             current_manager = 'retarget'
+                        elif event.ui_object_id.startswith('upgrade'):
+                            client.send(f'5_{event.ui_element.build_id}')
 
                 if event.type == pygame.QUIT:
                     running = False
@@ -570,6 +584,10 @@ class ClientWait:
             # screen.blit(background, (camera.off_x, camera.off_y))
             game.drawSprites(screen)
             for spr in game.sprites:
+                if spr.can_upgraded:
+                    text = small_font.render(f'{spr.level} lvl.', 1, (255, 125, 0))
+                    screen.blit(text, spr.rect.topleft)
+
                 if spr.is_projectile or spr.health == spr.max_health:
                     continue
                 colors = ['gray', 'orange'] if type(spr) == UncompletedBuilding else ['red', 'green']

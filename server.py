@@ -348,6 +348,14 @@ def main(screen):
             if type(en) == Worker and en.player_id == client.id:
                 en.state = int(args[1])
                 en.find_new_target(game, 3000)
+        elif cmd == '5':
+            en = game.find_with_id(int(args[0]))
+            if en.can_upgraded and en.can_be_upgraded(game):
+                cost = en.level_cost(game)
+                if game.has_enought(client.id, cost):
+                    game.take_resources(client.id, cost)
+                    en.next_level(game)
+                    server.send_all(f'7_{en.id}_{en.level}')
         else:
             print('Invalid command')
 

@@ -44,6 +44,8 @@ class Unit(Sprite):
         self.live = True
         self.is_building = True
         self.is_projectile = False
+        self.can_upgraded = False
+        self.level = -1
         super().__init__()
 
     def is_alive(self):
@@ -99,6 +101,7 @@ class Unit(Sprite):
         arr.append(str(self.id))
         arr.append(str(self.player_id))
         arr.append(str(self.health))
+        arr.append(str(self.level))
         return arr
 
     def set_update_args(self, arr, game):
@@ -108,6 +111,7 @@ class Unit(Sprite):
         self.id = int(arr.pop(0))
         self.player_id = int(arr.pop(0))
         self.health = float(arr.pop(0))
+        self.level = int(arr.pop(0))
 
     def send_updated(self, game):
         game.server.send_all('9_' + '_'.join(self.get_update_args([])))
@@ -115,6 +119,15 @@ class Unit(Sprite):
     def take_damage(self, dmg, game):
         self.health -= dmg
         game.server.send_all(f'5_{self.id}_{self.health}_{self.max_health}')
+
+    def next_level(self, game):
+        raise Exception('Not supported')
+
+    def level_cost(self, game):
+        raise Exception('Not supported')
+
+    def can_be_upgraded(self, game):
+        return False
 
 
 class TwistUnit(Unit):
@@ -589,7 +602,8 @@ class Fortress(ProductingBuild):
     name = 'Крепость'
     placeable = True
     cost = (1.0, 0.0)
-    levels_info = [(150.0, True, False, False), (200.0, True, True, False), (300.0, True, True, True)]
+
+    level_costs = [(50.0, 15.0), (20.0, 30.0)]  # Поменять
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/building/fortress/{team_id[i]}.png'))
@@ -614,9 +628,9 @@ class Fortress(ProductingBuild):
 
     def __init__(self, x, y, id, player_id):
         self.image = Fortress.images[player_id]
-        self.level = 1
-        self.workers_tray = 0
         super().__init__(x, y, id, player_id, 2, [Worker])
+        self.level = 1
+        self.can_upgraded = True
         Fortress.instances.append(self)
 
     def update(self, *args):
@@ -625,6 +639,21 @@ class Fortress(ProductingBuild):
             if args[0].type == SERVER_EVENT_UPDATE:
                 args[1].kill(self)
                 return
+
+    def next_level(self, game):
+        if self.level == 3:
+            print('Already on max level!')
+            return
+        self.level += 1
+
+    def level_cost(self, game):
+        if self.level == 3:
+            print('Max level!')
+            return None
+        return Fortress.level_costs[self.level - 1]
+
+    def can_be_upgraded(self, game):
+        return 3 > self.level > 0
 
 
 class Casern(ProductingBuild):
@@ -650,7 +679,7 @@ class ArcherTower(Fighter):
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/building/turret/{team_id[i]}.png'))
     image = images[0]
-    required_level = 1
+    required_level = 2  # Поменять этот пример
 
     def __init__(self, x, y, id, player_id):
         self.archer_image = Archer.images[player_id]
