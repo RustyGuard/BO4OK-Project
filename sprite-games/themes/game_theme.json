@@ -39,6 +39,36 @@
       }
     }
   },
+  "place_14": {
+    "misc": {
+      "shape": "ellipse"
+    },
+    "images": {
+      "normal_image": {
+        "path": "sprite-games/building/dragonlair/icon.png"
+      }
+    }
+  },
+  "place_15": {
+    "misc": {
+      "shape": "ellipse"
+    },
+    "images": {
+      "normal_image": {
+        "path": "sprite-games/building/workshop/icon.png"
+      }
+    }
+  },
+  "place_7": {
+    "misc": {
+      "shape": "ellipse"
+    },
+    "images": {
+      "normal_image": {
+        "path": "sprite-games/building/turret/icon.png"
+      }
+    }
+  },
   "product_0": {
     "misc": {
       "shape": "ellipse"
@@ -66,6 +96,26 @@
     "images": {
       "normal_image": {
         "path": "sprite-games/warrior/working/black.png"
+      }
+    }
+  },
+  "product_12": {
+    "misc": {
+      "shape": "ellipse"
+    },
+    "images": {
+      "normal_image": {
+        "path": "sprite-games/warrior/ballista/icon.png"
+      }
+    }
+  },
+  "product_9": {
+    "misc": {
+      "shape": "ellipse"
+    },
+    "images": {
+      "normal_image": {
+        "path": "sprite-games/warrior/dragon/icon.png"
       }
     }
   }
