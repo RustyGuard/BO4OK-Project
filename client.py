@@ -283,7 +283,7 @@ class ProductManager:
         self.manager.clear_and_reset()
         self.spr = spr
         max_i = -1
-        if isinstance(type(spr), ProductingBuild):
+        if issubclass(type(spr), ProductingBuild):
             for i, clazz in enumerate(spr.valid_types):
                 r1 = Rect(SCREEN_WIDTH - 65, 45 + 75 * i, 50, 50)
                 b = UIButton(r1, '', self.manager,
@@ -560,10 +560,9 @@ class ClientWait:
                     running = False
                 if event.type == pygame.KEYUP:
                     if event.key == pygame.K_ESCAPE:
-                        if current_manager == 'main':
-                            running = False
-                        else:
-                            current_manager = 'main'
+                        current_manager = 'main'
+                    elif event.key == pygame.K_F12:
+                        running = False
 
                 if event.type in [CLIENT_EVENT_UPDATE, CLIENT_EVENT_SEC]:
                     if event.type == CLIENT_EVENT_UPDATE:

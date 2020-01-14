@@ -225,6 +225,43 @@ class Arrow(TwistUnit):
         self.update_rect()
 
 
+class BallistaArrow(TwistUnit):
+    image = pygame.image.load(f'sprite-games/warrior/archer/arrow.png')
+    damage = 5
+    name = 'Arrow'
+    placeable = False
+
+    def __init__(self, x, y, id, player_id, angle):
+        super().__init__(x, y, id, player_id, Arrow.image)
+        self.set_angle(int(angle))
+        self.is_projectile = True
+        self.is_building = False
+        self.time = 1200
+
+    def update(self, *args):
+        if args[0].type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
+            self.move_to_angle(3, args[1])
+            if args[0].type == SERVER_EVENT_UPDATE:
+                self.time -= 1
+                if self.time <= 0:
+                    args[1].kill(self)
+                for spr in args[1].get_intersect(self):
+                    if spr.player_id != -1 and spr != self and spr.player_id != self.player_id and not spr.is_projectile:
+                        spr.take_damage(Arrow.damage, args[1])
+                        args[1].kill(self)
+                        return
+
+    def get_args(self):
+        return f'_{self.angle}'
+
+    def move(self, x, y, game):
+        if x != 0:
+            self.x += x
+        if y != 0:
+            self.y += y
+        self.update_rect()
+
+
 class Fighter(TwistUnit):
     def __init__(self, x, y, id, player_id, default_image):
         super().__init__(x, y, id, player_id, default_image)
@@ -911,7 +948,7 @@ class Ballista(Fighter):
     def __init__(self, x, y, id, player_id):
         self.image = Ballista.images[player_id]
         self.delay_time = 30
-        super().__init__(x, y, id, player_id, Archer.images[player_id])
+        super().__init__(x, y, id, player_id, Ballista.images[player_id])
 
     def update(self, *args):
         if not args:
