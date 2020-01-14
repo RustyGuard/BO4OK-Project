@@ -3,7 +3,6 @@ import data
 
 pygame.init()
 pygame.mouse.set_visible(False)
-cursor = pygame.image.load('sprite-games/menu/cursor.png')
 
 pygame.mixer.init()
 pygame.mixer.music.load('3.mp3')
