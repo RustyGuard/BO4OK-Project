@@ -713,7 +713,39 @@ class Casern(ProductingBuild):
     def __init__(self, x, y, id, player_id):
         self.image = Casern.images[player_id]
         super().__init__(x, y, id, player_id, 5,
-                         [Archer, Soldier, Dragon, Ballista])  # Драконы и баллисты здесь временно
+                         [Archer, Soldier])
+
+
+class Workshop(ProductingBuild):
+    placeable = True
+    name = 'Мастерская'
+    cost = (1.0, 0.0)
+    images = []
+    for i in range(10):
+        images.append(pygame.image.load(f'sprite-games/building/workshop/{team_id[i]}.png'))
+    image = images[0]
+    required_level = 1
+
+    def __init__(self, x, y, id, player_id):
+        self.image = Workshop.images[player_id]
+        super().__init__(x, y, id, player_id, 5,
+                         [Ballista])
+
+
+class DragonsLair(ProductingBuild):
+    placeable = True
+    name = 'Логово дракона'
+    cost = (1.0, 0.0)
+    images = []
+    for i in range(10):
+        images.append(pygame.image.load(f'sprite-games/building/Dragon\'s lair/{team_id[i]}.png'))
+    image = images[0]
+    required_level = 1
+
+    def __init__(self, x, y, id, player_id):
+        self.image = DragonsLair.images[player_id]
+        super().__init__(x, y, id, player_id, 5,
+                         [Dragon])
 
 
 class ArcherTower(Fighter):
@@ -1006,7 +1038,9 @@ UNIT_TYPES = {
     10: FireProjectile,
     11: UncompletedBuilding,
     12: Ballista,
-    13: BallistaArrow
+    13: BallistaArrow,
+    14: Workshop,
+    15: DragonsLair
 }
 
 
