@@ -601,7 +601,7 @@ class Worker(Fighter):
         if self.is_full():
             return type(enemy) == Fortress and enemy.player_id == self.player_id
         if self.state == STATE_ANY_WORK:
-            return type(enemy) in [Mine, Tree, UncompletedBuilding]
+            return type(enemy) in [Mine, Tree, UncompletedBuilding] and enemy.player_id in [-1, self.player_id]
         if self.state == STATE_DIG:
             return type(enemy) == Mine
         elif self.state == STATE_CHOP:

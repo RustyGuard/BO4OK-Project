@@ -167,7 +167,10 @@ class SelectArea:
         self.y = 0
         self.width = 0
         self.height = 0
+        self.selected = []
+        self.saved = [[] for _ in range(10)]
         self.active = False
+        self.dragged = False
         self.game = game
         self.camera = camera
         self.client = client
@@ -181,19 +184,25 @@ class SelectArea:
     def mouse_moved(self, x, y):
         self.width += x
         self.height += y
+        self.dragged = True
 
     def clear(self):
         self.width = 0
         self.height = 0
         self.active = False
+        self.selected.clear()
+        self.dragged = False
 
     def draw_ui(self, screen):
         if self.width != 0 and self.height != 0:
             pygame.draw.rect(screen, COLOR_LIST[self.game.info.id], (self.x, self.y, self.width, self.height), 2)
         if self.active:
             self.manager.draw_ui(screen)
+        for spr in self.selected:
+            if spr is not None:
+                pygame.draw.rect(screen, Color('blue'), spr.rect, 2)
 
-    def find_intersect(self, group):
+    def find_intersect(self):
         test = pygame.sprite.Sprite()
         if self.width < 0:
             self.width = -self.width
@@ -202,41 +211,67 @@ class SelectArea:
             self.height = -self.height
             self.y -= self.height
         test.rect = pygame.Rect(self.x, self.y, self.width, self.height)
-        return pygame.sprite.spritecollide(test, group, False)
+        return pygame.sprite.spritecollide(test, self.game.sprites, False)
 
     def process_events(self, event):
+
         if self.active:
             self.manager.process_events(event)
 
+        if event.type == pygame.KEYUP:
+            fs = [pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5, pygame.K_6, pygame.K_7, pygame.K_8, pygame.K_9, pygame.K_0]
+            if event.key in fs:
+                index = fs.index(event.key)
+                mods = pygame.key.get_mods()
+                if mods & pygame.KMOD_CTRL:
+                    if self.selected:
+                        print('Saved', index, self.selected)
+                        self.saved[index] = self.selected.copy()
+                elif mods & pygame.KMOD_SHIFT:
+                    if self.saved[index]:
+                        print('Loaded', index, self.saved[index])
+                        self.clear()
+                        self.selected = self.saved[index].copy()
+                        self.active = True
+
         if event.type == pygame.MOUSEBUTTONDOWN:
-            if not self.active:
-                self.x, self.y = event.pos
+            if event.button == 1:
+                if not self.active:
+                    self.x, self.y = event.pos
             return False
 
-        if event.type == pygame.MOUSEBUTTONUP:
+        elif event.type == pygame.MOUSEBUTTONUP:
             if event.button == 3:
                 if self.active:
-                    for spr in self.find_intersect(self.game.sprites):
+                    for spr in self.selected:
+                        if spr is None:
+                            continue
                         if spr.has_target and spr.player_id == self.game.info.id:
                             self.client.send(
                                 f'2_{spr.id}_{event.pos[0] - self.camera.off_x}_{event.pos[1] - self.camera.off_y}')
                     self.clear()
-                elif self.width != 0 and self.height != 0:
-                    self.active = True
-                else:
-                    return False
-                return True
+            elif event.button == 1:
+                if self.dragged:
+                    for spr in self.find_intersect():
+                        if spr.has_target and spr.player_id == self.game.info.id:
+                            self.selected.append(spr)
+                    if self.selected:
+                        self.active = True
+                    self.dragged = False
+                    self.width = 0
+                    self.height = 0
 
         if event.type == pygame.USEREVENT:
             if event.user_type == pygame_gui.UI_BUTTON_PRESSED:
                 if event.ui_object_id == 'retarget':
-                    for spr in self.find_intersect(self.game.sprites):
-                        if type(spr) == Worker and spr.player_id == self.game.info.id:
-                            self.client.send(f'4_{spr.id}_{event.ui_element.type}')
+                    if self.active:
+                        for spr in self.selected:
+                            if type(spr) == Worker and spr.player_id == self.game.info.id:
+                                self.client.send(f'4_{spr.id}_{event.ui_element.type}')
                     self.clear()
 
         if event.type == pygame.MOUSEMOTION:
-            if pygame.mouse.get_pressed()[2] == 1 and not self.active:
+            if pygame.mouse.get_pressed()[0] == 1 and not self.active:
                 self.mouse_moved(*event.rel)
                 return True
         return False
@@ -560,6 +595,8 @@ class ClientWait:
                     running = False
                 if event.type == pygame.KEYUP:
                     if event.key == pygame.K_ESCAPE:
+                        if current_manager == 'retarget':
+                            managers[current_manager].clear()
                         current_manager = 'main'
                     elif event.key == pygame.K_F12:
                         running = False
