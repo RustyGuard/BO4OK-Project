@@ -355,7 +355,7 @@ class Fighter(TwistUnit):
     def throw_projectile(self, game, clazz, spread=0):
         if self.delay <= 0:
             self.delay += self.delay_time
-            game.place(clazz, int(self.x), int(self.y), self.player_id, int(self.angle + randint([-spread, spread])),
+            game.place(clazz, int(self.x), int(self.y), self.player_id, int(self.angle + randint(-spread, spread)),
                        ignore_space=True, ignore_money=True, ignore_fort_level=True)
 
     def mass_attack(self, game):
