@@ -238,6 +238,7 @@ class BallistaArrow(TwistUnit):
         self.is_building = False
         self.time = 1200
         self.live_time = 5
+        self.striken = []
 
     def update(self, *args):
         if args[0].type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
@@ -248,11 +249,13 @@ class BallistaArrow(TwistUnit):
                     args[1].kill(self)
                 for spr in args[1].get_intersect(self):
                     if spr.player_id != -1 and spr != self and spr.player_id != self.player_id and not spr.is_projectile:
-                        self.live_time -= (1 if type(spr) != Dragon else 5)
-                        spr.take_damage(BallistaArrow.damage, args[1])
-                        if self.live_time <= 0:
-                            args[1].kill(self)
-                            return
+                        if spr not in self.striken:
+                            self.live_time -= (1 if type(spr) != Dragon else 5)
+                            spr.take_damage(BallistaArrow.damage, args[1])
+                            self.striken.append(spr)
+                            if self.live_time <= 0:
+                                args[1].kill(self)
+                                return
 
     def get_args(self):
         return f'_{self.angle}'
@@ -924,7 +927,7 @@ class UncompletedBuilding(Unit):
                 return
             if self.health >= self.max_health:
                 args[1].place(self.clazz, int(self.x), int(self.y), self.player_id,
-                              ignore_space=True, ignore_money=False, ignore_fort_level=True)
+                              ignore_space=True, ignore_money=True, ignore_fort_level=True)
                 self.completed = True
                 print('Ready')
 
@@ -974,11 +977,11 @@ class Ballista(Fighter):
                 self.find_target_angle()
                 if args[0].type == SERVER_EVENT_UPDATE:
                     self.update_delay()
-                near = self.close_to_attack(1000)
+                near = self.close_to_attack(1500)
                 if self.turn_around(3):
                     if near:
                         if args[0].type == SERVER_EVENT_UPDATE:
-                            self.throw_projectile(args[1], BallistaArrow)  # Хз какой разброс ставить
+                            self.throw_projectile(args[1], BallistaArrow)
                     else:
                         self.move_to_angle(1, args[1])
                 elif not near:
