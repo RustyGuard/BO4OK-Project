@@ -544,9 +544,9 @@ class ClientWait:
                 r1 = Rect(SCREEN_WIDTH - 65, 45 + 75 * build_i, 50, 50)
                 b = UIButton(r1, '', build_manager,
                              object_id=f'place_{build_id}')
-                r2 = Rect(0, 0, 65, 25)
+                r2 = Rect(0, 0, len(clazz.name) * 9, 25)
                 r2.centery = r1.centery
-                r2.right = r1.left
+                r2.right = r1.left - 5
                 UILabel(r2, clazz.name, build_manager)
                 b.id = build_id
                 build_i += 1

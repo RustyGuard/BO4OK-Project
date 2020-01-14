@@ -1,8 +1,7 @@
 import math
-from random import randint, choice
+from random import randint
 
 import pygame
-from pygame import Color
 from pygame.rect import Rect
 from pygame.sprite import Sprite
 from pygame.surface import Surface
@@ -712,8 +711,37 @@ class Casern(ProductingBuild):
 
     def __init__(self, x, y, id, player_id):
         self.image = Casern.images[player_id]
-        super().__init__(x, y, id, player_id, 5,
-                         [Archer, Soldier, Dragon, Ballista])  # Драконы и баллисты здесь временно
+        super().__init__(x, y, id, player_id, 5, [Archer, Soldier])
+
+
+class DragonLore(ProductingBuild):
+    placeable = True
+    name = 'Драконье логово'
+    cost = (1.0, 0.0)
+    images = []
+    for i in range(10):
+        images.append(pygame.image.load(f'sprite-games/building/dragonlair/{team_id[i]}.png'))
+    image = images[0]
+    required_level = 1
+
+    def __init__(self, x, y, id, player_id):
+        self.image = DragonLore.images[player_id]
+        super().__init__(x, y, id, player_id, 5, [Dragon])
+
+
+class Workshop(ProductingBuild):
+    placeable = True
+    name = 'Мастерская'
+    cost = (1.0, 0.0)
+    images = []
+    for i in range(10):
+        images.append(pygame.image.load(f'sprite-games/building/workshop/{team_id[i]}.png'))
+    image = images[0]
+    required_level = 1
+
+    def __init__(self, x, y, id, player_id):
+        self.image = Workshop.images[player_id]
+        super().__init__(x, y, id, player_id, 5, [Ballista])
 
 
 class ArcherTower(Fighter):
@@ -1006,7 +1034,9 @@ UNIT_TYPES = {
     10: FireProjectile,
     11: UncompletedBuilding,
     12: Ballista,
-    13: BallistaArrow
+    13: BallistaArrow,
+    14: DragonLore,
+    15: Workshop
 }
 
 
