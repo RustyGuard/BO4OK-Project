@@ -1002,7 +1002,8 @@ UNIT_TYPES = {
     9: Dragon,
     10: FireProjectile,
     11: UncompletedBuilding,
-    12: Ballista
+    12: Ballista,
+    13: BallistaArrow
 }
 
 
