@@ -227,8 +227,8 @@ class Arrow(TwistUnit):
 
 class BallistaArrow(TwistUnit):
     image = pygame.image.load(f'sprite-games/warrior/archer/arrow.png')
-    damage = 5
-    name = 'Arrow'
+    damage = 25
+    name = 'BallistaArrow'
     placeable = False
 
     def __init__(self, x, y, id, player_id, angle):
@@ -237,6 +237,7 @@ class BallistaArrow(TwistUnit):
         self.is_projectile = True
         self.is_building = False
         self.time = 1200
+        self.live_time = 5
 
     def update(self, *args):
         if args[0].type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
@@ -247,9 +248,11 @@ class BallistaArrow(TwistUnit):
                     args[1].kill(self)
                 for spr in args[1].get_intersect(self):
                     if spr.player_id != -1 and spr != self and spr.player_id != self.player_id and not spr.is_projectile:
-                        spr.take_damage(Arrow.damage, args[1])
-                        args[1].kill(self)
-                        return
+                        self.live_time -= (1 if type(spr) != Dragon else 5)
+                        spr.take_damage(BallistaArrow.damage, args[1])
+                        if self.live_time <= 0:
+                            args[1].kill(self)
+                            return
 
     def get_args(self):
         return f'_{self.angle}'
@@ -352,7 +355,7 @@ class Fighter(TwistUnit):
     def throw_projectile(self, game, clazz, spread=0):
         if self.delay <= 0:
             self.delay += self.delay_time
-            game.place(clazz, int(self.x), int(self.y), self.player_id, int(self.angle + choice([-spread, 0, spread])),
+            game.place(clazz, int(self.x), int(self.y), self.player_id, int(self.angle + randint([-spread, spread])),
                        ignore_space=True, ignore_money=True, ignore_fort_level=True)
 
     def mass_attack(self, game):
@@ -402,6 +405,7 @@ class Archer(Fighter):
         self.image = Archer.images[player_id]
 
         super().__init__(x, y, id, player_id, Archer.images[player_id])
+        self.delay_time = 60
 
     def update(self, *args):
         if not args:
@@ -947,8 +951,8 @@ class Ballista(Fighter):
 
     def __init__(self, x, y, id, player_id):
         self.image = Ballista.images[player_id]
-        self.delay_time = 30
         super().__init__(x, y, id, player_id, Ballista.images[player_id])
+        self.delay_time = 180
 
     def update(self, *args):
         if not args:
@@ -959,7 +963,7 @@ class Ballista(Fighter):
                 return
         if args[0].type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
             if self.target[0] == TARGET_MOVE:
-                self.move_to_point(args[0], args[1], 1, 0.5, 3)
+                self.move_to_point(args[0], args[1], 1, 0.5, 1)
                 # у лучника эти аргументы больше,думаю логично что баллиста более неповоротливая
 
             elif self.target[0] == TARGET_ATTACK:
@@ -974,7 +978,7 @@ class Ballista(Fighter):
                 if self.turn_around(3):
                     if near:
                         if args[0].type == SERVER_EVENT_UPDATE:
-                            self.throw_projectile(args[1], Arrow, 15)  # Хз какой разброс ставить
+                            self.throw_projectile(args[1], BallistaArrow)  # Хз какой разброс ставить
                     else:
                         self.move_to_angle(1, args[1])
                 elif not near:
@@ -983,9 +987,6 @@ class Ballista(Fighter):
             elif self.target[0] == TARGET_NONE:
                 if args[0].type == SERVER_EVENT_UPDATE:
                     self.find_new_target(args[1])
-
-        elif args[0].type in [CLIENT_EVENT_SEC, SERVER_EVENT_SEC]:
-            pass
 
 
 UNIT_TYPES = {
