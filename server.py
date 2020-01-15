@@ -153,6 +153,7 @@ class Player:
         self.client = client
         self.money = 150.0
         self.wood = 100
+        self.max_forge_level = 3
         self.id = -2
 
 
@@ -519,5 +520,5 @@ def main(screen, nicname):
 
 if __name__ == '__main__':
     pygame.init()
-    main(pygame.display.set_mode((1000, 1000)))
+    main(pygame.display.set_mode((1000, 1000)), 'PRIMER_NICK_ISACH')
     print('\n\tServer closed.\n')

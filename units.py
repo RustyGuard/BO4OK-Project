@@ -7,8 +7,7 @@ from pygame.rect import Rect
 from pygame.sprite import Sprite
 from pygame.surface import Surface
 
-from constants import SERVER_EVENT_SEC, SERVER_EVENT_UPDATE, CLIENT_EVENT_SEC, CLIENT_EVENT_UPDATE, WOOD_PER_PUNCH, \
-    MONEY_PER_PUNCH
+from constants import *
 
 # States
 STATE_DIG = 0
@@ -720,6 +719,80 @@ class Fortress(ProductingBuild):
         return 3 > self.level > 0
 
 
+class Forge(ProductingBuild):
+    name = 'Кузня'
+    placeable = True
+    cost = (1.0, 0.0)
+
+    level_costs = [(50.0, 15.0), (20.0, 30.0)]  # Поменять
+    images = []
+    for i in range(10):
+        images.append(pygame.image.load(f'sprite-games/building/forge/{team_id[i]}.png'))
+    image = images[0]
+    required_level = 1
+
+    instances = []
+
+    @staticmethod
+    def get_player_level(player_id):
+        max_level = 0
+        to_remove = []
+        for inst in Forge.instances:
+            if not inst.is_alive():
+                to_remove.append(inst)
+                continue
+            if inst.player_id == player_id and inst.level > max_level:
+                max_level = inst.level
+        for i in to_remove:
+            Fortress.instances.remove(i)
+        return max_level
+
+    def __init__(self, x, y, id, player_id):
+        self.image = Forge.images[player_id]
+        super().__init__(x, y, id, player_id, 2, [])
+        self.level = 1
+        self.hp_upgrade()
+        self.can_upgraded = True
+        Forge.instances.append(self)
+
+    def update(self, *args):
+        super().update(*args)
+        if not self.is_alive():
+            if args[0].type == SERVER_EVENT_UPDATE:
+                args[1].kill(self)
+                return
+
+    def stats_upgrade(self, game, level):  # данный метод ВОНЯЕТ и не тестен
+        for obj in game.sprites:
+            if obj.issubclass(Unit) and obj.player_id == self.player_id:
+                if obj.type == Fighter:
+                    if level == 1:
+                        obj.max_health *= K_HP_UP
+                        obj.health *= K_HP_UP
+                    elif level == 2:
+                        obj.damage *= K_DAMAGE_UP
+                elif obj.is_building:
+                    if level == 3:
+                        obj.health *= K_BUILDHP_UP
+                    elif level == 4:
+                        obj.health *= K_BUILDHP_UP2
+
+    def next_level(self, game):
+        if self.level == 3:
+            print('Already on max level!')
+            return
+        self.level += 1
+
+    def level_cost(self, game):
+        if self.level == 3:
+            print('Max level!')
+            return None
+        return Forge.level_costs[self.level - 1]
+
+    def can_be_upgraded(self, game):
+        return 3 > self.level > 0
+
+
 class Casern(ProductingBuild):
     placeable = True
     name = 'Казарма'
@@ -758,7 +831,7 @@ class DragonsLair(ProductingBuild):
     cost = (1.0, 0.0)
     images = []
     for i in range(10):
-        images.append(pygame.image.load(f'sprite-games/building/Dragon\'s lair/{team_id[i]}.png'))
+        images.append(pygame.image.load(f'sprite-games/building/dragonlair/{team_id[i]}.png'))
     image = images[0]
     required_level = 1
 
@@ -1060,7 +1133,8 @@ UNIT_TYPES = {
     12: Ballista,
     13: BallistaArrow,
     14: Workshop,
-    15: DragonsLair
+    15: DragonsLair,
+    16: Forge
 }
 
 
