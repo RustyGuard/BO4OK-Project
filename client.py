@@ -1,5 +1,6 @@
 import socket
 import threading
+from random import choice
 from threading import Lock
 
 import pygame
@@ -13,9 +14,18 @@ from pygame_gui.elements import UIButton, UILabel
 from constants import CLIENT_EVENT_SEC, CLIENT_EVENT_UPDATE, COLOR_LIST, CAMERA_MIN_SPEED, CAMERA_MAX_SPEED, \
     CAMERA_STEP_FASTER, CAMERA_STEP_SLOWER, SCREEN_WIDTH, SCREEN_HEIGHT
 from units import get_class_id, UNIT_TYPES, TARGET_MOVE, TARGET_ATTACK, TARGET_NONE, Arrow, \
-    ProductingBuild, Worker, STATE_DIG, STATE_FIGHT, STATE_BUILD, STATE_CHOP, STATE_ANY_WORK, UncompletedBuilding
+    ProductingBuild, Worker, STATE_DIG, STATE_FIGHT, STATE_BUILD, STATE_CHOP, STATE_ANY_WORK, UncompletedBuilding, \
+    Fortress
 
 fps = 60
+
+
+def random_nick():
+
+    adj = open('sprite-games/random_adj.txt').readlines()
+    noun = open('sprite-games/random_noun.txt').readlines()
+    return (choice(adj).replace('\n', '') + ' ' + choice(noun).replace('\n', '')).capitalize()
+
 
 class Client:
     def __init__(self, ip='localhost'):
@@ -82,10 +92,11 @@ class Client:
 
 
 class PlayerInfo:
-    def __init__(self):
+    def __init__(self, nick=random_nick()):
         self.money = 150.0
         self.wood = 100.0
         self.id = None
+        self.nick = nick
 
 
 class Camera:
@@ -115,12 +126,16 @@ class Camera:
 
 
 class Game:
-    def __init__(self):
+    def __init__(self, nick=random_nick()):
         self.sprites = Group()
         self.buildings = Group()
         self.lock = Lock()
         self.started = False
-        self.info = PlayerInfo()
+        self.info = PlayerInfo(nick)
+        self.other_nicks = []
+
+    def get_player_nick(self, player_id):
+        return self.other_nicks[player_id]
 
     def start(self):
         self.started = True
@@ -350,14 +365,14 @@ class ProductManager:
 
 
 class ClientWait:
-    def play(self, screen=pygame.display.set_mode((0, 0)), ip='localhost'):
+    def play(self, screen=pygame.display.set_mode((0, 0)), ip='localhost', nick=''):
         pygame.mouse.set_visible(0)
         client = Client(ip)
         pygame.init()
         if not client.connected:
             return False
 
-        game = Game()
+        game = Game(nick if nick != '' else random_nick())
         client.start_thread()
 
         # Screens
@@ -375,6 +390,7 @@ class ClientWait:
             if cmd == '0':
                 client.setEventCallback(None)
                 game.info.id = int(args[0])
+                game.other_nicks.extend(args[1::])
                 game.start()
                 print(f'Game started. Our id is {game.info.id}')
             if cmd == '10':
@@ -412,7 +428,7 @@ class ClientWait:
                         running = False
                 elif event.type == pygame.USEREVENT:
                     if event.ui_element == ready_button:
-                        client.send('10')
+                        client.send(f'10_{game.info.nick}')
                         ready_button.disable()
 
             manager.update(1 / 60)
@@ -559,6 +575,7 @@ class ClientWait:
         managers['product'] = ProductManager(screen)
         image1 = pygame.image.load('sprite-games/menu/cursor.png')
         global fps
+        print(game.other_nicks)
 
         while running and client.connected:
             for event in pygame.event.get():
@@ -638,6 +655,9 @@ class ClientWait:
                 if spr.can_upgraded:
                     text = small_font.render(f'{spr.level} lvl.', 1, (255, 125, 0))
                     screen.blit(text, spr.rect.topleft)
+                if type(spr) == Fortress:
+                    text = small_font.render(game.get_player_nick(spr.player_id), 1, COLOR_LIST[spr.player_id])
+                    screen.blit(text, spr.rect.bottomleft)
 
                 if spr.is_projectile or spr.health == spr.max_health:
                     continue
@@ -659,7 +679,8 @@ class ClientWait:
 
             pygame.display.flip()
             game.lock.release()
-            print('Задержка', clock.tick(fps))
+            # print('Задержка', clock.tick(fps))
+            clock.tick(fps)
         client.disconnect('Application closed.')
         return False
 
@@ -668,7 +689,7 @@ def main():
     pygame.init()
     with open('settings.txt', 'r') as settings:
         size = list(map(int, settings.readline().split()))
-    ClientWait().play(pygame.display.set_mode(size, pygame.FULLSCREEN))
+    ClientWait().play(pygame.display.set_mode(size, pygame.FULLSCREEN), nick=random_nick())
     # End
     pygame.quit()
 

@@ -6,7 +6,7 @@ SERVER_EVENT_SYNC = 29
 
 COLOR_LIST = [
     (0, 0, 0),  # 'black'
-    (69, 139, 116),  # 'aqua'
+    (69, 220, 220),  # 'aqua'
     (0, 0, 255),  # 'blue'
     (0, 255, 0),  # 'green'
     (195, 195, 195),  # 'light_green'
