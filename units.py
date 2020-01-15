@@ -556,7 +556,7 @@ class Worker(Fighter):
         if args[0].type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
 
             if self.target[0] == TARGET_MOVE:
-                self.move_to_point(args[0], args[1], 15, 15)
+                self.move_to_point(args[0], args[1], 1.5, 1)
                 return
 
             elif self.target[0] == TARGET_ATTACK:
