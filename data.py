@@ -145,7 +145,7 @@ def ip(screen):
                         if button.name == "OK":
                             print(nicname)
                             print(ip)
-                            if ClientWait().play(screen, ip if ip != '' else 'localhost'):
+                            if ClientWait().play(screen, ip if ip != '' else 'localhost', nick=nicname):
                                 return
                             else:
                                 f = True
