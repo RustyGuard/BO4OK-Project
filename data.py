@@ -214,30 +214,3 @@ def play(screen):
         screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
         pygame.display.flip()
         clock.tick(FPS)
-
-
-class GameInterface:
-    def __init__(self):
-        self.panel = pygame.image.load('sprite-games/панель справа/панель справа.png')
-        image = {"farm": (1797, 81),
-                 "casern": (1797, 211),
-                 "fortress": (1797, 341),
-                 "forge": (1797, 471),
-                 "turent": (1797, 601),
-                 "workshop": (1797, 731),
-                 "dragonlair": (1797, 876)}
-        self.all_buttons = pygame.sprite.Group()
-        for i in image:
-            Button(self.all_buttons, i, image[i], "панель справа")
-
-    def get_event(self, event):
-        for button in self.all_buttons:
-            if event.type == pygame.MOUSEMOTION:
-                button.get_anim(event)
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if button.rect.collidepoint(event.pos):
-                    return button.name
-
-    def draw(self, screen):
-        screen.blit(self.panel, (0, 0))
-        self.all_buttons.draw(screen)

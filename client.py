@@ -17,7 +17,9 @@ from units import get_class_id, UNIT_TYPES, TARGET_MOVE, TARGET_ATTACK, TARGET_N
     ProductingBuild, Worker, STATE_DIG, STATE_FIGHT, STATE_BUILD, STATE_CHOP, STATE_ANY_WORK, UncompletedBuilding, \
     Fortress
 
-fps = 60
+cursor = pygame.image.load('sprite-games/menu/cursor.png')
+FPS = 60
+clock = pygame.time.Clock()
 
 
 def random_nick():
@@ -374,9 +376,7 @@ class ProductManager:
 
 class ClientWait:
     def play(self, screen=pygame.display.set_mode((0, 0)), ip='localhost', nick=''):
-        pygame.mouse.set_visible(0)
         client = Client(ip)
-        pygame.init()
         if not client.connected:
             return False
 
@@ -391,6 +391,7 @@ class ClientWait:
         return True
 
     def waiting_screen(self, screen, client, game):
+        global cursor, FPS, clock
         players_info = [0, 0]
 
         def read(cmd, args):
@@ -407,7 +408,6 @@ class ClientWait:
                 print(players_info)
 
         client.setEventCallback(read)
-        clock = pygame.time.Clock()
         running = True
         font = pygame.font.Font(None, 50)
         SIRCLE_SIZE = 100
@@ -425,7 +425,6 @@ class ClientWait:
         a4 = pygame.image.load('sprite-games/play/ожидание/4.png')
         aa = [a1, a2, a3, a4]
         a = 0
-        image1 = pygame.image.load('sprite-games/menu/cursor.png')
         while running and not game.started:
             for event in pygame.event.get():
                 manager.process_events(event)
@@ -445,7 +444,7 @@ class ClientWait:
             text = font.render(f'{players_info[0]}/{players_info[1]} players.', 1, (200, 200, 200))
             screen.blit(text, (OFFSET_X, OFFSET_Y - SIRCLE_SIZE / 2))
             screen.blit(aa[a // 10], (OFFSET_X + 250, OFFSET_Y - SIRCLE_SIZE / 2))
-            screen.blit(image1, pygame.mouse.get_pos())
+            screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
             a += 1
             if a == 40:
                 a = 0
@@ -462,6 +461,7 @@ class ClientWait:
             client.send(f'1_{clazz}_{mouse_pos[0] - camera.off_x}_{mouse_pos[1] - camera.off_y}')
 
         def listen(cmd, args):
+            global cursor, FPS, clock
             # 0 - Game Started
             # 1 - Add entity of [type] at [x, y] with [id]
             # 2 - Retarget entity of [type] at [x, y] with [id]
@@ -538,7 +538,6 @@ class ClientWait:
         font = pygame.font.Font(None, 50)
         small_font = pygame.font.Font(None, 25)
         client.setEventCallback(listen)
-        clock = pygame.time.Clock()
         running = True
         camera = Camera(game.sprites)
         current_area = SelectArea(game, camera, client)
@@ -582,10 +581,8 @@ class ClientWait:
         managers['build'] = build_manager
         managers['retarget'] = current_area
         managers['product'] = ProductManager(screen)
-        image1 = pygame.image.load('sprite-games/menu/cursor.png')
-        global fps
+        global FPS
         print(game.other_nicks)
-        interface = data.GameInterface()
         while running and client.connected:
             for event in pygame.event.get():
                 if event.type == pygame.MOUSEBUTTONUP and current_manager == 'main':
@@ -650,23 +647,7 @@ class ClientWait:
                     camera.move(x_off, y_off)
 
                     game.update(event, game)
-                click_button = interface.get_event(event)
-                if click_button == "farm":
-                    pass
-                if click_button == "casern":
-                    pass
-                if click_button == "fortress":
-                    pass
-                if click_button == "forge":
-                    pass
-                if click_button == "turent":
-                    pass
-                if click_button == "workshop":
-                    pass
-                if click_button == "dragonlair":
-                    pass
 
-            screen.fill((125, 125, 125))
             game.lock.acquire()
             # /* Отрисовка заднего фона
             for i in range(3):
@@ -698,13 +679,12 @@ class ClientWait:
             screen.blit(text, (5, 100))
             managers[current_manager].update(1 / 60)
             managers[current_manager].draw_ui(screen)
-            interface.draw(screen, current_manager)
-            screen.blit(image1, pygame.mouse.get_pos())
+            screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
 
             pygame.display.flip()
             game.lock.release()
-            # print('Задержка', clock.tick(fps))
-            clock.tick(fps)
+            print('Задержка', 1000 / clock.tick(FPS))
+            clock.tick(FPS)
         client.disconnect('Application closed.')
         return False
 
