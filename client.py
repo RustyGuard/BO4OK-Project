@@ -15,6 +15,7 @@ from constants import CLIENT_EVENT_SEC, CLIENT_EVENT_UPDATE, COLOR_LIST, CAMERA_
 from units import get_class_id, UNIT_TYPES, TARGET_MOVE, TARGET_ATTACK, TARGET_NONE, Arrow, \
     ProductingBuild, Worker, STATE_DIG, STATE_FIGHT, STATE_BUILD, STATE_CHOP, STATE_ANY_WORK, UncompletedBuilding
 
+fps = 60
 
 class Client:
     def __init__(self, ip='localhost'):
@@ -508,7 +509,7 @@ class ClientWait:
                 return
             else:
                 print('Taken message:', cmd, args)
-        # background = pygame.image.load('карта.png')
+        background = pygame.image.load('sprite-games/small_map.png')
         font = pygame.font.Font(None, 50)
         small_font = pygame.font.Font(None, 25)
         client.setEventCallback(listen)
@@ -557,6 +558,7 @@ class ClientWait:
         managers['retarget'] = current_area
         managers['product'] = ProductManager(screen)
         image1 = pygame.image.load('sprite-games/menu/cursor.png')
+        global fps
 
         while running and client.connected:
             for event in pygame.event.get():
@@ -617,7 +619,11 @@ class ClientWait:
 
             screen.fill((125, 125, 125))
             game.lock.acquire()
-            # screen.blit(background, (camera.off_x, camera.off_y))
+            # /* Отрисовка заднего фона
+            for i in range(3):
+                for j in range(3):
+                    screen.blit(background, (camera.off_x % 965 + (j - 1) * 965, camera.off_y % 545 + (i - 1) * 545))
+            # */
             game.drawSprites(screen)
             for spr in game.sprites:
                 if spr.can_upgraded:
@@ -644,7 +650,7 @@ class ClientWait:
 
             pygame.display.flip()
             game.lock.release()
-            clock.tick(60)
+            print('Задержка', clock.tick(fps))
         client.disconnect('Application closed.')
         return False
 
