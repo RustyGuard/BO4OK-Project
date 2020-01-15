@@ -6,7 +6,7 @@ SERVER_EVENT_SYNC = 29
 
 COLOR_LIST = [
     (0, 0, 0),  # 'black'
-    (69, 139, 116),  # 'aqua'
+    (69, 220, 220),  # 'aqua'
     (0, 0, 255),  # 'blue'
     (0, 255, 0),  # 'green'
     (195, 195, 195),  # 'light_green'
@@ -17,9 +17,9 @@ COLOR_LIST = [
     (255, 255, 0),  # 'yellow'
 ]
 
-CAMERA_MAX_SPEED = 10.0
-CAMERA_MIN_SPEED = 1.0
-CAMERA_STEP_FASTER = 0.05
+CAMERA_MAX_SPEED = 30.0
+CAMERA_MIN_SPEED = 2.0
+CAMERA_STEP_FASTER = 0.1
 CAMERA_STEP_SLOWER = 0.25
 SCREEN_WIDTH = 1920
 SCREEN_HEIGHT = 1080

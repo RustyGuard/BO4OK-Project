@@ -63,6 +63,12 @@ class Unit(Sprite):
                         self.rect.right = spr.rect.left
                     self.x = self.rect.centerx - self.offsetx
                     break
+            if self.x < -5000:
+                self.x = -5000
+                self.rect.centerx = int(self.x) + self.offsetx
+            if self.x > 5000:
+                self.x = 5000
+                self.rect.centerx = int(self.x) + self.offsetx
 
         if y != 0:
             self.y += y
@@ -75,6 +81,12 @@ class Unit(Sprite):
                         self.rect.bottom = spr.rect.top
                     self.y = self.rect.centery - self.offsety
                     break
+                if self.y < -5000:
+                    self.y = -5000
+                    self.rect.centery = int(self.y) + self.offsety
+                if self.y < 5000:
+                    self.y = 5000
+                    self.rect.centery = int(self.y) + self.offsety
 
     def set_offset(self, x, y):
         self.offsetx, self.offsety = x, y
@@ -205,6 +217,10 @@ class Arrow(TwistUnit):
         if args[0].type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
             self.move_to_angle(3, args[1])
             if args[0].type == SERVER_EVENT_UPDATE:
+                if self.x < -5000 or self.x > 5000 or self.y < -5000 or self.y < 5000:
+                    args[1].kill(self)
+                    return
+
                 self.time -= 1
                 if self.time <= 0:
                     args[1].kill(self)
@@ -226,7 +242,7 @@ class Arrow(TwistUnit):
 
 
 class BallistaArrow(TwistUnit):
-    image = pygame.image.load(f'sprite-games/warrior/archer/arrow.png')
+    image = pygame.image.load(f'sprite-games/warrior/ballista/anim/arrow.png')
     damage = 25
     name = 'BallistaArrow'
     placeable = False
@@ -244,6 +260,10 @@ class BallistaArrow(TwistUnit):
         if args[0].type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
             self.move_to_angle(3, args[1])
             if args[0].type == SERVER_EVENT_UPDATE:
+                if self.x < -5000 or self.x > 5000 or self.y < -5000 or self.y < 5000:
+                    args[1].kill(self)
+                    return
+
                 self.time -= 1
                 if self.time <= 0:
                     args[1].kill(self)

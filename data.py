@@ -7,6 +7,7 @@ FPS = 60
 clock = pygame.time.Clock()
 nicname = ""
 
+
 class Button(pygame.sprite.Sprite):
     def __init__(self, group, name, image, way):
         super().__init__(group)
@@ -23,7 +24,6 @@ class Button(pygame.sprite.Sprite):
         else:
             if self.image == self.anim:
                 self.image = self.stok_image
-
 
 
 def menu(screen):
@@ -145,7 +145,7 @@ def ip(screen):
                         if button.name == "OK":
                             print(nicname)
                             print(ip)
-                            if ClientWait().play(screen, ip if ip != '' else 'localhost'):
+                            if ClientWait().play(screen, ip if ip != '' else 'localhost', nick=nicname):
                                 return
                             else:
                                 f = True
@@ -168,19 +168,19 @@ def ip(screen):
 
 def play(screen):
     global cursor, FPS, clock, nicname
-    background = pygame.image.load('sprite-games/play/Основа.png')
+    background = pygame.image.load('sprite-games/play/Основа1.png')
     screen.blit(background, (0, 0))
     FPS = 60
-    image = {"host": (330, 183),
-             "connect": (330, 386),
-             "back": (330, 784)}
+    image = {"host": (330, 250),
+             "connect": (330, 455),
+             "back": (340, 700)}
     way = "play"
 
     all_buttons = pygame.sprite.Group()
     for n, i in enumerate(image):
         if n < 3:
             Button(all_buttons, i, image[i], way)
-    font = pygame.font.Font(None, 100)
+    font = pygame.font.Font(None, 80)
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -195,7 +195,7 @@ def play(screen):
                 for button in all_buttons:
                     if button.rect.collidepoint(event.pos):
                         if button.name == "host":
-                            server.main(screen)
+                            server.main(screen, nicname)
                         if button.name == "connect":
                             ip(screen)
                         if button.name == "back" or button.name == "cancel":
@@ -207,13 +207,10 @@ def play(screen):
                                          "тьбюqwertyuiopasdfghjklzxcvbnm1234567890".upper():
                     nicname += event.unicode
                 if event.key == 8:
-                    nicname = nicname[:-2]
+                    nicname = nicname[:-1]
         screen.blit(background, (0, 0))
         all_buttons.draw(screen)
-        screen.blit(font.render(nicname, 1, (255, 255, 255)), (810, 810))
+        screen.blit(font.render(nicname, 1, (255, 255, 255)), (810, 740))
         screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
         pygame.display.flip()
         clock.tick(FPS)
-
-
-pygame.quit()
