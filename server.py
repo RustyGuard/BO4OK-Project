@@ -321,7 +321,7 @@ def place_fortresses(game):
         print('Placing stopped.')
 
 
-def main(screen):
+def main(screen, nicname):
     pygame.mouse.set_visible(0)
     connect_info = [0, 0]
 
@@ -391,13 +391,12 @@ def main(screen):
     thread = threading.Thread(target=server.thread_connection, daemon=True)
     thread.start()
     font = pygame.font.Font(None, 50)
-    background = pygame.image.load('sprite-games/play/Основа.png')
+    background = pygame.image.load('sprite-games/play/Основа1.png')
     pygame.mouse.set_visible(0)
-    image = {"host": (330, 183),
-             "connect": (330, 386),
-             "back": (330, 784),
-             "ready": (1311, 784),
-             "cancel": (1311, 784)}
+    image = {"host": (330, 250),
+             "connect": (330, 455),
+             "back": (340, 700),
+             "cancel": (1311, 700)}
 
     class Button(pygame.sprite.Sprite):
         def __init__(self, group, name, image1=None):
@@ -441,9 +440,8 @@ def main(screen):
     Button(cancel_buttons, "cancel")
     all_cursor = pygame.sprite.Group()
     cursor = Cursor(all_cursor)
-    pygame.mouse.set_visible(0)
+    font1 = pygame.font.Font(None, 80)
     while not server.is_ready():
-        pygame.mouse.set_visible(0)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return
@@ -470,6 +468,7 @@ def main(screen):
         screen.blit(text, (650, 455))  # 150
         all_buttons.draw(screen)
         cursor.rect.topleft = pygame.mouse.get_pos()
+        screen.blit(font1.render(nicname, 1, (255, 255, 255)), (810, 740))
         cancel_buttons.draw(screen)
         all_cursor.draw(screen)
         pygame.display.flip()
