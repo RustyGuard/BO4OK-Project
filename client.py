@@ -11,7 +11,7 @@ from pygame_gui import UIManager
 from pygame_gui.elements import UIButton, UILabel
 
 from constants import CLIENT_EVENT_SEC, CLIENT_EVENT_UPDATE, COLOR_LIST, CAMERA_MIN_SPEED, CAMERA_MAX_SPEED, \
-    CAMERA_STEP_FASTER, CAMERA_STEP_SLOWER, SCREEN_WIDTH
+    CAMERA_STEP_FASTER, CAMERA_STEP_SLOWER, SCREEN_WIDTH, SCREEN_HEIGHT
 from units import get_class_id, UNIT_TYPES, TARGET_MOVE, TARGET_ATTACK, TARGET_NONE, Arrow, \
     ProductingBuild, Worker, STATE_DIG, STATE_FIGHT, STATE_BUILD, STATE_CHOP, STATE_ANY_WORK, UncompletedBuilding
 
@@ -604,17 +604,26 @@ class ClientWait:
                         running = False
 
                 if event.type in [CLIENT_EVENT_UPDATE, CLIENT_EVENT_SEC]:
-                    if event.type == CLIENT_EVENT_UPDATE:
-                        x_off, y_off = 0, 0
-                        if pygame.key.get_pressed()[pygame.K_w]:
-                            y_off += 1
-                        if pygame.key.get_pressed()[pygame.K_s]:
-                            y_off -= 1
-                        if pygame.key.get_pressed()[pygame.K_a]:
-                            x_off += 1
-                        if pygame.key.get_pressed()[pygame.K_d]:
-                            x_off -= 1
-                        camera.move(x_off, y_off)
+                    p = pygame.mouse.get_pos()
+                    x_off, y_off = 0, 0
+                    if p[0] == 0:
+                        x_off += 1
+                    elif p[0] + 1 == SCREEN_WIDTH:
+                        x_off -= 1
+                    if p[1] == 0:
+                        y_off += 1
+                    elif p[1] + 1 == SCREEN_HEIGHT:
+                        y_off -= 1
+
+                    if x_off != 0 or y_off != 0:
+                        if False:  # Если курсор не в другом состоянии
+                            pass  # Поменять курсор на другой
+                    else:
+                        if False:  # Если курсор не в обычном состоянии
+                            pass  # Поменять курсор на обычный
+
+                    camera.move(x_off, y_off)
+
                     game.update(event, game)
 
             screen.fill((125, 125, 125))
