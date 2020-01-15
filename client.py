@@ -110,6 +110,14 @@ class Camera:
         if x != 0 or y != 0:
             self.off_x += x * int(self.speed)
             self.off_y += y * int(self.speed)
+            if self.off_x < -5000:
+                self.off_x = -5000
+            if self.off_x > 5000:
+                self.off_x = 5000
+            if self.off_y < -5000:
+                self.off_y = -5000
+            if self.off_y > 5000:
+                self.off_y = 5000
             self.speed += CAMERA_STEP_FASTER
             self.speed = min(CAMERA_MAX_SPEED, self.speed)
             for spr in self.sprites:
