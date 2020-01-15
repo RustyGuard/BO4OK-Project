@@ -2,7 +2,7 @@ import socket
 import threading
 from random import choice
 from threading import Lock
-
+import data
 import pygame
 import pygame_gui
 from pygame import Color
@@ -21,7 +21,6 @@ fps = 60
 
 
 def random_nick():
-
     adj = open('sprite-games/random_adj.txt').readlines()
     noun = open('sprite-games/random_noun.txt').readlines()
     return (choice(adj).replace('\n', '') + ' ' + choice(noun).replace('\n', '')).capitalize()
@@ -243,7 +242,8 @@ class SelectArea:
             self.manager.process_events(event)
 
         if event.type == pygame.KEYUP:
-            fs = [pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5, pygame.K_6, pygame.K_7, pygame.K_8, pygame.K_9, pygame.K_0]
+            fs = [pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5, pygame.K_6, pygame.K_7, pygame.K_8,
+                  pygame.K_9, pygame.K_0]
             if event.key in fs:
                 index = fs.index(event.key)
                 mods = pygame.key.get_mods()
@@ -533,6 +533,7 @@ class ClientWait:
                 return
             else:
                 print('Taken message:', cmd, args)
+
         background = pygame.image.load('sprite-games/small_map.png')
         font = pygame.font.Font(None, 50)
         small_font = pygame.font.Font(None, 25)
@@ -584,10 +585,9 @@ class ClientWait:
         image1 = pygame.image.load('sprite-games/menu/cursor.png')
         global fps
         print(game.other_nicks)
-
+        interface = data.GameInterface()
         while running and client.connected:
             for event in pygame.event.get():
-
                 if event.type == pygame.MOUSEBUTTONUP and current_manager == 'main':
                     collided = False
                     for spr in game.buildings:
@@ -650,6 +650,21 @@ class ClientWait:
                     camera.move(x_off, y_off)
 
                     game.update(event, game)
+                click_button = interface.get_event(event)
+                if click_button == "farm":
+                    pass
+                if click_button == "casern":
+                    pass
+                if click_button == "fortress":
+                    pass
+                if click_button == "forge":
+                    pass
+                if click_button == "turent":
+                    pass
+                if click_button == "workshop":
+                    pass
+                if click_button == "dragonlair":
+                    pass
 
             screen.fill((125, 125, 125))
             game.lock.acquire()
@@ -683,6 +698,7 @@ class ClientWait:
             screen.blit(text, (5, 100))
             managers[current_manager].update(1 / 60)
             managers[current_manager].draw_ui(screen)
+            interface.draw(screen, current_manager)
             screen.blit(image1, pygame.mouse.get_pos())
 
             pygame.display.flip()
