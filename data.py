@@ -122,8 +122,7 @@ def ip(screen):
     not_connect = pygame.image.load('sprite-games/play/neconectitsya.png')
     screen.blit(background, (0, 0))
     image = {"OK": (1085, 709),
-             "back": (558, 709),
-             "ip": (565, 442)}
+             "back": (558, 709)}
     way = "play"
     ip = ""
     f = False

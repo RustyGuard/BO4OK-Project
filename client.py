@@ -446,11 +446,7 @@ class ClientWait:
             pygame.Rect(OFFSET_X, OFFSET_Y + SIRCLE_SIZE - 100, 355, 91),
             '', manager, object_id='ready')
         background = pygame.image.load('sprite-games/menu/background.png')
-        a1 = pygame.image.load('sprite-games/play/ожидание/1.png')
-        a2 = pygame.image.load('sprite-games/play/ожидание/2.png')
-        a3 = pygame.image.load('sprite-games/play/ожидание/3.png')
-        a4 = pygame.image.load('sprite-games/play/ожидание/4.png')
-        aa = [a1, a2, a3, a4]
+        aa = [pygame.image.load(f'sprite-games/play/expectation/{i}.png') for i in range(1, 5)]
         a = 0
         while running and not game.started:
             for event in pygame.event.get():
@@ -732,15 +728,15 @@ class ClientWait:
                 text = small_font.render(str(spr.max_health), 1, COLOR_LIST[spr.player_id])
                 screen.blit(text, spr.rect.topright)
 
-            text = font.render(str(game.info.money), 1, (100, 255, 100))
-            screen.blit(text, (5, 50))
-            text = font.render(str(game.info.wood), 1, Color('burlywood'))
-            screen.blit(text, (5, 100))
-            text = font.render(f'{game.info.power}/{game.info.max_power}', 1, Color('palevioletred3'))
-            screen.blit(text, (5, 150))
             managers[current_manager].update(1 / 60)
             managers[current_manager].draw_ui(screen)
             screen.blit(minimap, (0, 692))
+            text = small_font.render(str(game.info.money), 1, (100, 255, 100))
+            screen.blit(text, (35, 805))
+            text = small_font.render(str(game.info.wood), 1, Color('burlywood'))
+            screen.blit(text, (145, 805))
+            text = small_font.render(f'{game.info.power}/{game.info.max_power}', 1, Color('palevioletred3'))
+            screen.blit(text, (260, 805))
             screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
             particles.update()
             particles.draw(screen)

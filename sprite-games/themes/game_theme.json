@@ -25,7 +25,7 @@
     },
     "images": {
       "normal_image": {
-        "path": "sprite-games/building/casern/casern_icon.png"
+        "path": "sprite-games/icon/casern.png"
       }
     }
   },
@@ -35,7 +35,7 @@
     },
     "images": {
       "normal_image": {
-        "path": "sprite-games/building/fortress/fortress_icon.png"
+        "path": "sprite-games/icon//fortress.png"
       }
     }
   },
@@ -45,7 +45,7 @@
     },
     "images": {
       "normal_image": {
-        "path": "sprite-games/building/dragonlair/icon.png"
+        "path": "sprite-games/icon/dragonlair.png"
       }
     }
   },
@@ -55,7 +55,7 @@
     },
     "images": {
       "normal_image": {
-        "path": "sprite-games/building/workshop/icon.png"
+        "path": "sprite-games/icon/workshop.png"
       }
     }
   },
@@ -65,7 +65,7 @@
     },
     "images": {
       "normal_image": {
-        "path": "sprite-games/building/turret/icon.png"
+        "path": "sprite-games/icon/turret.png"
       }
     }
   },
@@ -75,7 +75,7 @@
     },
     "images": {
       "normal_image": {
-        "path": "sprite-games/building/forge/icon.png"
+        "path": "sprite-games/icon/forge.png"
       }
     }
   },

@@ -926,7 +926,7 @@ class ArcherTower(Fighter):
 class Tree(Unit):
     placeable = False
     name = 'Дерево'
-    tree = pygame.image.load('sprite-games/building/tree/tree.png')
+    tree = pygame.image.load('sprite-games/icon/tree.png')
     image = tree
     required_level = 1
     unit_type = TYPE_RESOURCE
