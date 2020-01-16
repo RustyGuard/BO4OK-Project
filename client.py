@@ -95,6 +95,8 @@ class PlayerInfo:
         self.wood = 100.0
         self.id = None
         self.nick = nick
+        self.power = 0
+        self.max_power = 100
 
 
 class Camera:
@@ -493,6 +495,10 @@ class ClientWait:
                     game.info.money = float(args[1])
                     game.info.wood = float(args[2])
                     return
+                elif args[0] == '2':  # Power
+                    game.info.power = int(args[1])
+                    game.info.max_power = int(args[2])
+                    return
             elif cmd == '4':
                 en = game.find_with_id(int(args[0]))
                 if en is not None:
@@ -694,6 +700,8 @@ class ClientWait:
             screen.blit(text, (5, 50))
             text = font.render(str(game.info.wood), 1, Color('burlywood'))
             screen.blit(text, (5, 100))
+            text = font.render(f'{game.info.power}/{game.info.power}', 1, Color('palevioletred3'))
+            screen.blit(text, (5, 150))
             managers[current_manager].update(1 / 60)
             managers[current_manager].draw_ui(screen)
             screen.blit(minimap, (0, 692))

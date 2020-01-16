@@ -31,6 +31,7 @@ team_id = [
 
 
 class Unit(Sprite):
+    game = None
 
     def __init__(self, x, y, id, player_id):
         self.id = id
@@ -290,6 +291,8 @@ class BallistaArrow(TwistUnit):
 
 
 class Fighter(TwistUnit):
+    power_cost = 0
+
     def __init__(self, x, y, id, player_id, default_image):
         super().__init__(x, y, id, player_id, default_image)
         self.target_angle = 0
@@ -297,6 +300,8 @@ class Fighter(TwistUnit):
         self.delay = 0
         self.delay_time = 120
         self.damage = UNIT_STATS[type(self)][1] * Forge.get_mult(self)[1]
+        if Unit.game is not None:
+            Unit.game.players[self.player_id].power += self.power_cost
 
     def move_to_point(self, event, game, straight_speed, turn_speed, twist_speed=1):
         if event.type == SERVER_EVENT_UPDATE:
@@ -412,11 +417,17 @@ class Fighter(TwistUnit):
             second = game.find_with_id(int(arr.pop(0)))
         self.target = (target, second)
 
+    def kill(self):
+        if Unit.game is not None:
+            Unit.game.players[self.player_id].power -= self.power_cost
+        super().kill()
+
 
 class Archer(Fighter):
     cost = (1.0, 1.0)
     placeable = False
     name = 'Лучник'
+    power_cost = 1  # Поменять
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/warrior/archer/{team_id[i]}.png'))
@@ -471,6 +482,7 @@ class Soldier(Fighter):
     cost = (5.0, 0.0)
     name = 'Воин'
     placeable = False
+    power_cost = 1  # Поменять
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/warrior/soldier/{team_id[i]}.png'))
@@ -531,6 +543,7 @@ class Worker(Fighter):
     cost = (5.0, 0.0)
     name = 'Рабочий'
     placeable = False
+    power_cost = 3  # Поменять
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/warrior/working/{team_id[i]}.png'))
@@ -734,15 +747,14 @@ class Forge(Unit):
     image = images[0]
     required_level = 1
     unit_type = TYPE_BUILDING
-    game = None
 
     @staticmethod
     def get_mult(unit):
-        if Forge.game is None:
+        if Unit.game is None:
             return 1.0, 1.0
         if unit.unit_type in [TYPE_RESOURCE, TYPE_DECOR]:
             return 1.0, 1.0
-        player = Forge.game.players[unit.player_id]
+        player = Unit.game.players[unit.player_id]
         if player is None:
             return 1.0, 1.0
         player_forge_level = player.max_forge_level
@@ -976,6 +988,7 @@ class FireProjectile(TwistUnit):
 
 class Dragon(Fighter):
     cost = (5.0, 0.0)
+    power_cost = 5  # Поменять
     name = 'Дракон'
     placeable = False
     images = []
@@ -1084,6 +1097,7 @@ class UncompletedBuilding(Unit):
 class Ballista(Fighter):
     cost = (1.0, 1.0)
     placeable = False
+    power_cost = 3  # Поменять
     name = 'Баллиста'
     images = []
     for i in range(10):
@@ -1132,6 +1146,47 @@ class Ballista(Fighter):
                     self.find_new_target(args[1])
 
 
+class Farm(Unit):
+    name = 'Ферма'
+    placeable = True
+    cost = (1.0, 0.0)
+
+    images = []
+    for i in range(10):
+        images.append(pygame.image.load(f'sprite-games/building/farm/{team_id[i]}.png'))
+    image = images[0]
+    required_level = 1
+    unit_type = TYPE_BUILDING
+
+    instances = []
+
+    @staticmethod
+    def get_player_meat(player_id):
+        meat = 0
+        to_remove = []
+        for inst in Farm.instances:
+            if not inst.is_alive():
+                to_remove.append(inst)
+                continue
+            if inst.player_id == player_id:
+                meat += 10
+        for i in to_remove:
+            Fortress.instances.remove(i)
+        return meat
+
+    def __init__(self, x, y, id, player_id):
+        self.image = Farm.images[player_id]
+        super().__init__(x, y, id, player_id)
+        Farm.instances.append(self)
+
+    def update(self, *args):
+        super().update(*args)
+        if not self.is_alive():
+            if args[0].type == SERVER_EVENT_UPDATE:
+                args[1].kill(self)
+                return
+
+
 UNIT_TYPES = {
     0: Soldier,
     1: Mine,
@@ -1149,7 +1204,8 @@ UNIT_TYPES = {
     13: BallistaArrow,
     14: DragonLore,
     15: Workshop,
-    16: Forge
+    16: Forge,
+    17: Farm
 }
 
 UNIT_STATS = {  # (max_health, base_dmg)
@@ -1170,6 +1226,7 @@ UNIT_STATS = {  # (max_health, base_dmg)
     DragonLore: (150, 0),  # DragonLore,
     Workshop: (150, 0),  # Workshop,
     Forge: (150, 0),  # Forge
+    Farm: (150, 0)  # Farm
 }
 
 

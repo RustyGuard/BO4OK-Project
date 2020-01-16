@@ -6,11 +6,10 @@ from threading import Lock
 
 import pygame
 from pygame import sprite
-from pygame.sprite import Group, Sprite
+from pygame.sprite import Group
 from constants import SERVER_EVENT_SEC, SERVER_EVENT_UPDATE, SERVER_EVENT_SYNC, SCREEN_WIDTH, SCREEN_HEIGHT
 
-from units import get_class_id, UNIT_TYPES, TARGET_MOVE, Fortress, Mine, Worker, Tree, UncompletedBuilding, \
-    TYPE_BUILDING, TYPE_FIGHTER, Forge
+from units import *
 
 NEED_PLAYERS = 1
 MAX_PLAYERS = 10
@@ -156,6 +155,7 @@ class Player:
         self.wood = 100
         self.max_forge_level = 0
         self.id = -2
+        self.power = 0
 
 
 class ServerGame:
@@ -381,6 +381,7 @@ def main(screen, nicname):
         game.lock.acquire()
         for pl in game.players.values():
             pl.client.send(f'3_1_{pl.money}_{pl.wood}')
+            pl.client.send(f'3_2_{pl.power}_{Farm.get_player_meat(pl.id)}')
         game.lock.release()
 
     with open('server_setting.txt') as settings:
@@ -390,7 +391,7 @@ def main(screen, nicname):
     print('\n\tYour ip is:', server_ip, '\n')
     server = Server(server_ip)
     game = ServerGame(server)
-    Forge.game = game
+    Unit.game = game
     server.callback = pre_read
     server.connected_callback = connect_player
     server.disconnected_callback = disconnect_player
