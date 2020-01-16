@@ -32,6 +32,7 @@ team_id = [
 
 class Unit(Sprite):
     game = None
+    power_cost = 0
 
     def __init__(self, x, y, id, player_id):
         self.id = id

@@ -228,16 +228,21 @@ class ServerGame:
             if ignore_money or self.has_enought(player_id, build_class.cost):
                 building = build_class(x, y, get_curr_id(), player_id, *args)
                 if ignore_space or (not sprite.spritecollideany(building, self.all_sprites)):
-                    if not ignore_money:
-                        self.take_resources(player_id, build_class.cost)
-                    self.server.send_all(
-                        f'1_{get_class_id(build_class)}_{x}_{y}_{building.id}_{player_id}{building.get_args()}')
-                    self.all_sprites.add(building)
-                    if building.unit_type == TYPE_BUILDING:
-                        self.buildings.add(building)
-                    if building.can_upgraded:
-                        building.next_level(self)
-                        self.server.send_all(f'7_{building.id}_{building.level}')
+
+                    if player_id == -1 or (self.players[player_id].power <= Farm.get_player_meat(player_id)):
+                        if not ignore_money:
+                            self.take_resources(player_id, build_class.cost)
+                        self.server.send_all(
+                            f'1_{get_class_id(build_class)}_{x}_{y}_{building.id}_{player_id}{building.get_args()}')
+                        self.all_sprites.add(building)
+                        if building.unit_type == TYPE_BUILDING:
+                            self.buildings.add(building)
+                        if building.can_upgraded:
+                            building.next_level(self)
+                            self.server.send_all(f'7_{building.id}_{building.level}')
+                    else:
+                        print('Not enought meat!')
+                        building.kill()
                 else:
                     print(f'No place {build_class}')
                     building = None
@@ -315,6 +320,10 @@ def place_fortresses(game):
 
         x, y = int(x * 1.25), int(y * 1.25)
         game.place(Mine, x, y, -1,
+                   ignore_money=True, ignore_fort_level=True, ignore_space=True)
+
+        x, y = int(x * 0.55), int(y * 0.55)
+        game.place(Farm, x, y, player_id,
                    ignore_money=True, ignore_fort_level=True, ignore_space=True)
 
         trees_left = 7
