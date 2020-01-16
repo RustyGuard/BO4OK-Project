@@ -1,8 +1,7 @@
 import math
-from random import randint, choice
+from random import randint
 
 import pygame
-from pygame import Color
 from pygame.rect import Rect
 from pygame.sprite import Sprite
 from pygame.surface import Surface
@@ -19,6 +18,12 @@ STATE_ANY_WORK = 4
 TARGET_MOVE = 0
 TARGET_ATTACK = 1
 TARGET_NONE = 2
+
+TYPE_BUILDING = 0
+TYPE_PROJECTILE = 1
+TYPE_FIGHTER = 2
+TYPE_DECOR = 3
+TYPE_RESOURCE = 4
 
 team_id = [
     'black', 'aqua', 'blue', 'green', 'light_green', 'orange', 'pink', 'purple', 'red', 'yellow',
@@ -37,18 +42,14 @@ class Unit(Sprite):
         self.y = float(y)
         self.offsetx = 0
         self.offsety = 0
-        self.has_target = False
-        self.max_health = 100
-        self.health = 100
-        self.live = True
-        self.is_building = True
-        self.is_projectile = False
         self.can_upgraded = False
         self.level = -1
+        self.max_health = UNIT_STATS[type(self)][0] * Forge.get_mult(self)[0]
+        self.health = self.max_health
         super().__init__()
 
     def is_alive(self):
-        return self.live and self.health > 0
+        return self.health > 0
 
     def move(self, x, y, game):
         if x != 0:
@@ -112,6 +113,7 @@ class Unit(Sprite):
         arr.append(str(self.id))
         arr.append(str(self.player_id))
         arr.append(str(self.health))
+        arr.append(str(self.max_health))
         arr.append(str(self.level))
         return arr
 
@@ -122,6 +124,7 @@ class Unit(Sprite):
         self.id = int(arr.pop(0))
         self.player_id = int(arr.pop(0))
         self.health = float(arr.pop(0))
+        self.max_health = float(arr.pop(0))
         self.level = int(arr.pop(0))
 
     def send_updated(self, game):
@@ -186,6 +189,7 @@ class Mine(Unit):
     mine = pygame.image.load('sprite-games/building/mine/mine.png')
     image = mine
     required_level = 1
+    unit_type = TYPE_RESOURCE
 
     def __init__(self, x, y, id, player_id):
         self.image = Mine.mine
@@ -201,16 +205,15 @@ class Mine(Unit):
 
 class Arrow(TwistUnit):
     image = pygame.image.load(f'sprite-games/warrior/archer/arrow.png')
-    damage = 5
     name = 'Arrow'
     placeable = False
+    unit_type = TYPE_PROJECTILE
 
     def __init__(self, x, y, id, player_id, angle):
         super().__init__(x, y, id, player_id, Arrow.image)
         self.set_angle(int(angle))
-        self.is_projectile = True
-        self.is_building = False
         self.time = 1200
+        self.damage = UNIT_STATS[Arrow][1] * Forge.get_mult(self)[1]
 
     def update(self, *args):
         if args[0].type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
@@ -224,8 +227,8 @@ class Arrow(TwistUnit):
                 if self.time <= 0:
                     args[1].kill(self)
                 for spr in args[1].get_intersect(self):
-                    if spr.player_id != -1 and spr != self and spr.player_id != self.player_id and not spr.is_projectile:
-                        spr.take_damage(Arrow.damage, args[1])
+                    if spr.player_id not in [-1, self.player_id] and spr.unit_type != TYPE_PROJECTILE:
+                        spr.take_damage(self.damage, args[1])
                         args[1].kill(self)
                         return
 
@@ -242,18 +245,17 @@ class Arrow(TwistUnit):
 
 class BallistaArrow(TwistUnit):
     image = pygame.image.load(f'sprite-games/warrior/ballista/anim/arrow.png')
-    damage = 25
     name = 'BallistaArrow'
     placeable = False
+    unit_type = TYPE_PROJECTILE
 
     def __init__(self, x, y, id, player_id, angle):
         super().__init__(x, y, id, player_id, Arrow.image)
         self.set_angle(int(angle))
-        self.is_projectile = True
-        self.is_building = False
         self.time = 1200
         self.live_time = 5
         self.striken = []
+        self.damage = UNIT_STATS[BallistaArrow][1] * Forge.get_mult(self)[1]
 
     def update(self, *args):
         if args[0].type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
@@ -267,10 +269,10 @@ class BallistaArrow(TwistUnit):
                 if self.time <= 0:
                     args[1].kill(self)
                 for spr in args[1].get_intersect(self):
-                    if spr.player_id != -1 and spr != self and spr.player_id != self.player_id and not spr.is_projectile:
+                    if spr.player_id not in [-1, self.player_id] and spr.unit_type != TYPE_PROJECTILE:
                         if spr not in self.striken:
                             self.live_time -= (1 if type(spr) != Dragon else 5)
-                            spr.take_damage(BallistaArrow.damage, args[1])
+                            spr.take_damage(self.damage, args[1])
                             self.striken.append(spr)
                             if self.live_time <= 0:
                                 args[1].kill(self)
@@ -292,11 +294,9 @@ class Fighter(TwistUnit):
         super().__init__(x, y, id, player_id, default_image)
         self.target_angle = 0
         self.target = (TARGET_NONE, None)
-        self.has_target = True
-        self.is_building = False
         self.delay = 0
         self.delay_time = 120
-        self.damage = 10
+        self.damage = UNIT_STATS[type(self)][1] * Forge.get_mult(self)[1]
 
     def move_to_point(self, event, game, straight_speed, turn_speed, twist_speed=1):
         if event.type == SERVER_EVENT_UPDATE:
@@ -348,7 +348,7 @@ class Fighter(TwistUnit):
         return False
 
     def is_valid_enemy(self, enemy):
-        return enemy.player_id != -1 and enemy.player_id != self.player_id and not enemy.is_projectile
+        return enemy.player_id not in [-1, self.player_id] and enemy.unit_type != TYPE_PROJECTILE
 
     def turn_around(self, speed=1):
         angle_diff = self.target_angle - self.angle
@@ -422,6 +422,7 @@ class Archer(Fighter):
         images.append(pygame.image.load(f'sprite-games/warrior/archer/{team_id[i]}.png'))
     image = images[0]
     required_level = 1  # Will be removed
+    unit_type = TYPE_FIGHTER
 
     def __init__(self, x, y, id, player_id):
         self.image = Archer.images[player_id]
@@ -475,6 +476,7 @@ class Soldier(Fighter):
         images.append(pygame.image.load(f'sprite-games/warrior/soldier/{team_id[i]}.png'))
     image = images[0]
     required_level = 1  # Will be removed
+    unit_type = TYPE_FIGHTER
 
     def __init__(self, x, y, id, player_id):
         self.image = Soldier.images[player_id]
@@ -534,12 +536,12 @@ class Worker(Fighter):
         images.append(pygame.image.load(f'sprite-games/warrior/working/{team_id[i]}.png'))
     image = images[0]
     required_level = 1  # Will be removed
+    unit_type = TYPE_FIGHTER
 
     def __init__(self, x, y, id, player_id):
         self.image = Worker.images[player_id]
 
         super().__init__(x, y, id, player_id, Worker.images[player_id])
-        self.damage = 1
         self.money = 0
         self.wood = 0
         self.capacity = 50
@@ -620,7 +622,7 @@ class Worker(Fighter):
         if self.is_full():
             return type(enemy) == Fortress and enemy.player_id == self.player_id
         if self.state == STATE_ANY_WORK:
-            return type(enemy) in [Mine, Tree, UncompletedBuilding]
+            return type(enemy) in [Mine, Tree, UncompletedBuilding] and enemy.player_id in [-1, self.player_id]
         if self.state == STATE_DIG:
             return type(enemy) == Mine
         elif self.state == STATE_CHOP:
@@ -672,6 +674,7 @@ class Fortress(ProductingBuild):
         images.append(pygame.image.load(f'sprite-games/building/fortress/{team_id[i]}.png'))
     image = images[0]
     required_level = 1
+    unit_type = TYPE_BUILDING
 
     instances = []
 
@@ -692,7 +695,7 @@ class Fortress(ProductingBuild):
     def __init__(self, x, y, id, player_id):
         self.image = Fortress.images[player_id]
         super().__init__(x, y, id, player_id, 2, [Worker])
-        self.level = 1
+        self.level = 0
         self.can_upgraded = True
         Fortress.instances.append(self)
 
@@ -716,44 +719,53 @@ class Fortress(ProductingBuild):
         return Fortress.level_costs[self.level - 1]
 
     def can_be_upgraded(self, game):
-        return 3 > self.level > 0
+        return 3 > self.level >= 0
 
 
-class Forge(ProductingBuild):
+class Forge(Unit):
     name = 'Кузня'
     placeable = True
     cost = (1.0, 0.0)
 
-    level_costs = [(50.0, 15.0), (20.0, 30.0)]  # Поменять
+    level_costs = [(50.0, 15.0), (20.0, 30.0), (30.0, 40.0)]  # Поменять
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/building/forge/{team_id[i]}.png'))
     image = images[0]
     required_level = 1
-
-    instances = []
+    unit_type = TYPE_BUILDING
+    game = None
 
     @staticmethod
-    def get_player_level(player_id):
-        max_level = 0
-        to_remove = []
-        for inst in Forge.instances:
-            if not inst.is_alive():
-                to_remove.append(inst)
-                continue
-            if inst.player_id == player_id and inst.level > max_level:
-                max_level = inst.level
-        for i in to_remove:
-            Fortress.instances.remove(i)
-        return max_level
+    def get_mult(unit):
+        if Forge.game is None:
+            return 1.0, 1.0
+        if unit.unit_type in [TYPE_RESOURCE, TYPE_DECOR]:
+            return 1.0, 1.0
+        player_forge_level = Forge.game.players[unit.player_id].max_forge_level
+        health_mult = 1.0
+        damage_mult = 1.0
+        if unit.unit_type == TYPE_PROJECTILE:
+            if player_forge_level == 2:
+                damage_mult *= K_DAMAGE_UP
+        if unit.unit_type == TYPE_FIGHTER:
+            if player_forge_level == 1:
+                health_mult *= K_HP_UP
+            elif player_forge_level == 2:
+                damage_mult *= K_DAMAGE_UP
+        if unit.unit_type == TYPE_BUILDING:
+            if type(unit) != UncompletedBuilding:
+                if player_forge_level == 3:
+                    health_mult *= K_BUILDHP_UP
+                elif player_forge_level == 4:
+                    health_mult *= K_BUILDHP_UP2
+        return health_mult, damage_mult
 
     def __init__(self, x, y, id, player_id):
         self.image = Forge.images[player_id]
-        super().__init__(x, y, id, player_id, 2, [])
-        self.level = 1
-        self.hp_upgrade()
+        super().__init__(x, y, id, player_id)
+        self.level = 0
         self.can_upgraded = True
-        Forge.instances.append(self)
 
     def update(self, *args):
         super().update(*args)
@@ -762,35 +774,32 @@ class Forge(ProductingBuild):
                 args[1].kill(self)
                 return
 
-    def stats_upgrade(self, game, level):  # данный метод ВОНЯЕТ и не тестен
-        for obj in game.sprites:
-            if obj.issubclass(Unit) and obj.player_id == self.player_id:
-                if obj.type == Fighter:
-                    if level == 1:
-                        obj.max_health *= K_HP_UP
-                        obj.health *= K_HP_UP
-                    elif level == 2:
-                        obj.damage *= K_DAMAGE_UP
-                elif obj.is_building:
-                    if level == 3:
-                        obj.health *= K_BUILDHP_UP
-                    elif level == 4:
-                        obj.health *= K_BUILDHP_UP2
-
     def next_level(self, game):
-        if self.level == 3:
+        if self.level == 4:
             print('Already on max level!')
             return
         self.level += 1
+        if game.players[self.player_id].max_forge_level < self.level:
+            game.players[self.player_id].max_forge_level = self.level
+
+        for obj in game.all_sprites:
+            if obj.player_id == self.player_id:
+                h_mult, d_mult = Forge.get_mult(obj)
+                if h_mult != 1.0:
+                    obj.health *= h_mult
+                    obj.max_health *= h_mult
+                    game.server.send_all(f'5_{obj.id}_{obj.health}_{obj.max_health}')
+                if d_mult != 1.0:
+                    obj.damage *= d_mult
 
     def level_cost(self, game):
-        if self.level == 3:
+        if self.level == 4:
             print('Max level!')
             return None
         return Forge.level_costs[self.level - 1]
 
     def can_be_upgraded(self, game):
-        return 3 > self.level > 0
+        return 4 > self.level >= 0
 
 
 class Casern(ProductingBuild):
@@ -802,11 +811,27 @@ class Casern(ProductingBuild):
         images.append(pygame.image.load(f'sprite-games/building/casern/{team_id[i]}.png'))
     image = images[0]
     required_level = 1
+    unit_type = TYPE_BUILDING
 
     def __init__(self, x, y, id, player_id):
         self.image = Casern.images[player_id]
-        super().__init__(x, y, id, player_id, 5,
-                         [Archer, Soldier])
+        super().__init__(x, y, id, player_id, 5, [Archer, Soldier])
+
+
+class DragonLore(ProductingBuild):
+    placeable = True
+    name = 'Драконье логово'
+    cost = (1.0, 0.0)
+    images = []
+    for i in range(10):
+        images.append(pygame.image.load(f'sprite-games/building/dragonlair/{team_id[i]}.png'))
+    image = images[0]
+    required_level = 1
+    unit_type = TYPE_BUILDING
+
+    def __init__(self, x, y, id, player_id):
+        self.image = DragonLore.images[player_id]
+        super().__init__(x, y, id, player_id, 5, [Dragon])
 
 
 class Workshop(ProductingBuild):
@@ -818,27 +843,11 @@ class Workshop(ProductingBuild):
         images.append(pygame.image.load(f'sprite-games/building/workshop/{team_id[i]}.png'))
     image = images[0]
     required_level = 1
+    unit_type = TYPE_BUILDING
 
     def __init__(self, x, y, id, player_id):
         self.image = Workshop.images[player_id]
-        super().__init__(x, y, id, player_id, 5,
-                         [Ballista])
-
-
-class DragonsLair(ProductingBuild):
-    placeable = True
-    name = 'Логово дракона'
-    cost = (1.0, 0.0)
-    images = []
-    for i in range(10):
-        images.append(pygame.image.load(f'sprite-games/building/dragonlair/{team_id[i]}.png'))
-    image = images[0]
-    required_level = 1
-
-    def __init__(self, x, y, id, player_id):
-        self.image = DragonsLair.images[player_id]
-        super().__init__(x, y, id, player_id, 5,
-                         [Dragon])
+        super().__init__(x, y, id, player_id, 5, [Ballista])
 
 
 class ArcherTower(Fighter):
@@ -850,6 +859,7 @@ class ArcherTower(Fighter):
         images.append(pygame.image.load(f'sprite-games/building/turret/{team_id[i]}.png'))
     image = images[0]
     required_level = 2  # Поменять этот пример
+    unit_type = TYPE_BUILDING
 
     def __init__(self, x, y, id, player_id):
         self.archer_image = Archer.images[player_id]
@@ -857,7 +867,6 @@ class ArcherTower(Fighter):
 
         super().__init__(x, y, id, player_id, ArcherTower.images[player_id])
         self.update_image()
-        self.is_building = True
 
     def update_image(self):
         self.image = Surface(self.tower_image.get_rect().size, pygame.SRCALPHA)
@@ -904,6 +913,7 @@ class Tree(Unit):
     tree = pygame.image.load('sprite-games/building/tree/tree.png')
     image = tree
     required_level = 1
+    unit_type = TYPE_RESOURCE
 
     def __init__(self, x, y, id, player_id):
         self.image = Tree.tree
@@ -921,18 +931,17 @@ class FireProjectile(TwistUnit):
     images = []
     for i in range(1, 7):
         images.append(pygame.image.load(f'sprite-games/warrior/dragon/Flame/{i}.png'))
-    damage = 1
     name = 'Пламень'
     placeable = False
+    unit_type = TYPE_PROJECTILE
 
     def __init__(self, x, y, id, player_id, angle):
         self.time = 0
         self.current_state = 0
         self.set_angle(int(angle))
         super().__init__(x, y, id, player_id, None)
-        self.is_projectile = True
-        self.is_building = False
         self.angle = int(angle)
+        self.damage = UNIT_STATS[type(self)][1] * Forge.get_mult(self)[1]
 
     def update(self, *args):
         if args[0].type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
@@ -949,9 +958,9 @@ class FireProjectile(TwistUnit):
                         print('Dead')
                         return
                     for spr in args[1].get_intersect(self):
-                        if (spr != self) and (not spr.is_projectile) \
+                        if (spr != self) and (spr.unit_type != TYPE_PROJECTILE) \
                                 and (spr.player_id not in [self.player_id, -1]) and type(spr) != Dragon:
-                            spr.take_damage(FireProjectile.damage, args[1])
+                            spr.take_damage(self.damage, args[1])
 
     def get_args(self):
         print(self.angle)
@@ -975,6 +984,7 @@ class Dragon(Fighter):
         images.append(anim)
     image = images[0][0]
     required_level = 1  # Will be removed
+    unit_type = TYPE_FIGHTER
 
     def __init__(self, x, y, id, player_id):
         self.time = 0
@@ -1034,6 +1044,7 @@ class Dragon(Fighter):
 
 class UncompletedBuilding(Unit):
     placeable = False
+    unit_type = TYPE_BUILDING
 
     def __init__(self, x, y, id, player_id, clazz_id):
         self.clazz = UNIT_TYPES[int(clazz_id)]
@@ -1076,6 +1087,7 @@ class Ballista(Fighter):
         images.append(pygame.image.load(f'sprite-games/warrior/ballista/{team_id[i]}.png'))
     image = images[0]
     required_level = 1  # Will be removed
+    unit_type = TYPE_FIGHTER
 
     def __init__(self, x, y, id, player_id):
         self.image = Ballista.images[player_id]
@@ -1132,9 +1144,29 @@ UNIT_TYPES = {
     11: UncompletedBuilding,
     12: Ballista,
     13: BallistaArrow,
-    14: Workshop,
-    15: DragonsLair,
+    14: DragonLore,
+    15: Workshop,
     16: Forge
+}
+
+UNIT_STATS = {  # (max_health, base_dmg)
+    Soldier: (50, 10),  # Soldier,
+    Mine: (1000, 0),  # Mine,
+    Archer: (50, 0),  # Archer,
+    Arrow: (1, 5),  # Arrow,
+    Casern: (150, 0),  # Casern,
+    Fortress: (250, 0),  # Fortress,
+    Worker: (75, 1),  # Worker,
+    ArcherTower: (75, 0),  # ArcherTower,
+    Tree: (100, 0),  # Tree,
+    Dragon: (100, 0),  # Dragon,
+    FireProjectile: (1, 1),  # FireProjectile,
+    UncompletedBuilding: (100, 0),  # UncompletedBuilding,
+    Ballista: (100, 0),  # Ballista,
+    BallistaArrow: (1, 25),  # BallistaArrow,
+    DragonLore: (150, 0),  # DragonLore,
+    Workshop: (150, 0),  # Workshop,
+    Forge: (150, 0),  # Forge
 }
 
 

@@ -69,6 +69,16 @@
       }
     }
   },
+  "place_16": {
+    "misc": {
+      "shape": "ellipse"
+    },
+    "images": {
+      "normal_image": {
+        "path": "sprite-games/building/forge/icon.png"
+      }
+    }
+  },
   "product_0": {
     "misc": {
       "shape": "ellipse"

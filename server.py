@@ -9,7 +9,8 @@ from pygame import sprite
 from pygame.sprite import Group, Sprite
 from constants import SERVER_EVENT_SEC, SERVER_EVENT_UPDATE, SERVER_EVENT_SYNC, SCREEN_WIDTH, SCREEN_HEIGHT
 
-from units import get_class_id, UNIT_TYPES, TARGET_MOVE, Fortress, Mine, Worker, Tree, UncompletedBuilding
+from units import get_class_id, UNIT_TYPES, TARGET_MOVE, Fortress, Mine, Worker, Tree, UncompletedBuilding, \
+    TYPE_BUILDING, TYPE_FIGHTER, Forge
 
 NEED_PLAYERS = 1
 MAX_PLAYERS = 10
@@ -153,7 +154,7 @@ class Player:
         self.client = client
         self.money = 150.0
         self.wood = 100
-        self.max_forge_level = 3
+        self.max_forge_level = 0
         self.id = -2
 
 
@@ -232,8 +233,11 @@ class ServerGame:
                     self.server.send_all(
                         f'1_{get_class_id(build_class)}_{x}_{y}_{building.id}_{player_id}{building.get_args()}')
                     self.all_sprites.add(building)
-                    if building.is_building:
+                    if building.unit_type == TYPE_BUILDING:
                         self.buildings.add(building)
+                    if building.can_upgraded:
+                        building.next_level(self)
+                        self.server.send_all(f'7_{building.id}_{building.level}')
                 else:
                     print(f'No place {build_class}')
                     building = None
@@ -256,7 +260,7 @@ class ServerGame:
                     self.server.send_all(
                         f'1_{get_class_id(UncompletedBuilding)}_{x}_{y}_{building.id}_{player_id}{building.get_args()}')
                     self.all_sprites.add(building)
-                    if building.is_building:
+                    if building.unit_type == TYPE_BUILDING:
                         self.buildings.add(building)
                 else:
                     print(f'No place {build_class}')
@@ -279,7 +283,7 @@ class ServerGame:
     def retarget(self, id, x, y, client):
         for i in self.all_sprites:
             if i.id == id:
-                if i.has_target:
+                if i.unit_type == TYPE_FIGHTER:
                     self.lock.acquire()
                     if i.player_id == client.id:
                         i.set_target(TARGET_MOVE, (x, y), self)
@@ -386,6 +390,7 @@ def main(screen, nicname):
     print('\n\tYour ip is:', server_ip, '\n')
     server = Server(server_ip)
     game = ServerGame(server)
+    Forge.game = game
     server.callback = pre_read
     server.connected_callback = connect_player
     server.disconnected_callback = disconnect_player

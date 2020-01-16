@@ -15,7 +15,7 @@ from constants import CLIENT_EVENT_SEC, CLIENT_EVENT_UPDATE, COLOR_LIST, CAMERA_
     CAMERA_STEP_FASTER, CAMERA_STEP_SLOWER, SCREEN_WIDTH, SCREEN_HEIGHT
 from units import get_class_id, UNIT_TYPES, TARGET_MOVE, TARGET_ATTACK, TARGET_NONE, Arrow, \
     ProductingBuild, Worker, STATE_DIG, STATE_FIGHT, STATE_BUILD, STATE_CHOP, STATE_ANY_WORK, UncompletedBuilding, \
-    Fortress
+    Fortress, TYPE_BUILDING, TYPE_FIGHTER, TYPE_PROJECTILE
 
 cursor = pygame.image.load('sprite-games/menu/cursor.png')
 FPS = 60
@@ -159,7 +159,7 @@ class Game:
         en.offsety = camera.off_y
         en.update_rect()
         self.sprites.add(en)
-        if en.is_building:
+        if en.unit_type == TYPE_BUILDING:
             self.buildings.add(en)
         # print(f'Created entity of type [{type}] at [{x}, {y}] owner {player_id}')
         self.lock.release()
@@ -272,14 +272,14 @@ class SelectArea:
                     for spr in self.selected:
                         if spr is None:
                             continue
-                        if spr.has_target and spr.player_id == self.game.info.id:
+                        if spr.unit_type == TYPE_FIGHTER and spr.player_id == self.game.info.id:
                             self.client.send(
                                 f'2_{spr.id}_{event.pos[0] - self.camera.off_x}_{event.pos[1] - self.camera.off_y}')
                     self.clear()
             elif event.button == 1:
                 if self.dragged:
                     for spr in self.find_intersect():
-                        if spr.has_target and spr.player_id == self.game.info.id:
+                        if spr.unit_type == TYPE_FIGHTER and spr.player_id == self.game.info.id:
                             self.selected.append(spr)
                     if self.selected:
                         self.active = True
@@ -502,8 +502,8 @@ class ClientWait:
                     en.kill()
             elif cmd == '5':
                 en = game.find_with_id(int(args[0]))
-                en.health = int(args[1])
-                en.max_health = int(args[2])
+                en.health = float(args[1])
+                en.max_health = float(args[2])
                 return
             elif cmd == '6':
                 camera.set_pos(int(args[0]), int(args[1]))
@@ -524,7 +524,7 @@ class ClientWait:
                     en.offsetx = camera.off_x
                     en.offsety = camera.off_y
                     game.sprites.add(en)
-                    if en.is_building:
+                    if en.unit_type == TYPE_BUILDING:
                         game.buildings.add(en)
 
                 en.set_update_args(args, game)
@@ -663,7 +663,7 @@ class ClientWait:
                     text = small_font.render(game.get_player_nick(spr.player_id), 1, COLOR_LIST[spr.player_id])
                     screen.blit(text, spr.rect.bottomleft)
 
-                if spr.is_projectile or spr.health == spr.max_health:
+                if spr.unit_type == TYPE_PROJECTILE or spr.health == spr.max_health:
                     continue
                 colors = ['gray', 'orange'] if type(spr) == UncompletedBuilding else ['red', 'green']
                 rect = Rect(spr.rect.left, spr.rect.top - 5, spr.rect.width, 5)
@@ -672,6 +672,11 @@ class ClientWait:
                 pygame.draw.rect(screen, Color(colors[1]), rect)
                 rect.width = spr.rect.width
                 pygame.draw.rect(screen, Color('black'), rect, 1)
+
+                # text = small_font.render(str(spr.health), 1, COLOR_LIST[spr.player_id])
+                # screen.blit(text, spr.rect.bottomright)
+                # text = small_font.render(str(spr.max_health), 1, COLOR_LIST[spr.player_id])
+                # screen.blit(text, spr.rect.topright)
 
             text = font.render(str(game.info.money), 1, (100, 255, 100))
             screen.blit(text, (5, 50))
