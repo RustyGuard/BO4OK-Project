@@ -578,9 +578,19 @@ class ClientWait:
         managers['build'] = build_manager
         managers['retarget'] = current_area
         managers['product'] = ProductManager(screen)
+
         global FPS
         print(game.other_nicks)
         minimap = pygame.image.load('sprite-games/minimap.png')
+
+        with open('settings.txt', 'r') as set:
+            settings = {}
+            for i in set.read().split("\n")[1:]:
+                a = i.split()
+                if a[1] == "TRUE":
+                    settings[a[0]] = True
+                else:
+                    settings[a[0]] = False
         while running and client.connected:
             for event in pygame.event.get():
                 if event.type == pygame.MOUSEBUTTONUP and current_manager == 'main':
@@ -648,9 +658,13 @@ class ClientWait:
 
             game.lock.acquire()
             # /* Отрисовка заднего фона
-            for i in range(3):
-                for j in range(3):
-                    screen.blit(background, (camera.off_x % 965 + (j - 1) * 965, camera.off_y % 545 + (i - 1) * 545))
+            if settings["BACKGROUND"]:
+                for i in range(3):
+                    for j in range(3):
+                        screen.blit(background,
+                                    (camera.off_x % 965 + (j - 1) * 965, camera.off_y % 545 + (i - 1) * 545))
+            else:
+                screen.fill((200, 200, 200))
             # */
             game.drawSprites(screen)
             for spr in game.sprites:
