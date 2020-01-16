@@ -123,6 +123,8 @@ class PlayerInfo:
         self.wood = 100.0
         self.id = None
         self.nick = nick
+        self.power = 0
+        self.max_power = 100
 
 
 class Camera:
@@ -521,6 +523,10 @@ class ClientWait:
                     game.info.money = float(args[1])
                     game.info.wood = float(args[2])
                     return
+                elif args[0] == '2':  # Power
+                    game.info.power = int(args[1])
+                    game.info.max_power = int(args[2])
+                    return
             elif cmd == '4':
                 en = game.find_with_id(int(args[0]))
                 if en is not None:
@@ -613,6 +619,15 @@ class ClientWait:
         camera_area = Sprite()
         camera_area.rect = Rect(0, 0, 1920, 1080)
 
+
+        with open('settings.txt', 'r') as set:
+            settings = {}
+            for i in set.read().split("\n")[1:]:
+                a = i.split()
+                if a[1] == "TRUE":
+                    settings[a[0]] = True
+                else:
+                    settings[a[0]] = False
         while running and client.connected:
             for event in pygame.event.get():
                 if event.type == pygame.MOUSEBUTTONUP and current_manager == 'main':
@@ -685,9 +700,13 @@ class ClientWait:
 
             game.lock.acquire()
             # /* Отрисовка заднего фона
-            for i in range(3):
-                for j in range(3):
-                    screen.blit(background, (camera.off_x % 965 + (j - 1) * 965, camera.off_y % 545 + (i - 1) * 545))
+            if settings["BACKGROUND"]:
+                for i in range(3):
+                    for j in range(3):
+                        screen.blit(background,
+                                    (camera.off_x % 965 + (j - 1) * 965, camera.off_y % 545 + (i - 1) * 545))
+            else:
+                screen.fill((200, 200, 200))
             # */
             game.drawSprites(screen)
             for spr in game.sprites:
@@ -717,6 +736,8 @@ class ClientWait:
             screen.blit(text, (5, 50))
             text = font.render(str(game.info.wood), 1, Color('burlywood'))
             screen.blit(text, (5, 100))
+            text = font.render(f'{game.info.power}/{game.info.max_power}', 1, Color('palevioletred3'))
+            screen.blit(text, (5, 150))
             managers[current_manager].update(1 / 60)
             managers[current_manager].draw_ui(screen)
             screen.blit(minimap, (0, 692))

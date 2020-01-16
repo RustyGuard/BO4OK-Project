@@ -6,11 +6,10 @@ from threading import Lock
 
 import pygame
 from pygame import sprite
-from pygame.sprite import Group, Sprite
+from pygame.sprite import Group
 from constants import SERVER_EVENT_SEC, SERVER_EVENT_UPDATE, SERVER_EVENT_SYNC, SCREEN_WIDTH, SCREEN_HEIGHT
 
-from units import get_class_id, UNIT_TYPES, TARGET_MOVE, Fortress, Mine, Worker, Tree, UncompletedBuilding, \
-    TYPE_BUILDING, TYPE_FIGHTER, Forge
+from units import *
 
 NEED_PLAYERS = 1
 MAX_PLAYERS = 10
@@ -156,6 +155,7 @@ class Player:
         self.wood = 100
         self.max_forge_level = 0
         self.id = -2
+        self.power = 0
 
 
 class ServerGame:
@@ -228,16 +228,21 @@ class ServerGame:
             if ignore_money or self.has_enought(player_id, build_class.cost):
                 building = build_class(x, y, get_curr_id(), player_id, *args)
                 if ignore_space or (not sprite.spritecollideany(building, self.all_sprites)):
-                    if not ignore_money:
-                        self.take_resources(player_id, build_class.cost)
-                    self.server.send_all(
-                        f'1_{get_class_id(build_class)}_{x}_{y}_{building.id}_{player_id}{building.get_args()}')
-                    self.all_sprites.add(building)
-                    if building.unit_type == TYPE_BUILDING:
-                        self.buildings.add(building)
-                    if building.can_upgraded:
-                        building.next_level(self)
-                        self.server.send_all(f'7_{building.id}_{building.level}')
+
+                    if player_id == -1 or (self.players[player_id].power <= Farm.get_player_meat(player_id)):
+                        if not ignore_money:
+                            self.take_resources(player_id, build_class.cost)
+                        self.server.send_all(
+                            f'1_{get_class_id(build_class)}_{x}_{y}_{building.id}_{player_id}{building.get_args()}')
+                        self.all_sprites.add(building)
+                        if building.unit_type == TYPE_BUILDING:
+                            self.buildings.add(building)
+                        if building.can_upgraded:
+                            building.next_level(self)
+                            self.server.send_all(f'7_{building.id}_{building.level}')
+                    else:
+                        print('Not enought meat!')
+                        building.kill()
                 else:
                     print(f'No place {build_class}')
                     building = None
@@ -317,6 +322,10 @@ def place_fortresses(game):
         game.place(Mine, x, y, -1,
                    ignore_money=True, ignore_fort_level=True, ignore_space=True)
 
+        x, y = int(x * 0.55), int(y * 0.55)
+        game.place(Farm, x, y, player_id,
+                   ignore_money=True, ignore_fort_level=True, ignore_space=True)
+
         trees_left = 7
         tree_x, tree_y = randint(x - 500, x + 500), randint(y - 500, y + 500)
         while trees_left > 0:
@@ -381,6 +390,7 @@ def main(screen, nicname):
         game.lock.acquire()
         for pl in game.players.values():
             pl.client.send(f'3_1_{pl.money}_{pl.wood}')
+            pl.client.send(f'3_2_{pl.power}_{Farm.get_player_meat(pl.id)}')
         game.lock.release()
 
     with open('server_setting.txt') as settings:
@@ -390,7 +400,7 @@ def main(screen, nicname):
     print('\n\tYour ip is:', server_ip, '\n')
     server = Server(server_ip)
     game = ServerGame(server)
-    Forge.game = game
+    Unit.game = game
     server.callback = pre_read
     server.connected_callback = connect_player
     server.disconnected_callback = disconnect_player
