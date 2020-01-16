@@ -25,6 +25,34 @@ def random_nick():
     return (choice(adj).replace('\n', '') + ' ' + choice(noun).replace('\n', '')).capitalize()
 
 
+particles = Group()  # так и не понял куда это расположить,наверное тут
+
+
+class Particle(Sprite):
+
+    def __init__(self, type_building, x, y):
+        super().__init__(particles)
+        self.cur_frame = 0
+        self.frames = [pygame.image.load(f'sprite-games/building/{type_building}/smoke/{1}.png'),
+                       pygame.image.load(f'sprite-games/building/{type_building}/smoke/{2}.png'),
+                       pygame.image.load(f'sprite-games/building/{type_building}/smoke/{3}.png')]
+        self.image = self.frames[self.cur_frame]
+        self.rect = self.image.get_rect()
+        self.y = y
+        self.x = x
+        self.rect[0] += int(self.x)
+        self.rect[1] += int(self.y)
+        self.life_time = 5
+
+    def update(self):
+        if self.life_time == 0:
+            self.kill()
+        if self.life_time > 0:
+            self.life_time -= 1
+        self.cur_frame = (self.cur_frame + 1) % len(self.frames)
+        self.image = self.frames[self.cur_frame]
+
+
 class Client:
     def __init__(self, ip='localhost'):
         self.conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -584,10 +612,13 @@ class ClientWait:
         managers['build'] = build_manager
         managers['retarget'] = current_area
         managers['product'] = ProductManager(screen)
-
         global FPS
         print(game.other_nicks)
         minimap = pygame.image.load('sprite-games/minimap.png')
+
+        camera_area = Sprite()
+        camera_area.rect = Rect(0, 0, 1920, 1080)
+
 
         with open('settings.txt', 'r') as set:
             settings = {}
@@ -659,7 +690,12 @@ class ClientWait:
                             pass  # Поменять курсор на обычный
 
                     camera.move(x_off, y_off)
-
+                    if event.type == CLIENT_EVENT_SEC:
+                        for entity in pygame.sprite.spritecollide(camera_area, game.sprites, False):
+                            if type(entity) == Workshop:
+                                Particle('workshop', entity.x, entity.y)
+                            elif type(entity) == Forge:
+                                Particle('forge', entity.x, entity.y)
                     game.update(event, game)
 
             game.lock.acquire()
@@ -706,7 +742,8 @@ class ClientWait:
             managers[current_manager].draw_ui(screen)
             screen.blit(minimap, (0, 692))
             screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
-
+            particles.update()
+            particles.draw(screen)
             pygame.display.flip()
             game.lock.release()
             # print('FPS', 1000 / clock.tick(FPS))
