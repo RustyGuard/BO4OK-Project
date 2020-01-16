@@ -84,7 +84,7 @@ class Unit(Sprite):
                 if self.y < -5000:
                     self.y = -5000
                     self.rect.centery = int(self.y) + self.offsety
-                if self.y < 5000:
+                if self.y > 5000:
                     self.y = 5000
                     self.rect.centery = int(self.y) + self.offsety
 
@@ -219,7 +219,7 @@ class Arrow(TwistUnit):
         if args[0].type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
             self.move_to_angle(3, args[1])
             if args[0].type == SERVER_EVENT_UPDATE:
-                if self.x < -5000 or self.x > 5000 or self.y < -5000 or self.y < 5000:
+                if self.x < -5000 or self.x > 5000 or self.y < -5000 or self.y > 5000:
                     args[1].kill(self)
                     return
 
@@ -261,7 +261,7 @@ class BallistaArrow(TwistUnit):
         if args[0].type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
             self.move_to_angle(3, args[1])
             if args[0].type == SERVER_EVENT_UPDATE:
-                if self.x < -5000 or self.x > 5000 or self.y < -5000 or self.y < 5000:
+                if self.x < -5000 or self.x > 5000 or self.y < -5000 or self.y > 5000:
                     args[1].kill(self)
                     return
 
@@ -742,7 +742,10 @@ class Forge(Unit):
             return 1.0, 1.0
         if unit.unit_type in [TYPE_RESOURCE, TYPE_DECOR]:
             return 1.0, 1.0
-        player_forge_level = Forge.game.players[unit.player_id].max_forge_level
+        player = Forge.game.players[unit.player_id]
+        if player is None:
+            return 1.0, 1.0
+        player_forge_level = player.max_forge_level
         health_mult = 1.0
         damage_mult = 1.0
         if unit.unit_type == TYPE_PROJECTILE:

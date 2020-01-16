@@ -13,9 +13,7 @@ from pygame_gui.elements import UIButton, UILabel
 
 from constants import CLIENT_EVENT_SEC, CLIENT_EVENT_UPDATE, COLOR_LIST, CAMERA_MIN_SPEED, CAMERA_MAX_SPEED, \
     CAMERA_STEP_FASTER, CAMERA_STEP_SLOWER, SCREEN_WIDTH, SCREEN_HEIGHT
-from units import get_class_id, UNIT_TYPES, TARGET_MOVE, TARGET_ATTACK, TARGET_NONE, Arrow, \
-    ProductingBuild, Worker, STATE_DIG, STATE_FIGHT, STATE_BUILD, STATE_CHOP, STATE_ANY_WORK, UncompletedBuilding, \
-    Fortress, TYPE_BUILDING, TYPE_FIGHTER, TYPE_PROJECTILE
+from units import *
 
 cursor = pygame.image.load('sprite-games/menu/cursor.png')
 FPS = 60
@@ -663,7 +661,7 @@ class ClientWait:
                     text = small_font.render(game.get_player_nick(spr.player_id), 1, COLOR_LIST[spr.player_id])
                     screen.blit(text, spr.rect.bottomleft)
 
-                if spr.unit_type == TYPE_PROJECTILE or spr.health == spr.max_health:
+                if spr.unit_type == TYPE_PROJECTILE:  # or spr.health == spr.max_health:
                     continue
                 colors = ['gray', 'orange'] if type(spr) == UncompletedBuilding else ['red', 'green']
                 rect = Rect(spr.rect.left, spr.rect.top - 5, spr.rect.width, 5)
@@ -673,10 +671,10 @@ class ClientWait:
                 rect.width = spr.rect.width
                 pygame.draw.rect(screen, Color('black'), rect, 1)
 
-                # text = small_font.render(str(spr.health), 1, COLOR_LIST[spr.player_id])
-                # screen.blit(text, spr.rect.bottomright)
-                # text = small_font.render(str(spr.max_health), 1, COLOR_LIST[spr.player_id])
-                # screen.blit(text, spr.rect.topright)
+                text = small_font.render(str(spr.health), 1, COLOR_LIST[spr.player_id])
+                screen.blit(text, spr.rect.bottomright)
+                text = small_font.render(str(spr.max_health), 1, COLOR_LIST[spr.player_id])
+                screen.blit(text, spr.rect.topright)
 
             text = font.render(str(game.info.money), 1, (100, 255, 100))
             screen.blit(text, (5, 50))
@@ -688,7 +686,7 @@ class ClientWait:
 
             pygame.display.flip()
             game.lock.release()
-            print('Задержка', 1000 / clock.tick(FPS))
+            # print('FPS', 1000 / clock.tick(FPS))
             clock.tick(FPS)
         client.disconnect('Application closed.')
         return False
@@ -696,6 +694,7 @@ class ClientWait:
 
 def main():
     pygame.init()
+    pygame.mouse.set_visible(False)
     with open('settings.txt', 'r') as settings:
         size = list(map(int, settings.readline().split()))
     ClientWait().play(pygame.display.set_mode(size, pygame.FULLSCREEN), nick=random_nick())
