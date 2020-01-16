@@ -2,7 +2,6 @@ import socket
 import threading
 from random import choice
 from threading import Lock
-import data
 import pygame
 import pygame_gui
 from pygame import Color
@@ -581,6 +580,7 @@ class ClientWait:
         managers['product'] = ProductManager(screen)
         global FPS
         print(game.other_nicks)
+        minimap = pygame.image.load('sprite-games/minimap.png')
         while running and client.connected:
             for event in pygame.event.get():
                 if event.type == pygame.MOUSEBUTTONUP and current_manager == 'main':
@@ -682,6 +682,7 @@ class ClientWait:
             screen.blit(text, (5, 100))
             managers[current_manager].update(1 / 60)
             managers[current_manager].draw_ui(screen)
+            screen.blit(minimap, (0, 692))
             screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
 
             pygame.display.flip()
