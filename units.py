@@ -754,9 +754,9 @@ class Forge(Unit):
             return 1.0, 1.0
         if unit.unit_type in [TYPE_RESOURCE, TYPE_DECOR]:
             return 1.0, 1.0
-        player = Unit.game.players[unit.player_id]
-        if player is None:
+        if unit.player_id not in Unit.game.players:
             return 1.0, 1.0
+        player = Unit.game.players[unit.player_id]
         player_forge_level = player.max_forge_level
         health_mult = 1.0
         damage_mult = 1.0
@@ -1171,7 +1171,7 @@ class Farm(Unit):
             if inst.player_id == player_id:
                 meat += 10
         for i in to_remove:
-            Fortress.instances.remove(i)
+            Farm.instances.remove(i)
         return meat
 
     def __init__(self, x, y, id, player_id):

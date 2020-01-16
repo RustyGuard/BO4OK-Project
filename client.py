@@ -700,7 +700,7 @@ class ClientWait:
             screen.blit(text, (5, 50))
             text = font.render(str(game.info.wood), 1, Color('burlywood'))
             screen.blit(text, (5, 100))
-            text = font.render(f'{game.info.power}/{game.info.power}', 1, Color('palevioletred3'))
+            text = font.render(f'{game.info.power}/{game.info.max_power}', 1, Color('palevioletred3'))
             screen.blit(text, (5, 150))
             managers[current_manager].update(1 / 60)
             managers[current_manager].draw_ui(screen)
