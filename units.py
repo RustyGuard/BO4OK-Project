@@ -663,7 +663,7 @@ class ProductingBuild(Unit):
         if clazz is not None:
             game.place(clazz, int(self.x) - randint(self.rect.width // 2 + 25, self.rect.width + self.rect.width // 2),
                        int(self.y) - randint(-50, 50),
-                       self.player_id, ignore_space=True, ignore_money=False, ignore_fort_level=True)
+                       self.player_id, ignore_space=True, ignore_money=True, ignore_fort_level=True)
 
     def update(self, *args):
         if not self.is_alive():
@@ -1163,7 +1163,7 @@ class Farm(Unit):
 
     @staticmethod
     def get_player_meat(player_id):
-        meat = 0
+        meat = 10
         to_remove = []
         for inst in Farm.instances:
             if not inst.is_alive():
