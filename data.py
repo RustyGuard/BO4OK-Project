@@ -176,8 +176,6 @@ def ip(screen):
                 for button in all_buttons:
                     if button.rect.collidepoint(event.pos):
                         if button.name == "OK":
-                            print(nicname)
-                            print(ip)
                             if ClientWait().play(screen, ip if ip != '' else 'localhost', nick=nicname):
                                 return
                             else:
