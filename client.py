@@ -30,27 +30,39 @@ particles = Group()  # так и не понял куда это располо�
 
 class Particle(Sprite):
 
-    def __init__(self, type_building, x, y):
+    def __init__(self, type_building, x, y, camera):
         super().__init__(particles)
         self.cur_frame = 0
+        self.x = x
+        self.y = y
         self.frames = [pygame.image.load(f'sprite-games/building/{type_building}/smoke/{1}.png'),
                        pygame.image.load(f'sprite-games/building/{type_building}/smoke/{2}.png'),
                        pygame.image.load(f'sprite-games/building/{type_building}/smoke/{3}.png')]
         self.image = self.frames[self.cur_frame]
         self.rect = self.image.get_rect()
-        self.y = y
-        self.x = x
-        self.rect[0] += int(self.x)
-        self.rect[1] += int(self.y)
-        self.life_time = 5
+        self.rect.centerx = self.x + camera.off_x
+        self.rect.centery = self.y + camera.off_y
 
-    def update(self):
-        if self.life_time == 0:
-            self.kill()
-        if self.life_time > 0:
-            self.life_time -= 1
-        self.cur_frame = (self.cur_frame + 1) % len(self.frames)
-        self.image = self.frames[self.cur_frame]
+        self.max_lifetime = 2
+        self.time = 20
+        self.delay = 20
+
+    def set_offset(self, x, y):
+        self.rect.centerx = self.x + x
+        self.rect.centery = self.y + y
+
+    def update(self, *args):
+        if args is None:
+            return
+        if args[0].type == CLIENT_EVENT_UPDATE:
+            self.time -= 1
+            if self.time <= 0:
+                self.time += self.delay
+                self.cur_frame += 1
+            if self.cur_frame > self.max_lifetime:
+                self.kill()
+                return
+            self.image = self.frames[self.cur_frame]
 
 
 class Client:
@@ -128,8 +140,9 @@ class PlayerInfo:
 
 
 class Camera:
-    def __init__(self, sprites):
+    def __init__(self, sprites, particles):
         self.sprites = sprites
+        self.particles = particles
         self.off_x = 0
         self.off_y = 0
         self.speed = CAMERA_MIN_SPEED
@@ -150,6 +163,9 @@ class Camera:
             self.speed = min(CAMERA_MAX_SPEED, self.speed)
             for spr in self.sprites:
                 spr.set_offset(self.off_x, self.off_y)
+            for part in self.particles:
+                part.set_offset(self.off_x, self.off_y)
+
         else:
             self.speed -= CAMERA_STEP_SLOWER
             self.speed = max(CAMERA_MIN_SPEED, self.speed)
@@ -157,6 +173,8 @@ class Camera:
     def set_pos(self, x, y):
         self.off_x = x
         self.off_y = y
+        for part in self.particles:
+            part.set_offset(self.off_x, self.off_y)
         for spr in self.sprites:
             spr.set_offset(self.off_x, self.off_y)
 
@@ -566,7 +584,7 @@ class ClientWait:
         small_font = pygame.font.Font(None, 25)
         client.setEventCallback(listen)
         running = True
-        camera = Camera(game.sprites)
+        camera = Camera(game.sprites, particles)
         current_area = SelectArea(game, camera, client)
         pygame.time.set_timer(CLIENT_EVENT_UPDATE, 1000 // 60)
         pygame.time.set_timer(CLIENT_EVENT_SEC, 1000 // 1)
@@ -615,7 +633,6 @@ class ClientWait:
         camera_area = Sprite()
         camera_area.rect = Rect(0, 0, 1920, 1080)
 
-
         with open('settings.txt', 'r') as set:
             settings = {}
             for i in set.read().split("\n")[1:]:
@@ -638,6 +655,7 @@ class ClientWait:
                     if collided:
                         continue
                 managers[current_manager].process_events(event)
+                particles.update(event)
 
                 if event.type == pygame.USEREVENT:
                     if event.user_type == pygame_gui.UI_BUTTON_PRESSED:
@@ -689,9 +707,11 @@ class ClientWait:
                     if event.type == CLIENT_EVENT_SEC:
                         for entity in pygame.sprite.spritecollide(camera_area, game.sprites, False):
                             if type(entity) == Workshop:
-                                Particle('workshop', entity.x, entity.y)
+                                Particle('workshop', entity.x, entity.y, camera)
                             elif type(entity) == Forge:
-                                Particle('forge', entity.x, entity.y)
+                                Particle('forge', entity.x, entity.y, camera)
+                            elif type(entity) == Farm:
+                                Particle('farm', entity.x, entity.y, camera)
                     game.update(event, game)
 
             game.lock.acquire()
@@ -738,7 +758,6 @@ class ClientWait:
             text = small_font.render(f'{game.info.power}/{game.info.max_power}', 1, Color('palevioletred3'))
             screen.blit(text, (260, 805))
             screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
-            particles.update()
             particles.draw(screen)
             pygame.display.flip()
             game.lock.release()
