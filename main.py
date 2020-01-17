@@ -3,31 +3,36 @@ import data
 import server
 
 pygame.init()
+pygame.mixer.init()
 pygame.mouse.set_visible(False)
 
-# pygame.mixer.init()
-# pygame.mixer.music.load('3.mp3')
-# pygame.mixer.music.play(-1)
+musik = pygame.mixer.music.load('3.mp3')
+sound = pygame.mixer.Sound('2.ogg')
+pygame.mixer.music.play(-1)
 
 screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 data.headpiece(screen)
 window, nicname = data.menu(screen)
 while window:
+    sound.play()
     if window == "play":
         window, nicname = data.play(screen)
     if window == "settings":
-        window, nicname = data.settings(screen)
+        window = data.settings(screen)[0]
     if window == "statistics":
-        window, nicname = ["back_menu", nicname]
+        window = "back_menu"
     if window == "creators":
-        window, nicname = ["back_menu", nicname]
+        pygame.mixer.music.pause()
+        data.titers(screen)
+        window = "back_menu"
+        pygame.mixer.music.unpause()
     if window == "host":
         server.main(screen, nicname)
-        window, nicname = ["play", nicname]
+        window = "play"
     if window == "connect":
-        window, nicname = data.ip(screen)
+        window = data.ip(screen)[0]
     if window == "back_menu":
-        window, nicname = data.menu(screen)
+        window = data.menu(screen)[0]
     if window == "exit":
         break
 pygame.quit()

@@ -276,3 +276,30 @@ def settings(screen):
         screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
         pygame.display.flip()
         clock.tick(FPS)
+
+
+def titers(screen):
+    global FPS, clock
+    pygame.init()
+    i1 = pygame.image.load('sprite-games/титры/1.png')
+    i2 = pygame.image.load('sprite-games/титры/2.png')
+    i3 = pygame.image.load('sprite-games/титры/3.png')
+    i2_rect = [450, 1080]
+    i3_rect = [450, 2530]
+    pygame.mixer.music.load('1.mp3')
+    pygame.mixer.music.play(0)
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_ESCAPE:
+                    pygame.mixer.music.stop()
+                    return
+        screen.blit(i1, (0, 0))
+        screen.blit(i2, i2_rect)
+        screen.blit(i3, i3_rect)
+        i2_rect[1] -= 0.5
+        i3_rect[1] -= 0.5
+        pygame.display.flip()
+        clock.tick(FPS)
