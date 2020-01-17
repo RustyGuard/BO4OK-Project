@@ -742,7 +742,7 @@ class ClientWait:
             particles.draw(screen)
             pygame.display.flip()
             game.lock.release()
-            # print('FPS', 1000 / clock.tick(FPS))
+            print('FPS', 1000 / clock.tick(FPS))
             clock.tick(FPS)
         client.disconnect('Application closed.')
         return False

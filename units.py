@@ -196,7 +196,7 @@ class Mine(Unit):
     def __init__(self, x, y, id, player_id):
         self.image = Mine.mine
         super().__init__(x, y, id, player_id)
-        self.max_health = 1000
+        self.max_health = UNIT_STATS[type(self)][0]
         self.health = self.max_health
 
     def update(self, *args):
@@ -425,10 +425,10 @@ class Fighter(TwistUnit):
 
 
 class Archer(Fighter):
-    cost = (1.0, 1.0)
+    cost = (150.0, 3.0)
     placeable = False
     name = 'Лучник'
-    power_cost = 1  # Поменять
+    power_cost = 2  # Поменять
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/warrior/archer/{team_id[i]}.png'))
@@ -480,10 +480,10 @@ class Archer(Fighter):
 
 
 class Soldier(Fighter):
-    cost = (5.0, 0.0)
+    cost = (200.0, 0.0)
     name = 'Воин'
     placeable = False
-    power_cost = 1  # Поменять
+    power_cost = 3  # Поменять
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/warrior/soldier/{team_id[i]}.png'))
@@ -541,10 +541,10 @@ class Soldier(Fighter):
 
 
 class Worker(Fighter):
-    cost = (5.0, 0.0)
+    cost = (25.0, 0.0)
     name = 'Рабочий'
     placeable = False
-    power_cost = 3  # Поменять
+    power_cost = 1  # Поменять
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/warrior/working/{team_id[i]}.png'))
@@ -558,7 +558,7 @@ class Worker(Fighter):
         super().__init__(x, y, id, player_id, Worker.images[player_id])
         self.money = 0
         self.wood = 0
-        self.capacity = 50
+        self.capacity = 25
         self.state = STATE_ANY_WORK
 
     def take_damage(self, dmg, game):
@@ -630,7 +630,7 @@ class Worker(Fighter):
                 return
 
     def is_full(self):
-        return self.money + self.wood * 5 > 50
+        return self.money + self.wood >= self.capacity
 
     def is_valid_enemy(self, enemy):
         if self.is_full():
@@ -680,9 +680,9 @@ class ProductingBuild(Unit):
 class Fortress(ProductingBuild):
     name = 'Крепость'
     placeable = True
-    cost = (1.0, 0.0)
+    cost = (250.0, 50.0)
 
-    level_costs = [(50.0, 15.0), (20.0, 30.0)]  # Поменять
+    level_costs = [(300.0, 50.0), (400.0, 100.0)]  # Поменять
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/building/fortress/{team_id[i]}.png'))
@@ -739,14 +739,14 @@ class Fortress(ProductingBuild):
 class Forge(Unit):
     name = 'Кузня'
     placeable = True
-    cost = (1.0, 0.0)
+    cost = (300.0, 100.0)
 
-    level_costs = [(50.0, 15.0), (20.0, 30.0), (30.0, 40.0)]  # Поменять
+    level_costs = [(350.0, 100.0), (500.0, 170.0), (700.0, 200.0)]  # Поменять
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/building/forge/{team_id[i]}.png'))
     image = images[0]
-    required_level = 1
+    required_level = 2
     unit_type = TYPE_BUILDING
 
     @staticmethod
@@ -821,7 +821,7 @@ class Forge(Unit):
 class Casern(ProductingBuild):
     placeable = True
     name = 'Казарма'
-    cost = (1.0, 0.0)
+    cost = (100.0, 25.0)
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/building/casern/{team_id[i]}.png'))
@@ -837,12 +837,12 @@ class Casern(ProductingBuild):
 class DragonLore(ProductingBuild):
     placeable = True
     name = 'Драконье логово'
-    cost = (1.0, 0.0)
+    cost = (500.0, 0.0)
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/building/dragonlair/{team_id[i]}.png'))
     image = images[0]
-    required_level = 1
+    required_level = 3
     unit_type = TYPE_BUILDING
 
     def __init__(self, x, y, id, player_id):
@@ -853,12 +853,12 @@ class DragonLore(ProductingBuild):
 class Workshop(ProductingBuild):
     placeable = True
     name = 'Мастерская'
-    cost = (1.0, 0.0)
+    cost = (350.0, 100.0)
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/building/workshop/{team_id[i]}.png'))
     image = images[0]
-    required_level = 1
+    required_level = 2
     unit_type = TYPE_BUILDING
 
     def __init__(self, x, y, id, player_id):
@@ -867,14 +867,14 @@ class Workshop(ProductingBuild):
 
 
 class ArcherTower(Fighter):
-    cost = (1.0, 1.0)
+    cost = (200.0, 20.0)
     placeable = True
     name = 'Башня'
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/building/turret/{team_id[i]}.png'))
     image = images[0]
-    required_level = 2  # Поменять этот пример
+    required_level = 1  # Поменять этот пример
     unit_type = TYPE_BUILDING
 
     def __init__(self, x, y, id, player_id):
@@ -934,7 +934,7 @@ class Tree(Unit):
     def __init__(self, x, y, id, player_id):
         self.image = Tree.tree
         super().__init__(x, y, id, player_id)
-        self.max_health = 10
+        self.max_health = UNIT_STATS[type(self)][0]
         self.health = self.max_health
 
     def update(self, *args):
@@ -988,8 +988,8 @@ class FireProjectile(TwistUnit):
 
 
 class Dragon(Fighter):
-    cost = (5.0, 0.0)
-    power_cost = 5  # Поменять
+    cost = (300.0, 0.0)
+    power_cost = 8  # Поменять
     name = 'Дракон'
     placeable = False
     images = []
@@ -1096,9 +1096,9 @@ class UncompletedBuilding(Unit):
 
 
 class Ballista(Fighter):
-    cost = (1.0, 1.0)
+    cost = (300.0, 100.0)
     placeable = False
-    power_cost = 3  # Поменять
+    power_cost = 6  # Поменять
     name = 'Баллиста'
     images = []
     for i in range(10):
@@ -1150,7 +1150,7 @@ class Ballista(Fighter):
 class Farm(Unit):
     name = 'Ферма'
     placeable = True
-    cost = (1.0, 0.0)
+    cost = (50.0, 10.0)
 
     images = []
     for i in range(10):
@@ -1210,24 +1210,24 @@ UNIT_TYPES = {
 }
 
 UNIT_STATS = {  # (max_health, base_dmg)
-    Soldier: (50, 10),  # Soldier,
-    Mine: (1000, 0),  # Mine,
-    Archer: (50, 0),  # Archer,
-    Arrow: (1, 5),  # Arrow,
-    Casern: (150, 0),  # Casern,
-    Fortress: (250, 0),  # Fortress,
-    Worker: (75, 1),  # Worker,
-    ArcherTower: (75, 0),  # ArcherTower,
-    Tree: (100, 0),  # Tree,
-    Dragon: (100, 0),  # Dragon,
-    FireProjectile: (1, 1),  # FireProjectile,
-    UncompletedBuilding: (100, 0),  # UncompletedBuilding,
-    Ballista: (100, 0),  # Ballista,
-    BallistaArrow: (1, 25),  # BallistaArrow,
-    DragonLore: (150, 0),  # DragonLore,
-    Workshop: (150, 0),  # Workshop,
-    Forge: (150, 0),  # Forge
-    Farm: (150, 0)  # Farm
+    Worker: (100, 5),  # Worker,
+    Soldier: (300, 50),  # Soldier,
+    Archer: (150, 0),  # Archer,
+    Ballista: (800, 0),  # Ballista,
+    Dragon: (1000, 0),  # Dragon,
+    Mine: (10000, 0),  # Mine,
+    Arrow: (1, 60),  # Arrow,
+    Casern: (800, 0),  # Casern,
+    Fortress: (2000, 0),  # Fortress,
+    ArcherTower: (600, 0),  # ArcherTower,
+    Tree: (10, 0),  # Tree,
+    FireProjectile: (1, 50),  # FireProjectile,
+    UncompletedBuilding: (200, 0),  # UncompletedBuilding,
+    BallistaArrow: (1, 1000),  # BallistaArrow,
+    DragonLore: (1500, 0),  # DragonLore,
+    Workshop: (1200, 0),  # Workshop,
+    Forge: (800, 0),  # Forge
+    Farm: (500, 0)  # Farm
 }
 
 
