@@ -161,11 +161,15 @@ def ip(screen):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 exit()
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_ESCAPE:
+                    return ["play", nicname]
             for button in all_buttons:
-                if button.rect.collidepoint(event.pos):
-                    if button.name == "OK":
-                        ClientWait().play(screen, ip if ip != '' else 'localhost', nick=nicname)
-                        return ["play", nicname]
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if button.rect.collidepoint(event.pos):
+                        if button.name == "OK":
+                            ClientWait().play(screen, ip if ip != '' else 'localhost', nick=nicname)
+                            return ["play", nicname]
                 if button.get_event(event):
                     return button.get_event(event)
             if event.type == pygame.KEYDOWN:
@@ -204,7 +208,7 @@ def play(screen):
                 exit()
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_ESCAPE:
-                    return "back_menu"
+                    return ["back_menu", nicname]
             for button in all_buttons:
                 if button.get_event(event):
                     return button.get_event(event)
@@ -246,6 +250,9 @@ def settings(screen):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 exit()
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_ESCAPE:
+                    return ["back_menu", nicname]
             for button in all_buttons:
                 if button.get_event(event):
                     return button.get_event(event)
