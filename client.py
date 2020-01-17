@@ -725,7 +725,7 @@ class ClientWait:
                 screen.fill((200, 200, 200))
             # */
             game.drawSprites(screen)
-            for spr in game.sprites:
+            for spr in pygame.sprite.spritecollide(camera_area, game.sprites, False):
                 if spr.can_upgraded:
                     text = small_font.render(f'{spr.level} lvl.', 1, (255, 125, 0))
                     screen.blit(text, spr.rect.topleft)
@@ -733,7 +733,7 @@ class ClientWait:
                     text = small_font.render(game.get_player_nick(spr.player_id), 1, COLOR_LIST[spr.player_id])
                     screen.blit(text, spr.rect.bottomleft)
 
-                if spr.unit_type == TYPE_PROJECTILE:  # or spr.health == spr.max_health:
+                if spr.unit_type == TYPE_PROJECTILE or spr.health == spr.max_health:
                     continue
                 colors = ['gray', 'orange'] if type(spr) == UncompletedBuilding else ['red', 'green']
                 rect = Rect(spr.rect.left, spr.rect.top - 5, spr.rect.width, 5)
@@ -761,8 +761,8 @@ class ClientWait:
             particles.draw(screen)
             pygame.display.flip()
             game.lock.release()
-            # print('FPS', 1000 / clock.tick(FPS))
-            clock.tick(FPS)
+            print('FPS', 1000 / clock.tick(FPS))
+            # clock.tick(FPS)
         client.disconnect('Application closed.')
         return False
 
