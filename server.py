@@ -326,7 +326,7 @@ def place_fortresses(game):
         game.place(Farm, x, y, player_id,
                    ignore_money=True, ignore_fort_level=True, ignore_space=True)
 
-        trees_left = 7
+        trees_left = 15
         tree_x, tree_y = randint(x - 500, x + 500), randint(y - 500, y + 500)
         while trees_left > 0:
             if game.place(Tree, tree_x, tree_y, -1, ignore_money=True, ignore_fort_level=True) is not None:
@@ -411,7 +411,7 @@ def main(screen, nicname):
     pygame.mouse.set_visible(0)
     image = {"host": (330, 250),
              "connect": (330, 455),
-             "back": (340, 700),
+             "back_menu": (340, 700),
              "cancel": (1311, 700)}
 
     class Button(pygame.sprite.Sprite):
@@ -530,6 +530,7 @@ def main(screen, nicname):
         screen.blit(background, (0, 0))
         # Отрисовка информации!
         pygame.display.flip()
+        print('FPS', 1000 / clock.tick(60))
         clock.tick(60)
 
 

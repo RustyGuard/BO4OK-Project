@@ -762,11 +762,11 @@ class ClientWait:
             pygame.display.flip()
             game.lock.release()
             print('FPS', 1000 / clock.tick(FPS))
-<<<<<<< HEAD
+# <<<<<<< HEAD
             clock.tick(FPS)
-=======
+# =======
             # clock.tick(FPS)
->>>>>>> 67854fe5608f43b1397fc9ebb655a043bc6d13b1
+# >>>>>>> 67854fe5608f43b1397fc9ebb655a043bc6d13b1
         client.disconnect('Application closed.')
         return False
 

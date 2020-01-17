@@ -1,5 +1,4 @@
 import pygame
-import server
 from client import ClientWait
 
 cursor = pygame.image.load('sprite-games/menu/cursor.png')
@@ -21,13 +20,19 @@ class Button(pygame.sprite.Sprite):
         self.image = self.stok_image
         self.rect = self.image.get_rect()
         self.rect.topleft = image
+        self.f = f
 
-    def get_anim(self, event):
-        if self.rect.collidepoint(event.pos):
-            self.image = self.anim
-        else:
-            if self.image == self.anim:
-                self.image = self.stok_image
+    def get_event(self, event):
+        if event.type == pygame.MOUSEMOTION:
+            if not self.f:
+                if self.rect.collidepoint(event.pos):
+                    self.image = self.anim
+                else:
+                    if self.image == self.anim:
+                        self.image = self.stok_image
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if self.rect.collidepoint(event.pos):
+                return [self.name, nicname]
 
 
 def read_settings():
@@ -79,22 +84,9 @@ def menu(screen):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 exit()
-            if event.type == pygame.MOUSEMOTION:
-                for button in all_buttons:
-                    button.get_anim(event)
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                for button in all_buttons:
-                    if button.rect.collidepoint(event.pos):
-                        if button.name == "play":
-                            play(screen)
-                        if button.name == "settings":
-                            settings(screen)
-                        if button.name == "statistics":
-                            pass
-                        if button.name == "creators":
-                            pass
-                        if button.name == "exit":
-                            return
+            for button in all_buttons:
+                if button.get_event(event):
+                    return button.get_event(event)
         screen.blit(background, (0, 0))
         all_buttons.draw(screen)
         screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
@@ -156,7 +148,7 @@ def ip(screen):
     not_connect = pygame.image.load('sprite-games/play/neconectitsya.png')
     screen.blit(background, (0, 0))
     image = {"OK": (1085, 709),
-             "back": (558, 709)}
+             "back_menu": (558, 709)}
     way = "play"
     ip = ""
     f = False
@@ -169,19 +161,13 @@ def ip(screen):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 exit()
-            if event.type == pygame.MOUSEMOTION:
-                for button in all_buttons:
-                    button.get_anim(event)
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                for button in all_buttons:
-                    if button.rect.collidepoint(event.pos):
-                        if button.name == "OK":
-                            if ClientWait().play(screen, ip if ip != '' else 'localhost', nick=nicname):
-                                return
-                            else:
-                                f = True
-                        if button.name == "back":
-                            return
+            for button in all_buttons:
+                if button.rect.collidepoint(event.pos):
+                    if button.name == "OK":
+                        ClientWait().play(screen, ip if ip != '' else 'localhost', nick=nicname)
+                        return ["play", nicname]
+                if button.get_event(event):
+                    return button.get_event(event)
             if event.type == pygame.KEYDOWN:
                 if event.unicode in "1234567890.:":
                     ip += event.unicode
@@ -204,7 +190,7 @@ def play(screen):
     FPS = 60
     image = {"host": (330, 250),
              "connect": (330, 455),
-             "back": (340, 700)}
+             "back_menu": (340, 700)}
     way = "play"
 
     all_buttons = pygame.sprite.Group()
@@ -218,19 +204,10 @@ def play(screen):
                 exit()
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_ESCAPE:
-                    return
-            if event.type == pygame.MOUSEMOTION:
-                for button in all_buttons:
-                    button.get_anim(event)
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                for button in all_buttons:
-                    if button.rect.collidepoint(event.pos):
-                        if button.name == "host":
-                            server.main(screen, nicname)
-                        if button.name == "connect":
-                            ip(screen)
-                        if button.name == "back" or button.name == "cancel":
-                            return
+                    return "back_menu"
+            for button in all_buttons:
+                if button.get_event(event):
+                    return button.get_event(event)
             if event.type == pygame.KEYDOWN:
                 if event.unicode in "ёйцукенгшщзхъфывапролджэячсмить" \
                                     "бюqwertyuiopasdfghjklzxcvbnm1234567890" or \
@@ -251,13 +228,15 @@ def settings(screen):
     global cursor, FPS, clock
     background = pygame.image.load('sprite-games/settings/background.png')
     screen.blit(background, (0, 0))
+    fon = pygame.image.load('sprite-games/settings/fon.png')
+    camera = pygame.image.load('sprite-games/settings/camera.png')
     tick_field_image = {"BACKGROUND": (15, 183),
                         "CAMERA": (15, 315)}
     way = "settings"
     settings = read_settings()
 
     all_buttons = pygame.sprite.Group()
-    Button(all_buttons, "back", (12, 12), way)
+    Button(all_buttons, "back_menu", (12, 12), way)
 
     all_tick_field = pygame.sprite.Group()
     for i in tick_field_image:
@@ -267,17 +246,11 @@ def settings(screen):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 exit()
-            if event.type == pygame.MOUSEMOTION:
-                for button in all_buttons:
-                    button.get_anim(event)
-                for tick_field in all_tick_field:
-                    tick_field.get_anim(event)
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                for button in all_buttons:
-                    if button.rect.collidepoint(event.pos):
-                        write_settings(settings)
-                        return
-                for tick_field in all_tick_field:
+            for button in all_buttons:
+                if button.get_event(event):
+                    return button.get_event(event)
+            for tick_field in all_tick_field:
+                if event.type == pygame.MOUSEBUTTONDOWN:
                     if tick_field.rect.collidepoint(event.pos):
                         if settings[tick_field.name]:
                             settings[tick_field.name] = False
@@ -291,6 +264,8 @@ def settings(screen):
         screen.blit(background, (0, 0))
         all_buttons.draw(screen)
         all_tick_field.draw(screen)
+        screen.blit(fon, (170, 208))
+        screen.blit(camera, (170, 340))
         screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
         pygame.display.flip()
         clock.tick(FPS)

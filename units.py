@@ -1220,7 +1220,7 @@ UNIT_STATS = {  # (max_health, base_dmg)
     Casern: (800, 0),  # Casern,
     Fortress: (2000, 0),  # Fortress,
     ArcherTower: (600, 0),  # ArcherTower,
-    Tree: (10, 0),  # Tree,
+    Tree: (30, 0),  # Tree,
     FireProjectile: (1, 50),  # FireProjectile,
     UncompletedBuilding: (200, 0),  # UncompletedBuilding,
     BallistaArrow: (1, 1000),  # BallistaArrow,
