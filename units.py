@@ -318,7 +318,6 @@ class Fighter(TwistUnit):
             self.move_to_angle(turn_speed, game)
 
     def set_target(self, target_type, coord, game=None):
-        # print(f'Entity[{self.id}] found a new target of [{target_type}] is [{coord}]')
         self.target = (target_type, coord)
         if game is None:
             return
@@ -480,7 +479,7 @@ class Archer(Fighter):
 
 
 class Soldier(Fighter):
-    cost = (200.0, 0.0)
+    cost = (20.0, 0.0)
     name = 'Воин'
     placeable = False
     power_cost = 3  # Поменять
@@ -488,7 +487,7 @@ class Soldier(Fighter):
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/warrior/soldier/{team_id[i]}.png'))
     image = images[0]
-    required_level = 1  # Will be removed
+    required_level = 0
     unit_type = TYPE_FIGHTER
 
     def __init__(self, x, y, id, player_id):
@@ -496,44 +495,38 @@ class Soldier(Fighter):
 
         super().__init__(x, y, id, player_id, Soldier.images[player_id])
 
-    def update(self, *args):
-        if not args:
-            return
-        if args[0].type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
+    def update(self, event, game):
+        if event.type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
 
             if self.target[0] == TARGET_MOVE:
-                self.move_to_point(args[0], args[1], 1.5, 1, 2)
+                self.move_to_point(event, game, 1.5, 1, 2)
                 return
 
             if self.target[0] == TARGET_ATTACK:
-                if args[0].type == SERVER_EVENT_UPDATE and not self.target[1].is_alive():
-                    self.set_target(TARGET_NONE, None, args[1])
+                if event.type == SERVER_EVENT_UPDATE and not self.target[1].is_alive():
+                    self.set_target(TARGET_NONE, None, game)
                     return
 
                 self.find_target_angle()
-                if args[0].type == SERVER_EVENT_UPDATE:
+                if event.type == SERVER_EVENT_UPDATE:
                     self.update_delay()
                 near = self.close_to_attack()
                 if self.turn_around(2):
                     if near:
-                        if args[0].type == SERVER_EVENT_UPDATE:
-                            self.single_attack(args[1])
+                        if event.type == SERVER_EVENT_UPDATE:
+                            self.single_attack(game)
                     else:
-                        self.move_to_angle(1, args[1])
+                        self.move_to_angle(1, game)
                 elif not near:
-                    self.move_to_angle(0.5, args[1])
+                    self.move_to_angle(0.5, game)
 
             elif self.target[0] == TARGET_NONE:
-                if args[0].type == SERVER_EVENT_UPDATE:
-                    self.find_new_target(args[1])
-
-        elif args[0].type in [CLIENT_EVENT_SEC, SERVER_EVENT_SEC]:
-            pass
-            # print('En', self.id, self.x, self.y)
+                if event.type == SERVER_EVENT_UPDATE:
+                    self.find_new_target(game)
 
         if not self.is_alive():
-            if args[0].type == SERVER_EVENT_UPDATE:
-                args[1].kill(self)
+            if event.type == SERVER_EVENT_UPDATE:
+                game.kill(self)
                 return
 
     def is_valid_enemy(self, enemy):
@@ -663,7 +656,7 @@ class ProductingBuild(Unit):
         if clazz is not None:
             game.place(clazz, int(self.x) - randint(self.rect.width // 2 + 25, self.rect.width + self.rect.width // 2),
                        int(self.y) - randint(-50, 50),
-                       self.player_id, ignore_space=True, ignore_money=True, ignore_fort_level=True)
+                       self.player_id, ignore_space=True, ignore_money=False, ignore_fort_level=True)
 
     def update(self, *args):
         if not self.is_alive():
@@ -798,7 +791,7 @@ class Forge(Unit):
         if game.players[self.player_id].max_forge_level < self.level:
             game.players[self.player_id].max_forge_level = self.level
 
-        for obj in game.all_sprites:
+        for obj in game.sprites:
             if obj.player_id == self.player_id:
                 h_mult, d_mult = Forge.get_mult(obj)
                 if h_mult != 1.0:
@@ -1082,7 +1075,6 @@ class UncompletedBuilding(Unit):
                 args[1].place(self.clazz, int(self.x), int(self.y), self.player_id,
                               ignore_space=True, ignore_money=True, ignore_fort_level=True)
                 self.completed = True
-                print('Ready')
 
     def get_args(self):
         return f'_{get_class_id(self.clazz)}'
@@ -1122,7 +1114,6 @@ class Ballista(Fighter):
         if args[0].type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
             if self.target[0] == TARGET_MOVE:
                 self.move_to_point(args[0], args[1], 1, 0.5, 1)
-                # у лучника эти аргументы больше,думаю логично что баллиста более неповоротливая
 
             elif self.target[0] == TARGET_ATTACK:
                 if args[0].type == SERVER_EVENT_UPDATE and not self.target[1].is_alive():

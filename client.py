@@ -10,13 +10,29 @@ from pygame.sprite import Group, Sprite
 from pygame_gui import UIManager
 from pygame_gui.elements import UIButton, UILabel
 
-from constants import CLIENT_EVENT_SEC, CLIENT_EVENT_UPDATE, COLOR_LIST, CAMERA_MIN_SPEED, CAMERA_MAX_SPEED, \
-    CAMERA_STEP_FASTER, CAMERA_STEP_SLOWER, SCREEN_WIDTH, SCREEN_HEIGHT
 from units import *
 
 cursor = pygame.image.load('sprite-games/menu/cursor.png')
 FPS = 60
 clock = pygame.time.Clock()
+
+settings = {}
+
+
+def update_settings():
+    with open('settings.txt', 'r') as setts:  # Settings
+        for i in setts.read().split("\n"):
+            a = i.split()
+            if a[1] == "TRUE":
+                settings[a[0]] = True
+            elif a[1] == "FALSE":
+                settings[a[0]] = False
+            else:
+                try:
+                    settings[a[0]] = int(a[1])
+                except ValueError:
+                    settings[a[0]] = a[1]
+    print(settings)
 
 
 def random_nick():
@@ -352,6 +368,147 @@ class SelectArea:
             self.manager.update(*args)
 
 
+class MainManager:
+    def __init__(self, game, camera, client):
+        self.x = 0
+        self.y = 0
+        self.width = 0
+        self.height = 0
+        self.selected = []
+        self.saved = [[] for _ in range(10)]
+        self.active = False
+        self.dragged = False
+        self.game = game
+        self.camera = camera
+        self.client = client
+        self.manager = UIManager(pygame.display.get_surface().get_size(), 'sprite-games/themes/game_theme.json')
+        self.hided_manager = UIManager(pygame.display.get_surface().get_size(), 'sprite-games/themes/game_theme.json')
+        UIButton(Rect(5, 5, 50, 50), 'DIG', self.hided_manager, object_id='retarget').type = STATE_DIG
+        UIButton(Rect(55, 5, 50, 50), 'FIGHT', self.hided_manager, object_id='retarget').type = STATE_FIGHT
+        UIButton(Rect(110, 5, 50, 50), 'CHOP', self.hided_manager, object_id='retarget').type = STATE_CHOP
+        UIButton(Rect(165, 5, 50, 50), 'BUILD', self.hided_manager, object_id='retarget').type = STATE_BUILD
+        UIButton(Rect(220, 5, 50, 50), 'ANY', self.hided_manager, object_id='retarget').type = STATE_ANY_WORK
+        build_i = 0
+        for build_id, clazz in UNIT_TYPES.items():
+            if clazz.placeable:
+                r1 = Rect(settings['WIDTH'] - 65, 45 + 75 * build_i, 50, 50)
+                b = UIButton(r1, '', self.manager,
+                             object_id=f'place_{build_id}')
+                r2 = Rect(0, 0, len(clazz.name) * 9, 25)
+                r2.centery = r1.centery
+                r2.right = r1.left - 5
+                UILabel(r2, clazz.name, self.manager)
+                b.id = build_id
+                build_i += 1
+
+    def mouse_moved(self, x, y):
+        self.width += x
+        self.height += y
+        self.dragged = True
+
+    def clear(self):
+        self.width = 0
+        self.height = 0
+        self.active = False
+        self.selected.clear()
+        self.dragged = False
+
+    def draw_ui(self, screen):
+        if self.width != 0 and self.height != 0:
+            pygame.draw.rect(screen, COLOR_LIST[self.game.info.id], (self.x, self.y, self.width, self.height), 2)
+        if self.active:
+            self.hided_manager.draw_ui(screen)
+        for spr in self.selected:
+            if spr is not None:
+                pygame.draw.rect(screen, Color('blue'), spr.rect, 2)
+        self.manager.draw_ui(screen)
+
+    def find_intersect(self):
+        test = pygame.sprite.Sprite()
+        if self.width < 0:
+            self.width = -self.width
+            self.x -= self.width
+        if self.height < 0:
+            self.height = -self.height
+            self.y -= self.height
+        test.rect = pygame.Rect(self.x, self.y, self.width, self.height)
+        return pygame.sprite.spritecollide(test, self.game.sprites, False)
+
+    def process_events(self, event):
+
+        if self.active:
+            self.hided_manager.process_events(event)
+        self.manager.process_events(event)
+
+        if event.type == pygame.KEYUP:
+            if event.key == pygame.K_ESCAPE:
+                self.clear()
+                return
+
+            fs = [pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5, pygame.K_6, pygame.K_7, pygame.K_8,
+                  pygame.K_9, pygame.K_0]
+            if event.key in fs:
+                index = fs.index(event.key)
+                mods = pygame.key.get_mods()
+                if mods & pygame.KMOD_CTRL:
+                    if self.selected:
+                        print('Saved', index, self.selected)
+                        self.saved[index] = self.selected.copy()
+                elif mods & pygame.KMOD_SHIFT:
+                    if self.saved[index]:
+                        print('Loaded', index, self.saved[index])
+                        self.clear()
+                        self.selected = self.saved[index].copy()
+                        self.active = True
+
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:
+                if not self.active:
+                    self.x, self.y = event.pos
+            return False
+
+        elif event.type == pygame.MOUSEBUTTONUP:
+            if event.button == 3:
+                if self.active:
+                    for spr in self.selected:
+                        if spr is None:
+                            continue
+                        if spr.unit_type == TYPE_FIGHTER and spr.player_id == self.game.info.id:
+                            self.client.send(
+                                f'2_{spr.id}_{event.pos[0] - self.camera.off_x}_{event.pos[1] - self.camera.off_y}')
+                    self.clear()
+            elif event.button == 1:
+                if self.dragged:
+                    for spr in self.find_intersect():
+                        if spr.unit_type == TYPE_FIGHTER and spr.player_id == self.game.info.id:
+                            self.selected.append(spr)
+                    if self.selected:
+                        self.active = True
+                    self.dragged = False
+                    self.width = 0
+                    self.height = 0
+
+        if event.type == pygame.USEREVENT:
+            if event.user_type == pygame_gui.UI_BUTTON_PRESSED:
+                if event.ui_object_id == 'retarget':
+                    if self.active:
+                        for spr in self.selected:
+                            if type(spr) == Worker and spr.player_id == self.game.info.id:
+                                self.client.send(f'4_{spr.id}_{event.ui_element.type}')
+                    self.clear()
+
+        if event.type == pygame.MOUSEMOTION:
+            if pygame.mouse.get_pressed()[0] == 1 and not self.active:
+                self.mouse_moved(*event.rel)
+                return True
+        return False
+
+    def update(self, *args):
+        if self.active:
+            self.hided_manager.update(*args)
+        self.manager.update(*args)
+
+
 class PlaceManager:
     def __init__(self, place_func):
         self.place_func = place_func
@@ -391,7 +548,7 @@ class ProductManager:
         max_i = -1
         if issubclass(type(spr), ProductingBuild):
             for i, clazz in enumerate(spr.valid_types):
-                r1 = Rect(SCREEN_WIDTH - 65, 45 + 75 * i, 50, 50)
+                r1 = Rect(settings['WIDTH'] - 65, 45 + 75 * i, 50, 50)
                 b = UIButton(r1, '', self.manager,
                              object_id=f'product_{get_class_id(clazz)}')
                 r2 = Rect(0, 0, 75, 25)
@@ -402,7 +559,7 @@ class ProductManager:
                 b.class_id = get_class_id(clazz)
                 max_i = i
         if spr.can_upgraded:
-            r1 = Rect(SCREEN_WIDTH - 65, 45 + 75 * (max_i + 1), 50, 50)
+            r1 = Rect(settings['WIDTH'] - 65, 45 + 75 * (max_i + 1), 50, 50)
             b = UIButton(r1, '', self.manager,
                          object_id=f'upgrade_{get_class_id(type(spr))}')
             b.build_id = spr.id
@@ -502,17 +659,13 @@ class ClientWait:
             client.send(f'1_{clazz}_{mouse_pos[0] - camera.off_x}_{mouse_pos[1] - camera.off_y}')
 
         def listen(cmd, args):
-            global cursor, FPS, clock
-            # 0 - Game Started
-            # 1 - Add entity of [type] at [x, y] with [id]
-            # 2 - Retarget entity of [type] at [x, y] with [id]
-            # 3 - Update Player Info
-            # 10 - Tell player count [curr, max]
-            print(cmd, args)
-            if cmd == '1':
+            if settings['DEBUG']:
+                print(cmd, args)
+
+            if cmd == '1':  # Add entity of [type] at [x, y] with [id]
                 type, x, y, id, id_player = int(args[0]), int(args[1]), int(args[2]), int(args[3]), int(args[4])
                 game.addEntity(type, x, y, id, id_player, camera, args[5::])
-            elif cmd == '2':  # Retarget
+            elif cmd == '2':  # Retarget entity of [type] at [x, y] with [id]
                 print(cmd, args)
                 if args[0] == str(TARGET_MOVE):
                     id, x, y = int(args[1]), int(args[2]), int(args[3])
@@ -556,6 +709,13 @@ class ClientWait:
             elif cmd == '7':
                 en = game.find_with_id(int(args[0]))
                 en.level = int(args[1])
+            elif cmd == '8':
+                if args[0] == '0':
+                    print('No money')
+                elif args[0] == '1':
+                    print('No place')
+                elif args[0] == '2':
+                    print('No fort level')
             elif cmd == '9':
                 game.lock.acquire()
                 en = game.find_with_id(int(args[3]))
@@ -580,7 +740,8 @@ class ClientWait:
                 print('Taken message:', cmd, args)
 
         background = pygame.image.load('sprite-games/small_map.png')
-        font = pygame.font.Font(None, 50)
+        # font = pygame.font.Font(None, 50)
+        update_settings()
         small_font = pygame.font.Font(None, 25)
         client.setEventCallback(listen)
         running = True
@@ -592,55 +753,20 @@ class ClientWait:
         managers = {}
         current_manager = 'main'
 
-        main_manager = UIManager(screen.get_size(), 'sprite-games/themes/game_theme.json')
-        r1 = Rect(SCREEN_WIDTH - 85, 45, 75, 75)
-        build_button = UIButton(r1, '', main_manager, object_id='build_button')
-        r2 = Rect(0, 0, 75, 25)
-        r2.centery = r1.centery
-        r2.right = r1.left
-        UILabel(r2, 'Построить', main_manager)
-        r1 = Rect(SCREEN_WIDTH - 85, 130, 75, 75)
-        retarget_button = UIButton(r1, '', main_manager, object_id='retarget_button')
-        r2 = Rect(0, 0, 75, 25)
-        r2.centery = r1.centery
-        r2.right = r1.left
-        UILabel(r2, 'Назначить', main_manager)
-
-        build_manager = UIManager(screen.get_size(), 'sprite-games/themes/game_theme.json')
-        # UIButton(pygame.Rect(5, 5, 50, 50), 'Back', build_manager, object_id='back')
-        build_i = 0
-        for build_id, clazz in UNIT_TYPES.items():
-            if clazz.placeable:
-                r1 = Rect(SCREEN_WIDTH - 65, 45 + 75 * build_i, 50, 50)
-                b = UIButton(r1, '', build_manager,
-                             object_id=f'place_{build_id}')
-                r2 = Rect(0, 0, len(clazz.name) * 9, 25)
-                r2.centery = r1.centery
-                r2.right = r1.left - 5
-                UILabel(r2, clazz.name, build_manager)
-                b.id = build_id
-                build_i += 1
+        main_manager = MainManager(game, camera, client)
 
         managers['place'] = PlaceManager(place)
         managers['main'] = main_manager
-        managers['build'] = build_manager
         managers['retarget'] = current_area
         managers['product'] = ProductManager(screen)
         global FPS
         print(game.other_nicks)
+        fps_count = 60
         minimap = pygame.image.load('sprite-games/minimap.png')
 
         camera_area = Sprite()
         camera_area.rect = Rect(0, 0, 1920, 1080)
 
-        with open('settings.txt', 'r') as set:
-            settings = {}
-            for i in set.read().split("\n")[1:]:
-                a = i.split()
-                if a[1] == "TRUE":
-                    settings[a[0]] = True
-                else:
-                    settings[a[0]] = False
         while running and client.connected:
             for event in pygame.event.get():
                 if event.type == pygame.MOUSEBUTTONUP and current_manager == 'main':
@@ -667,10 +793,6 @@ class ClientWait:
                         elif event.ui_object_id.startswith('product'):
                             btn = event.ui_element
                             client.send(f'3_{btn.build_id}_{btn.class_id}')
-                        elif event.ui_element == build_button:
-                            current_manager = 'build'
-                        elif event.ui_element == retarget_button:
-                            current_manager = 'retarget'
                         elif event.ui_object_id.startswith('upgrade'):
                             client.send(f'5_{event.ui_element.build_id}')
 
@@ -685,16 +807,32 @@ class ClientWait:
                         running = False
 
                 if event.type in [CLIENT_EVENT_UPDATE, CLIENT_EVENT_SEC]:
-                    p = pygame.mouse.get_pos()
-                    x_off, y_off = 0, 0
-                    if p[0] == 0:
-                        x_off += 1
-                    elif p[0] + 1 == SCREEN_WIDTH:
-                        x_off -= 1
-                    if p[1] == 0:
-                        y_off += 1
-                    elif p[1] + 1 == SCREEN_HEIGHT:
-                        y_off -= 1
+                    if settings['CAMERA']:
+                        p = pygame.mouse.get_pos()
+                        x_off, y_off = 0, 0
+                        if p[0] == 0:
+                            x_off += 1
+                        elif p[0] + 1 == settings['WIDTH']:
+                            x_off -= 1
+                        if p[1] == 0:
+                            y_off += 1
+                        elif p[1] + 1 == settings['HEIGHT']:
+                            y_off -= 1
+                    else:
+                        x_off, y_off = 0, 0
+                        if pygame.key.get_pressed()[pygame.K_w]:
+                            camera.move(0, 1)
+                            y_off += 1
+                        if pygame.key.get_pressed()[pygame.K_s]:
+                            camera.move(0, -1)
+                            y_off -= 1
+                        if pygame.key.get_pressed()[pygame.K_a]:
+                            camera.move(1, 0)
+                            x_off += 1
+                        if pygame.key.get_pressed()[pygame.K_d]:
+                            camera.move(-1, 0)
+                            x_off -= 1
+                    camera.move(x_off, y_off)
 
                     if x_off != 0 or y_off != 0:
                         if False:  # Если курсор не в другом состоянии
@@ -703,7 +841,6 @@ class ClientWait:
                         if False:  # Если курсор не в обычном состоянии
                             pass  # Поменять курсор на обычный
 
-                    camera.move(x_off, y_off)
                     if event.type == CLIENT_EVENT_SEC:
                         for entity in pygame.sprite.spritecollide(camera_area, game.sprites, False):
                             if type(entity) == Workshop:
@@ -712,6 +849,7 @@ class ClientWait:
                                 Particle('forge', entity.x, entity.y, camera)
                             elif type(entity) == Farm:
                                 Particle('farm', entity.x, entity.y, camera)
+
                     game.update(event, game)
 
             game.lock.acquire()
@@ -722,7 +860,7 @@ class ClientWait:
                         screen.blit(background,
                                     (camera.off_x % 965 + (j - 1) * 965, camera.off_y % 545 + (i - 1) * 545))
             else:
-                screen.fill((200, 200, 200))
+                screen.fill((96, 128, 56))
             # */
             game.drawSprites(screen)
             for spr in pygame.sprite.spritecollide(camera_area, game.sprites, False):
@@ -733,7 +871,7 @@ class ClientWait:
                     text = small_font.render(game.get_player_nick(spr.player_id), 1, COLOR_LIST[spr.player_id])
                     screen.blit(text, spr.rect.bottomleft)
 
-                if spr.unit_type == TYPE_PROJECTILE or spr.health == spr.max_health:
+                if spr.unit_type == TYPE_PROJECTILE or (spr.health == spr.max_health and not settings['DEBUG']):
                     continue
                 colors = ['gray', 'orange'] if type(spr) == UncompletedBuilding else ['red', 'green']
                 rect = Rect(spr.rect.left, spr.rect.top - 5, spr.rect.width, 5)
@@ -743,10 +881,11 @@ class ClientWait:
                 rect.width = spr.rect.width
                 pygame.draw.rect(screen, Color('black'), rect, 1)
 
-                text = small_font.render(str(spr.health), 1, COLOR_LIST[spr.player_id])
-                screen.blit(text, spr.rect.bottomright)
-                text = small_font.render(str(spr.max_health), 1, COLOR_LIST[spr.player_id])
-                screen.blit(text, spr.rect.topright)
+                if settings['DEBUG']:
+                    text = small_font.render(str(spr.health), 1, COLOR_LIST[spr.player_id])
+                    screen.blit(text, spr.rect.bottomright)
+                    text = small_font.render(str(spr.max_health), 1, COLOR_LIST[spr.player_id])
+                    screen.blit(text, spr.rect.topright)
 
             managers[current_manager].update(1 / 60)
             managers[current_manager].draw_ui(screen)
@@ -759,14 +898,12 @@ class ClientWait:
             screen.blit(text, (260, 805))
             screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
             particles.draw(screen)
+            text = small_font.render(f'FPS: {fps_count}', 1, pygame.Color('red' if fps_count < 40 else 'green'))
+            screen.blit(text, (0, 0))
+
             pygame.display.flip()
             game.lock.release()
-            print('FPS', 1000 / clock.tick(FPS))
-# <<<<<<< HEAD
-            clock.tick(FPS)
-# =======
-            # clock.tick(FPS)
-# >>>>>>> 67854fe5608f43b1397fc9ebb655a043bc6d13b1
+            fps_count = 1000 // clock.tick(FPS)
         client.disconnect('Application closed.')
         return False
 
@@ -774,9 +911,7 @@ class ClientWait:
 def main():
     pygame.init()
     pygame.mouse.set_visible(False)
-    with open('settings.txt', 'r') as settings:
-        size = list(map(int, settings.readline().split()))
-    ClientWait().play(pygame.display.set_mode(size, pygame.FULLSCREEN), nick=random_nick())
+    ClientWait().play(pygame.display.set_mode((0, 0), pygame.FULLSCREEN), nick=random_nick())
     # End
     pygame.quit()
 

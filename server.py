@@ -161,7 +161,7 @@ class Player:
 class ServerGame:
     def __init__(self, server):
         self.lock = Lock()
-        self.all_sprites = Group()
+        self.sprites = Group()
         self.buildings = Group()
         self.players = {}
         self.server = server
@@ -219,7 +219,7 @@ class ServerGame:
         self.lock.release()
 
     def update(self, *args):
-        self.all_sprites.update(*args)
+        self.sprites.update(*args)
 
     def place(self, build_class, x, y, player_id, *args, ignore_space=False, ignore_money=False,
               ignore_fort_level=False):
@@ -227,14 +227,14 @@ class ServerGame:
         if ignore_fort_level or build_class.required_level <= Fortress.get_player_level(player_id):
             if ignore_money or self.has_enought(player_id, build_class.cost):
                 building = build_class(x, y, get_curr_id(), player_id, *args)
-                if ignore_space or (not sprite.spritecollideany(building, self.all_sprites)):
+                if ignore_space or (not sprite.spritecollideany(building, self.sprites)):
 
                     if player_id == -1 or (self.players[player_id].power <= Farm.get_player_meat(player_id)):
                         if not ignore_money:
                             self.take_resources(player_id, build_class.cost)
                         self.server.send_all(
                             f'1_{get_class_id(build_class)}_{x}_{y}_{building.id}_{player_id}{building.get_args()}')
-                        self.all_sprites.add(building)
+                        self.sprites.add(building)
                         if building.unit_type == TYPE_BUILDING:
                             self.buildings.add(building)
                         if building.can_upgraded:
@@ -260,11 +260,11 @@ class ServerGame:
         if build_class.required_level <= Fortress.get_player_level(player_id):
             if self.has_enought(player_id, build_class.cost):
                 building = UncompletedBuilding(x, y, get_curr_id(), player_id, get_class_id(build_class))
-                if not sprite.spritecollideany(building, self.all_sprites):
+                if not sprite.spritecollideany(building, self.sprites):
                     self.take_resources(player_id, build_class.cost)
                     self.server.send_all(
                         f'1_{get_class_id(UncompletedBuilding)}_{x}_{y}_{building.id}_{player_id}{building.get_args()}')
-                    self.all_sprites.add(building)
+                    self.sprites.add(building)
                     if building.unit_type == TYPE_BUILDING:
                         self.buildings.add(building)
                 else:
@@ -280,13 +280,13 @@ class ServerGame:
         return building
 
     def get_intersect(self, spr):
-        return pygame.sprite.spritecollide(spr, self.all_sprites, False)
+        return pygame.sprite.spritecollide(spr, self.sprites, False)
 
     def get_building_intersect(self, spr):
         return pygame.sprite.spritecollide(spr, self.buildings, False)
 
     def retarget(self, id, x, y, client):
-        for i in self.all_sprites:
+        for i in self.sprites:
             if i.id == id:
                 if i.unit_type == TYPE_FIGHTER:
                     self.lock.acquire()
@@ -297,7 +297,7 @@ class ServerGame:
         return False
 
     def find_with_id(self, id):
-        for spr in self.all_sprites:
+        for spr in self.sprites:
             if spr.id == id:
                 return spr
 
@@ -519,7 +519,7 @@ def main(screen, nicname):
                     update_players_info()
             elif event.type == SERVER_EVENT_SYNC:
                 game.lock.acquire()
-                for spr in game.all_sprites:
+                for spr in game.sprites:
                     spr.send_updated(game)
                 game.lock.release()
             elif event.type == pygame.KEYUP:
