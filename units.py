@@ -199,10 +199,10 @@ class Mine(Unit):
         self.max_health = UNIT_STATS[type(self)][0]
         self.health = self.max_health
 
-    def update(self, *args):
-        if args[0].type == SERVER_EVENT_UPDATE:
+    def update(self, event, game):
+        if event.type == SERVER_EVENT_UPDATE:
             if not self.is_alive():
-                args[1].kill(self)
+                game.kill(self)
 
 
 class Arrow(TwistUnit):
@@ -217,21 +217,21 @@ class Arrow(TwistUnit):
         self.time = 1200
         self.damage = UNIT_STATS[Arrow][1] * Forge.get_mult(self)[1]
 
-    def update(self, *args):
-        if args[0].type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
-            self.move_to_angle(3, args[1])
-            if args[0].type == SERVER_EVENT_UPDATE:
+    def update(self, event, game):
+        if event.type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
+            self.move_to_angle(3, game)
+            if event.type == SERVER_EVENT_UPDATE:
                 if self.x < -5000 or self.x > 5000 or self.y < -5000 or self.y > 5000:
-                    args[1].kill(self)
+                    game.kill(self)
                     return
 
                 self.time -= 1
                 if self.time <= 0:
-                    args[1].kill(self)
-                for spr in args[1].get_intersect(self):
+                    game.kill(self)
+                for spr in game.get_intersect(self):
                     if spr.player_id not in [-1, self.player_id] and spr.unit_type != TYPE_PROJECTILE:
-                        spr.take_damage(self.damage, args[1])
-                        args[1].kill(self)
+                        spr.take_damage(self.damage, game)
+                        game.kill(self)
                         return
 
     def get_args(self):
@@ -259,25 +259,25 @@ class BallistaArrow(TwistUnit):
         self.striken = []
         self.damage = UNIT_STATS[BallistaArrow][1] * Forge.get_mult(self)[1]
 
-    def update(self, *args):
-        if args[0].type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
-            self.move_to_angle(3, args[1])
-            if args[0].type == SERVER_EVENT_UPDATE:
+    def update(self, event, game):
+        if event.type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
+            self.move_to_angle(3, game)
+            if event.type == SERVER_EVENT_UPDATE:
                 if self.x < -5000 or self.x > 5000 or self.y < -5000 or self.y > 5000:
-                    args[1].kill(self)
+                    game.kill(self)
                     return
 
                 self.time -= 1
                 if self.time <= 0:
-                    args[1].kill(self)
-                for spr in args[1].get_intersect(self):
+                    game.kill(self)
+                for spr in game.get_intersect(self):
                     if spr.player_id not in [-1, self.player_id] and spr.unit_type != TYPE_PROJECTILE:
                         if spr not in self.striken:
                             self.live_time -= (1 if type(spr) != Dragon else 5)
-                            spr.take_damage(self.damage, args[1])
+                            spr.take_damage(self.damage, game)
                             self.striken.append(spr)
                             if self.live_time <= 0:
-                                args[1].kill(self)
+                                game.kill(self)
                                 return
 
     def get_args(self):
@@ -441,40 +441,38 @@ class Archer(Fighter):
         super().__init__(x, y, id, player_id, Archer.images[player_id])
         self.delay_time = 60
 
-    def update(self, *args):
-        if not args:
-            return
+    def update(self, event, game):
         if not self.is_alive():
-            if args[0].type == SERVER_EVENT_UPDATE:
-                args[1].kill(self)
+            if event.type == SERVER_EVENT_UPDATE:
+                game.kill(self)
                 return
-        if args[0].type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
+        if event.type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
             if self.target[0] == TARGET_MOVE:
-                self.move_to_point(args[0], args[1], 1, 0.5, 3)
+                self.move_to_point(event, game, 1, 0.5, 3)
 
             elif self.target[0] == TARGET_ATTACK:
-                if args[0].type == SERVER_EVENT_UPDATE and not self.target[1].is_alive():
-                    self.set_target(TARGET_NONE, None, args[1])
+                if event.type == SERVER_EVENT_UPDATE and not self.target[1].is_alive():
+                    self.set_target(TARGET_NONE, None, game)
                     return
 
                 self.find_target_angle()
-                if args[0].type == SERVER_EVENT_UPDATE:
+                if event.type == SERVER_EVENT_UPDATE:
                     self.update_delay()
                 near = self.close_to_attack(1000)
                 if self.turn_around(3):
                     if near:
-                        if args[0].type == SERVER_EVENT_UPDATE:
-                            self.throw_projectile(args[1], Arrow)
+                        if event.type == SERVER_EVENT_UPDATE:
+                            self.throw_projectile(game, Arrow)
                     else:
-                        self.move_to_angle(1, args[1])
+                        self.move_to_angle(1, game)
                 elif not near:
-                    self.move_to_angle(0.5, args[1])
+                    self.move_to_angle(0.5, game)
 
             elif self.target[0] == TARGET_NONE:
-                if args[0].type == SERVER_EVENT_UPDATE:
-                    self.find_new_target(args[1])
+                if event.type == SERVER_EVENT_UPDATE:
+                    self.find_new_target(game)
 
-        elif args[0].type in [CLIENT_EVENT_SEC, SERVER_EVENT_SEC]:
+        elif event.type in [CLIENT_EVENT_SEC, SERVER_EVENT_SEC]:
             pass
 
 
@@ -559,67 +557,65 @@ class Worker(Fighter):
         self.state = STATE_FIGHT
         self.find_new_target(game, 2000)
 
-    def update(self, *args):
-        if not args:
-            return
-        if args[0].type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
+    def update(self, event, game):
+        if event.type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
 
             if self.target[0] == TARGET_MOVE:
-                self.move_to_point(args[0], args[1], 1.5, 1)
+                self.move_to_point(event, game, 1.5, 1)
                 return
 
             elif self.target[0] == TARGET_ATTACK:
-                if args[0].type == SERVER_EVENT_UPDATE and not self.target[1].is_alive():
-                    self.set_target(TARGET_NONE, None, args[1])
+                if event.type == SERVER_EVENT_UPDATE and not self.target[1].is_alive():
+                    self.set_target(TARGET_NONE, None, game)
                     if self.state == STATE_FIGHT:
                         self.state = STATE_ANY_WORK
                     return
 
                 self.find_target_angle()
-                if args[0].type == SERVER_EVENT_UPDATE:
+                if event.type == SERVER_EVENT_UPDATE:
                     self.update_delay()
                 near = self.close_to_attack()
-                if self.turn_around():
+                if self.turn_around(2):
                     if near:
-                        if args[0].type == SERVER_EVENT_UPDATE:
+                        if event.type == SERVER_EVENT_UPDATE:
                             if type(self.target[1]) == Mine:
-                                if self.single_attack(args[1]):
+                                if self.single_attack(game):
                                     self.money += MONEY_PER_PUNCH
                                     if self.is_full():
-                                        self.find_new_target(args[1], 3000)
+                                        self.find_new_target(game, 3000)
                                         return
                             elif type(self.target[1]) == Tree:
-                                if self.single_attack(args[1]):
+                                if self.single_attack(game):
                                     self.wood += WOOD_PER_PUNCH
                                     if self.is_full():
-                                        self.find_new_target(args[1], 3000)
+                                        self.find_new_target(game, 3000)
                                         return
                             elif type(self.target[1]) == UncompletedBuilding:
-                                if self.single_attack(args[1], -5):
+                                if self.single_attack(game, -5):
                                     if self.target[1].health >= self.target[1].max_health:
-                                        if not self.find_new_target(args[1], 3000):
+                                        if not self.find_new_target(game, 3000):
                                             self.set_target(TARGET_NONE, None)
                                             return
                             elif type(self.target[1]) == Fortress and self.player_id == self.target[1].player_id:
-                                args[1].give_resources(self.player_id, (self.money, self.wood))
+                                game.give_resources(self.player_id, (self.money, self.wood))
                                 self.money = 0
                                 self.wood = 0
-                                self.find_new_target(args[1], 3000)
+                                self.find_new_target(game, 3000)
                                 return
                             else:
-                                self.single_attack(args[1])
+                                self.single_attack(game)
                     else:
-                        self.move_to_angle(1.5, args[1])
+                        self.move_to_angle(1.5, game)
                 elif not near:
-                    self.move_to_angle(1, args[1])
+                    self.move_to_angle(1, game)
 
             elif self.target[0] == TARGET_NONE:
-                if args[0].type == SERVER_EVENT_UPDATE:
-                    self.find_new_target(args[1], 3000)
+                if event.type == SERVER_EVENT_UPDATE:
+                    self.find_new_target(game, 3000)
 
         if not self.is_alive():
-            if args[0].type == SERVER_EVENT_UPDATE:
-                args[1].kill(self)
+            if event.type == SERVER_EVENT_UPDATE:
+                game.kill(self)
                 return
 
     def is_full(self):
@@ -658,16 +654,16 @@ class ProductingBuild(Unit):
                        int(self.y) - randint(-50, 50),
                        self.player_id, ignore_space=True, ignore_money=False, ignore_fort_level=True)
 
-    def update(self, *args):
+    def update(self, event, game):
         if not self.is_alive():
-            if args[0].type == SERVER_EVENT_UPDATE:
-                args[1].kill(self)
+            if event.type == SERVER_EVENT_UPDATE:
+                game.kill(self)
                 return
-        if args[0].type == SERVER_EVENT_SEC and self.time > 0 and self.units_tray:
+        if event.type == SERVER_EVENT_SEC and self.time > 0 and self.units_tray:
             self.time -= 1
         elif self.time == 0:
             self.time = self.delay
-            self.create_unit(args[1], self.units_tray.pop(0))
+            self.create_unit(game, self.units_tray.pop(0))
 
 
 class Fortress(ProductingBuild):
@@ -706,11 +702,11 @@ class Fortress(ProductingBuild):
         self.can_upgraded = True
         Fortress.instances.append(self)
 
-    def update(self, *args):
-        super().update(*args)
+    def update(self, event, game):
+        super().update(event, game)
         if not self.is_alive():
-            if args[0].type == SERVER_EVENT_UPDATE:
-                args[1].kill(self)
+            if event.type == SERVER_EVENT_UPDATE:
+                game.kill(self)
                 return
 
     def next_level(self, game):
@@ -776,11 +772,10 @@ class Forge(Unit):
         self.level = 0
         self.can_upgraded = True
 
-    def update(self, *args):
-        super().update(*args)
+    def update(self, event, game):
         if not self.is_alive():
-            if args[0].type == SERVER_EVENT_UPDATE:
-                args[1].kill(self)
+            if event.type == SERVER_EVENT_UPDATE:
+                game.kill(self)
                 return
 
     def next_level(self, game):
@@ -882,38 +877,36 @@ class ArcherTower(Fighter):
         self.image.blit(self.tower_image, (0, 0))
         self.image.blit(pygame.transform.rotate(self.archer_image, -self.angle), (10, 10))
 
-    def update(self, *args):
-        if not args:
-            return
+    def update(self, event, game):
         if not self.is_alive():
-            if args[0].type == SERVER_EVENT_UPDATE:
-                args[1].kill(self)
+            if event.type == SERVER_EVENT_UPDATE:
+                game.kill(self)
                 return
-        if args[0].type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
+        if event.type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
             if self.target[0] == TARGET_MOVE:
                 self.find_target_angle()
                 turned = self.turn_around(3)
 
-                if args[0].type == SERVER_EVENT_UPDATE:
+                if event.type == SERVER_EVENT_UPDATE:
                     if turned:
-                        self.set_target(TARGET_NONE, None, args[1])
+                        self.set_target(TARGET_NONE, None, game)
                         return
 
             elif self.target[0] == TARGET_ATTACK:
-                if args[0].type == SERVER_EVENT_UPDATE and not self.target[1].is_alive():
+                if event.type == SERVER_EVENT_UPDATE and not self.target[1].is_alive():
                     self.set_target(TARGET_NONE, None)
                     return
 
                 self.find_target_angle()
-                if args[0].type == SERVER_EVENT_UPDATE:
+                if event.type == SERVER_EVENT_UPDATE:
                     self.update_delay()
                 if self.turn_around(3):
-                    if args[0].type == SERVER_EVENT_UPDATE:
-                        self.throw_projectile(args[1], Arrow)
+                    if event.type == SERVER_EVENT_UPDATE:
+                        self.throw_projectile(game, Arrow)
 
             elif self.target[0] == TARGET_NONE:
-                if args[0].type == SERVER_EVENT_UPDATE:
-                    self.find_new_target(args[1])
+                if event.type == SERVER_EVENT_UPDATE:
+                    self.find_new_target(game)
 
 
 class Tree(Unit):
@@ -930,10 +923,10 @@ class Tree(Unit):
         self.max_health = UNIT_STATS[type(self)][0]
         self.health = self.max_health
 
-    def update(self, *args):
-        if args[0].type == SERVER_EVENT_UPDATE:
+    def update(self, event, game):
+        if event.type == SERVER_EVENT_UPDATE:
             if not self.is_alive():
-                args[1].kill(self)
+                game.kill(self)
 
 
 class FireProjectile(TwistUnit):
@@ -952,24 +945,24 @@ class FireProjectile(TwistUnit):
         self.angle = int(angle)
         self.damage = UNIT_STATS[type(self)][1] * Forge.get_mult(self)[1]
 
-    def update(self, *args):
-        if args[0].type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
+    def update(self, event, game):
+        if event.type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
             self.time += 1
             if self.time >= 15:
                 self.time = 0
                 self.current_state += 1
-                if args[0].type == CLIENT_EVENT_UPDATE:
+                if event.type == CLIENT_EVENT_UPDATE:
                     self.current_state = min(5, self.current_state)
                     self.update_image()
-                elif args[0].type == SERVER_EVENT_UPDATE:
+                elif event.type == SERVER_EVENT_UPDATE:
                     if self.current_state == 6:
-                        args[1].kill(self)
+                        game.kill(self)
                         print('Dead')
                         return
-                    for spr in args[1].get_intersect(self):
+                    for spr in game.get_intersect(self):
                         if (spr != self) and (spr.unit_type != TYPE_PROJECTILE) \
                                 and (spr.player_id not in [self.player_id, -1]) and type(spr) != Dragon:
-                            spr.take_damage(self.damage, args[1])
+                            spr.take_damage(self.damage, game)
 
     def get_args(self):
         print(self.angle)
@@ -1005,47 +998,45 @@ class Dragon(Fighter):
         self.update_image()
         self.delay = 45 * 10
 
-    def update(self, *args):
-        if not args:
-            return
+    def update(self, event, game):
         if not self.is_alive():
-            if args[0].type == SERVER_EVENT_UPDATE:
-                args[1].kill(self)
+            if event.type == SERVER_EVENT_UPDATE:
+                game.kill(self)
                 return
-        if args[0].type == CLIENT_EVENT_UPDATE:
+        if event.type == CLIENT_EVENT_UPDATE:
             self.time += 1
             if self.time >= 45:
                 self.anim_switch = (self.anim_switch + 1) % 2
                 self.time = 0
                 self.update_image()
 
-        if args[0].type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
+        if event.type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
 
             if self.target[0] == TARGET_MOVE:
-                self.move_to_point(args[0], args[1], 1, 0.5)
+                self.move_to_point(event, game, 1, 0.5)
                 return
 
             elif self.target[0] == TARGET_ATTACK:
-                if args[0].type == SERVER_EVENT_UPDATE and not self.target[1].is_alive():
-                    self.set_target(TARGET_NONE, None, args[1])
+                if event.type == SERVER_EVENT_UPDATE and not self.target[1].is_alive():
+                    self.set_target(TARGET_NONE, None, game)
                     return
 
                 self.find_target_angle()
-                if args[0].type == SERVER_EVENT_UPDATE:
+                if event.type == SERVER_EVENT_UPDATE:
                     self.update_delay()
                 near = self.close_to_attack()
                 if self.turn_around(2):
                     if near:
-                        if args[0].type == SERVER_EVENT_UPDATE:
-                            self.throw_projectile(args[1], FireProjectile)
+                        if event.type == SERVER_EVENT_UPDATE:
+                            self.throw_projectile(game, FireProjectile)
                     else:
-                        self.move_to_angle(1, args[1])
+                        self.move_to_angle(1, game)
                 elif not near:
-                    self.move_to_angle(0.5, args[1])
+                    self.move_to_angle(0.5, game)
 
             elif self.target[0] == TARGET_NONE:
-                if args[0].type == SERVER_EVENT_UPDATE:
-                    self.find_new_target(args[1])
+                if event.type == SERVER_EVENT_UPDATE:
+                    self.find_new_target(game)
 
     def update_image(self):
         rotated_image = pygame.transform.rotate(self.anim_tuple[self.anim_switch], -self.angle)
@@ -1064,16 +1055,14 @@ class UncompletedBuilding(Unit):
         self.max_health = 100
         self.completed = False
 
-    def update(self, *args):
-        if args is None:
-            return
-        if args[0].type == SERVER_EVENT_UPDATE:
+    def update(self, event, game):
+        if event.type == SERVER_EVENT_UPDATE:
             if not self.is_alive():
-                args[1].kill(self)
+                game.kill(self)
                 return
             if self.health >= self.max_health:
-                args[1].place(self.clazz, int(self.x), int(self.y), self.player_id,
-                              ignore_space=True, ignore_money=True, ignore_fort_level=True)
+                game.place(self.clazz, int(self.x), int(self.y), self.player_id,
+                           ignore_space=True, ignore_money=True, ignore_fort_level=True)
                 self.completed = True
 
     def get_args(self):
@@ -1104,38 +1093,36 @@ class Ballista(Fighter):
         super().__init__(x, y, id, player_id, Ballista.images[player_id])
         self.delay_time = 180
 
-    def update(self, *args):
-        if not args:
-            return
+    def update(self, event, game):
         if not self.is_alive():
-            if args[0].type == SERVER_EVENT_UPDATE:
-                args[1].kill(self)
+            if event.type == SERVER_EVENT_UPDATE:
+                game.kill(self)
                 return
-        if args[0].type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
+        if event.type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
             if self.target[0] == TARGET_MOVE:
-                self.move_to_point(args[0], args[1], 1, 0.5, 1)
+                self.move_to_point(event, game, 1, 0.5, 1)
 
             elif self.target[0] == TARGET_ATTACK:
-                if args[0].type == SERVER_EVENT_UPDATE and not self.target[1].is_alive():
-                    self.set_target(TARGET_NONE, None, args[1])
+                if event.type == SERVER_EVENT_UPDATE and not self.target[1].is_alive():
+                    self.set_target(TARGET_NONE, None, game)
                     return
 
                 self.find_target_angle()
-                if args[0].type == SERVER_EVENT_UPDATE:
+                if event.type == SERVER_EVENT_UPDATE:
                     self.update_delay()
                 near = self.close_to_attack(1500)
                 if self.turn_around(3):
                     if near:
-                        if args[0].type == SERVER_EVENT_UPDATE:
-                            self.throw_projectile(args[1], BallistaArrow)
+                        if event.type == SERVER_EVENT_UPDATE:
+                            self.throw_projectile(game, BallistaArrow)
                     else:
-                        self.move_to_angle(1, args[1])
+                        self.move_to_angle(1, game)
                 elif not near:
-                    self.move_to_angle(0.5, args[1])
+                    self.move_to_angle(0.5, game)
 
             elif self.target[0] == TARGET_NONE:
-                if args[0].type == SERVER_EVENT_UPDATE:
-                    self.find_new_target(args[1])
+                if event.type == SERVER_EVENT_UPDATE:
+                    self.find_new_target(game)
 
 
 class Farm(Unit):
@@ -1171,11 +1158,10 @@ class Farm(Unit):
         super().__init__(x, y, id, player_id)
         Farm.instances.append(self)
 
-    def update(self, *args):
-        super().update(*args)
+    def update(self, event, game):
         if not self.is_alive():
-            if args[0].type == SERVER_EVENT_UPDATE:
-                args[1].kill(self)
+            if event.type == SERVER_EVENT_UPDATE:
+                game.kill(self)
                 return
 
 

@@ -194,6 +194,37 @@ class Camera:
         for spr in self.sprites:
             spr.set_offset(self.off_x, self.off_y)
 
+    def update(self):
+        if settings['CAMERA']:
+            p = pygame.mouse.get_pos()
+            x_off, y_off = 0, 0
+            if p[0] == 0:
+                x_off += 1
+            elif p[0] + 1 == settings['WIDTH']:
+                x_off -= 1
+            if p[1] == 0:
+                y_off += 1
+            elif p[1] + 1 == settings['HEIGHT']:
+                y_off -= 1
+        else:
+            x_off, y_off = 0, 0
+            if pygame.key.get_pressed()[pygame.K_w]:
+                y_off += 1
+            if pygame.key.get_pressed()[pygame.K_s]:
+                y_off -= 1
+            if pygame.key.get_pressed()[pygame.K_a]:
+                x_off += 1
+            if pygame.key.get_pressed()[pygame.K_d]:
+                x_off -= 1
+        self.move(x_off, y_off)
+
+        if x_off != 0 or y_off != 0:
+            if False:  # Если курсор не в другом состоянии
+                pass  # Поменять курсор на другой
+        else:
+            if False:  # Если курсор не в обычном состоянии
+                pass  # Поменять курсор на обычный
+
 
 class Game:
     def __init__(self, nick=random_nick()):
@@ -666,7 +697,6 @@ class ClientWait:
                 type, x, y, id, id_player = int(args[0]), int(args[1]), int(args[2]), int(args[3]), int(args[4])
                 game.addEntity(type, x, y, id, id_player, camera, args[5::])
             elif cmd == '2':  # Retarget entity of [type] at [x, y] with [id]
-                print(cmd, args)
                 if args[0] == str(TARGET_MOVE):
                     id, x, y = int(args[1]), int(args[2]), int(args[3])
                     game.retarget(id, x, y)
@@ -711,7 +741,10 @@ class ClientWait:
                 en.level = int(args[1])
             elif cmd == '8':
                 if args[0] == '0':
-                    print('No money')
+                    if args[1] == '0':
+                        print('No resources')
+                    elif args[1] == '1':
+                        print('No meat')
                 elif args[0] == '1':
                     print('No place')
                 elif args[0] == '2':
@@ -780,8 +813,10 @@ class ClientWait:
                             break
                     if collided:
                         continue
+
                 managers[current_manager].process_events(event)
-                particles.update(event)
+                if settings['PARTICLES']:
+                    particles.update(event)
 
                 if event.type == pygame.USEREVENT:
                     if event.user_type == pygame_gui.UI_BUTTON_PRESSED:
@@ -806,42 +841,14 @@ class ClientWait:
                     elif event.key == pygame.K_F12:
                         running = False
 
+                if event.type == CLIENT_EVENT_UPDATE:
+                    camera.update()
+
                 if event.type in [CLIENT_EVENT_UPDATE, CLIENT_EVENT_SEC]:
-                    if settings['CAMERA']:
-                        p = pygame.mouse.get_pos()
-                        x_off, y_off = 0, 0
-                        if p[0] == 0:
-                            x_off += 1
-                        elif p[0] + 1 == settings['WIDTH']:
-                            x_off -= 1
-                        if p[1] == 0:
-                            y_off += 1
-                        elif p[1] + 1 == settings['HEIGHT']:
-                            y_off -= 1
-                    else:
-                        x_off, y_off = 0, 0
-                        if pygame.key.get_pressed()[pygame.K_w]:
-                            camera.move(0, 1)
-                            y_off += 1
-                        if pygame.key.get_pressed()[pygame.K_s]:
-                            camera.move(0, -1)
-                            y_off -= 1
-                        if pygame.key.get_pressed()[pygame.K_a]:
-                            camera.move(1, 0)
-                            x_off += 1
-                        if pygame.key.get_pressed()[pygame.K_d]:
-                            camera.move(-1, 0)
-                            x_off -= 1
-                    camera.move(x_off, y_off)
+                    game.update(event, game)
 
-                    if x_off != 0 or y_off != 0:
-                        if False:  # Если курсор не в другом состоянии
-                            pass  # Поменять курсор на другой
-                    else:
-                        if False:  # Если курсор не в обычном состоянии
-                            pass  # Поменять курсор на обычный
-
-                    if event.type == CLIENT_EVENT_SEC:
+                if event.type == CLIENT_EVENT_SEC:
+                    if settings['PARTICLES']:
                         for entity in pygame.sprite.spritecollide(camera_area, game.sprites, False):
                             if type(entity) == Workshop:
                                 Particle('workshop', entity.x, entity.y, camera)
@@ -849,7 +856,6 @@ class ClientWait:
                                 Particle('forge', entity.x, entity.y, camera)
                             elif type(entity) == Farm:
                                 Particle('farm', entity.x, entity.y, camera)
-
                     game.update(event, game)
 
             game.lock.acquire()
@@ -897,7 +903,8 @@ class ClientWait:
             text = small_font.render(f'{game.info.power}/{game.info.max_power}', 1, Color('palevioletred3'))
             screen.blit(text, (260, 805))
             screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
-            particles.draw(screen)
+            if settings['PARTICLES']:
+                particles.draw(screen)
             text = small_font.render(f'FPS: {fps_count}', 1, pygame.Color('red' if fps_count < 40 else 'green'))
             screen.blit(text, (0, 0))
 

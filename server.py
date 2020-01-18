@@ -242,18 +242,28 @@ class ServerGame:
                             self.server.send_all(f'7_{building.id}_{building.level}')
                     else:
                         print('Not enought meat!')
+                        self.safe_send(player_id, '8_0_1')
                         building.kill()
                 else:
                     print(f'No place {build_class}')
+                    self.safe_send(player_id, '8_1')
                     building = None
             else:
                 print(f'No money {player_id} {build_class} {build_class.cost}')
+                self.safe_send(player_id, '8_0_0')
                 building = None
         else:
             print(f'No fortress level', build_class.required_level)
+            self.safe_send(player_id, '8_2')
             building = None
         self.lock.release()
         return building
+
+    def safe_send(self, player_id, msg):
+        pl = self.players.get(player_id)
+        if pl is None:
+            return
+        pl.client.send(msg)
 
     def place_building(self, build_class, x, y, player_id):
         self.lock.acquire()
@@ -372,6 +382,8 @@ def main(screen, nicname):
                     game.take_resources(client.id, cost)
                     en.next_level(game)
                     server.send_all(f'7_{en.id}_{en.level}')
+                else:
+                    game.safe_send(client.id, '8_0_0')
         else:
             print('Invalid command')
 
