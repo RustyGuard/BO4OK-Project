@@ -169,7 +169,7 @@ def ip(screen):
                     if button.rect.collidepoint(event.pos):
                         if button.name == "OK":
                             ClientWait().play(screen, ip if ip != '' else 'localhost', nick=nicname)
-                            return ["play", nicname]
+                        return ["play", nicname]
                 if button.get_event(event):
                     return button.get_event(event)
             if event.type == pygame.KEYDOWN:
@@ -280,21 +280,20 @@ def settings(screen):
 
 def titers(screen):
     global FPS, clock
-    pygame.init()
     i1 = pygame.image.load('sprite-games/титры/1.png')
     i2 = pygame.image.load('sprite-games/титры/2.png')
     i3 = pygame.image.load('sprite-games/титры/3.png')
     i2_rect = [450, 1080]
     i3_rect = [450, 2530]
-    pygame.mixer.music.load('1.mp3')
-    pygame.mixer.music.play(0)
+    sound1 = pygame.mixer.Sound('music/settings.ogg')
+    sound1.play()
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_ESCAPE:
-                    pygame.mixer.music.stop()
+                    sound1.stop()
                     return
         screen.blit(i1, (0, 0))
         screen.blit(i2, i2_rect)

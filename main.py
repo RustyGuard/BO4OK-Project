@@ -6,15 +6,13 @@ pygame.init()
 pygame.mixer.init()
 pygame.mouse.set_visible(False)
 
-musik = pygame.mixer.music.load('3.mp3')
-sound = pygame.mixer.Sound('2.ogg')
+musik = pygame.mixer.music.load('music/menu.mp3')
 pygame.mixer.music.play(-1)
 
 screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 data.headpiece(screen)
 window, nicname = data.menu(screen)
 while window:
-    sound.play()
     if window == "play":
         window, nicname = data.play(screen)
     if window == "settings":
