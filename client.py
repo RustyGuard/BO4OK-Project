@@ -641,6 +641,8 @@ class ClientWait:
                     stats['wood_chopped'] += float(args[1])
                 elif args[0] == '5':  # Unit created
                     stats['build_created'] += 1
+                    sound1 = pygame.mixer.Sound('music/construction_completed.ogg')
+                    sound1.play()
                 elif args[0] == '6':  # Building completed
                     stats['units_created'] += 1
 
@@ -662,14 +664,24 @@ class ClientWait:
             elif cmd == '8':
                 if args[0] == '0':
                     if args[1] == '0':
+                        sound1 = pygame.mixer.Sound('music/need_gold.ogg')
+                        sound1.play()
                         print('No money')
                     elif args[1] == '1':
+                        sound1 = pygame.mixer.Sound('music/not_enough_wood.ogg')
+                        sound1.play()
                         print('No wood')
                     elif args[1] == '2':
+                        sound1 = pygame.mixer.Sound('music/build_a_farm.ogg')
+                        sound1.play()
                         print('No meat')
                 elif args[0] == '1':
+                    # sound1 = pygame.mixer.Sound('music/need_gold.ogg')
+                    # sound1.play()
                     print('No place')
                 elif args[0] == '2':
+                    # sound1 = pygame.mixer.Sound('music/need_gold.ogg')
+                    # sound1.play()
                     print('No fort level')
             elif cmd == '9':
                 game.lock.acquire()
