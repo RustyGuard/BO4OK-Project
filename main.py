@@ -18,7 +18,7 @@ while window:
     if window == "settings":
         window = data.settings(screen)[0]
     if window == "statistics":
-        window = "back_menu"
+        window = data.statistics(screen)[0]
     if window == "creators":
         pygame.mixer.music.pause()
         data.titers(screen)

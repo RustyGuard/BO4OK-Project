@@ -1,4 +1,4 @@
-import pygame
+import pygame, sqlite3, datetime
 from client import ClientWait
 
 cursor = pygame.image.load('sprite-games/menu/cursor.png')
@@ -108,6 +108,7 @@ def headpiece(screen):
     clock = pygame.time.Clock()
     Timer = 0
     f = False
+    n = 0
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -132,6 +133,10 @@ def headpiece(screen):
             else:
                 Timer += 1
         screen.fill(pygame.Color("white"))
+        # flip = pygame.transform.rotate(Stone, n)
+        # rot_rect = flip.get_rect(center=(1272, 566))
+        # n += 1
+        # screen.blit(flip, rot_rect)
         screen.blit(Stone, (1170, 500))
         screen.blit(Bo4ok, Bo4ok_rect)
         screen.blit(Potick1, Potick1_rect)
@@ -302,3 +307,57 @@ def titers(screen):
         i3_rect[1] -= 0.5
         pygame.display.flip()
         clock.tick(FPS)
+
+
+def write_statistics(a, stats):
+    statistics = sqlite3.connect("statistics.db")
+    statistics.execute(f"INSERT INTO stats({', '.join([i for i in stats])}, datetime) "
+                       f"VALUES({', '.join([stats[i] for i in stats])}, "
+                       f"{datetime.datetime.today().strftime('%Y/%m/%d %H:%M')})")
+    statistics.commit()
+    statistics.close()
+
+
+def statistics(screen):
+    global cursor, FPS, clock
+    background = pygame.image.load('sprite-games/statistics/background.png')
+    screen.blit(background, (0, 0))
+    way = "settings"
+
+    all_buttons = pygame.sprite.Group()
+    Button(all_buttons, "back_menu", (12, 12), way)
+
+    con = sqlite3.connect("statistics.db")
+    req = "SELECT * FROM stats"
+    cur = con.cursor()
+    res = cur.execute(req).fetchall()
+
+    font = pygame.font.Font(None, 80)
+    n = 0
+    n_max = len(res)
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                exit()
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_ESCAPE:
+                    return ["back_menu", nicname]
+            for button in all_buttons:
+                if button.get_event(event):
+                    return button.get_event(event)
+            if event.type == pygame.MOUSEBUTTONUP:
+                if str(event).split()[5][0] == "5":
+                    if n + 1 < n_max:
+                        n += 1
+                if str(event).split()[5][0] == "4":
+                    if n > 0:
+                        n -= 1
+        screen.blit(background, (0, 0))
+        all_buttons.draw(screen)
+        for y, result in enumerate(res[n:n+15]):
+            for x, i in enumerate(result[1:]):
+                screen.blit(font.render(i, 1, (255, 255, 255)), (50 + 212 * x, 180 + 57 * y))
+        screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
+        pygame.display.flip()
+        clock.tick(FPS)
+
