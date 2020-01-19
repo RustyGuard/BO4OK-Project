@@ -9,8 +9,6 @@ from pygame.surface import Surface
 from constants import *
 
 # States
-from server import ServerGame
-
 STATE_DIG = 0
 STATE_FIGHT = 1
 STATE_BUILD = 2
@@ -1059,7 +1057,7 @@ class UncompletedBuilding(Unit):
         self.max_health = 100
         self.completed = False
 
-    def update(self, event, game: ServerGame):
+    def update(self, event, game):
         if event.type == SERVER_EVENT_UPDATE:
             if not self.is_alive():
                 game.kill(self)
