@@ -79,6 +79,16 @@
       }
     }
   },
+  "place_17": {
+    "misc": {
+      "shape": "ellipse"
+    },
+    "images": {
+      "normal_image": {
+        "path": "sprite-games/icon/farm.png"
+      }
+    }
+  },
   "product_0": {
     "misc": {
       "shape": "ellipse"
@@ -128,5 +138,16 @@
         "path": "sprite-games/warrior/dragon/icon.png"
       }
     }
+  },
+  "upgrade": {
+    "misc": {
+      "shape": "ellipse"
+    },
+    "images": {
+      "normal_image": {
+        "path": "sprite-games/icon/upgrade.png"
+      }
+    }
   }
+
 }
