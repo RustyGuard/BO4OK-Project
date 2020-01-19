@@ -9,6 +9,8 @@ from pygame.surface import Surface
 from constants import *
 
 # States
+from server import ServerGame
+
 STATE_DIG = 0
 STATE_FIGHT = 1
 STATE_BUILD = 2
@@ -650,9 +652,11 @@ class ProductingBuild(Unit):
 
     def create_unit(self, game, clazz):
         if clazz is not None:
-            game.place(clazz, int(self.x) - randint(self.rect.width // 2 + 25, self.rect.width + self.rect.width // 2),
-                       int(self.y) - randint(-50, 50),
-                       self.player_id, ignore_space=True, ignore_money=False, ignore_fort_level=True)
+            if game.place(clazz,
+                          int(self.x) - randint(self.rect.width // 2 + 25, self.rect.width + self.rect.width // 2),
+                          int(self.y) - randint(-50, 50),
+                          self.player_id, ignore_space=True, ignore_money=False, ignore_fort_level=True) is not None:
+                game.safe_send(self.player_id, '3_6')
 
     def update(self, event, game):
         if not self.is_alive():
@@ -1055,7 +1059,7 @@ class UncompletedBuilding(Unit):
         self.max_health = 100
         self.completed = False
 
-    def update(self, event, game):
+    def update(self, event, game: ServerGame):
         if event.type == SERVER_EVENT_UPDATE:
             if not self.is_alive():
                 game.kill(self)
@@ -1064,6 +1068,7 @@ class UncompletedBuilding(Unit):
                 game.place(self.clazz, int(self.x), int(self.y), self.player_id,
                            ignore_space=True, ignore_money=True, ignore_fort_level=True)
                 self.completed = True
+                game.safe_send(self.player_id, '3_5')
 
     def get_args(self):
         return f'_{get_class_id(self.clazz)}'

@@ -202,6 +202,8 @@ class ServerGame:
         pl.money += costs[0]
         pl.wood += costs[1]
         pl.client.send(f'3_1_{pl.money}_{pl.wood}')
+        pl.client.send(f'3_3_{costs[0]}')
+        pl.client.send(f'3_4_{costs[1]}')
 
     def has_enought(self, player_id, costs):
         pl = self.players.get(player_id)
@@ -242,7 +244,7 @@ class ServerGame:
                             self.server.send_all(f'7_{building.id}_{building.level}')
                     else:
                         print('Not enought meat!')
-                        self.safe_send(player_id, '8_0_1')
+                        self.safe_send(player_id, '8_0_2')
                         building.kill()
                 else:
                     print(f'No place {build_class}')
@@ -250,7 +252,9 @@ class ServerGame:
                     building = None
             else:
                 print(f'No money {player_id} {build_class} {build_class.cost}')
-                self.safe_send(player_id, '8_0_0')
+                pl = self.players.get(player_id)
+                if pl is not None:
+                    self.safe_send(player_id, f'8_0_{"0" if pl.money < build_class.cost[0] else "1"}')
                 building = None
         else:
             print(f'No fortress level', build_class.required_level)
@@ -279,12 +283,17 @@ class ServerGame:
                         self.buildings.add(building)
                 else:
                     print(f'No place {build_class}')
+                    self.safe_send(player_id, '8_1')
                     building = None
             else:
                 print(f'No money {player_id} {build_class} {build_class.cost}')
+                pl = self.players.get(player_id)
+                if pl is not None:
+                    self.safe_send(player_id, f'8_0_{"0" if pl.money < build_class.cost[0] else "1"}')
                 building = None
         else:
             print(f'No fortress level', build_class.required_level)
+            self.safe_send(player_id, '8_2')
             building = None
         self.lock.release()
         return building
@@ -383,7 +392,9 @@ def main(screen, nicname):
                     en.next_level(game)
                     server.send_all(f'7_{en.id}_{en.level}')
                 else:
-                    game.safe_send(client.id, '8_0_0')
+                    pl = game.players.get(client.id)
+                    if pl is not None:
+                        game.safe_send(client.id, f'8_0_{"0" if pl.money < cost[0] else "1"}')
         else:
             print('Invalid command')
 

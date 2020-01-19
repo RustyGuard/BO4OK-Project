@@ -13,7 +13,6 @@ from pygame_gui.elements import UIButton, UILabel
 from units import *
 
 cursor = pygame.image.load('sprite-games/menu/cursor.png')
-FPS = 60
 clock = pygame.time.Clock()
 
 settings = {}
@@ -41,12 +40,9 @@ def random_nick():
     return (choice(adj).replace('\n', '') + ' ' + choice(noun).replace('\n', '')).capitalize()
 
 
-particles = Group()  # так и не понял куда это расположить,наверное тут
-
-
 class Particle(Sprite):
 
-    def __init__(self, type_building, x, y, camera):
+    def __init__(self, type_building, x, y, camera, particles):
         super().__init__(particles)
         self.cur_frame = 0
         self.x = x
@@ -278,129 +274,8 @@ class Game:
                 return spr
 
 
-class SelectArea:
-    def __init__(self, game, camera, client):
-        self.x = 0
-        self.y = 0
-        self.width = 0
-        self.height = 0
-        self.selected = []
-        self.saved = [[] for _ in range(10)]
-        self.active = False
-        self.dragged = False
-        self.game = game
-        self.camera = camera
-        self.client = client
-        self.manager = UIManager(pygame.display.get_surface().get_size(), 'sprite-games/themes/game_theme.json')
-        UIButton(Rect(5, 5, 50, 50), 'DIG', self.manager, object_id='retarget').type = STATE_DIG
-        UIButton(Rect(55, 5, 50, 50), 'FIGHT', self.manager, object_id='retarget').type = STATE_FIGHT
-        UIButton(Rect(110, 5, 50, 50), 'CHOP', self.manager, object_id='retarget').type = STATE_CHOP
-        UIButton(Rect(165, 5, 50, 50), 'BUILD', self.manager, object_id='retarget').type = STATE_BUILD
-        UIButton(Rect(220, 5, 50, 50), 'ANY', self.manager, object_id='retarget').type = STATE_ANY_WORK
-
-    def mouse_moved(self, x, y):
-        self.width += x
-        self.height += y
-        self.dragged = True
-
-    def clear(self):
-        self.width = 0
-        self.height = 0
-        self.active = False
-        self.selected.clear()
-        self.dragged = False
-
-    def draw_ui(self, screen):
-        if self.width != 0 and self.height != 0:
-            pygame.draw.rect(screen, COLOR_LIST[self.game.info.id], (self.x, self.y, self.width, self.height), 2)
-        if self.active:
-            self.manager.draw_ui(screen)
-        for spr in self.selected:
-            if spr is not None:
-                pygame.draw.rect(screen, Color('blue'), spr.rect, 2)
-
-    def find_intersect(self):
-        test = pygame.sprite.Sprite()
-        if self.width < 0:
-            self.width = -self.width
-            self.x -= self.width
-        if self.height < 0:
-            self.height = -self.height
-            self.y -= self.height
-        test.rect = pygame.Rect(self.x, self.y, self.width, self.height)
-        return pygame.sprite.spritecollide(test, self.game.sprites, False)
-
-    def process_events(self, event):
-
-        if self.active:
-            self.manager.process_events(event)
-
-        if event.type == pygame.KEYUP:
-            fs = [pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5, pygame.K_6, pygame.K_7, pygame.K_8,
-                  pygame.K_9, pygame.K_0]
-            if event.key in fs:
-                index = fs.index(event.key)
-                mods = pygame.key.get_mods()
-                if mods & pygame.KMOD_CTRL:
-                    if self.selected:
-                        print('Saved', index, self.selected)
-                        self.saved[index] = self.selected.copy()
-                elif mods & pygame.KMOD_SHIFT:
-                    if self.saved[index]:
-                        print('Loaded', index, self.saved[index])
-                        self.clear()
-                        self.selected = self.saved[index].copy()
-                        self.active = True
-
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1:
-                if not self.active:
-                    self.x, self.y = event.pos
-            return False
-
-        elif event.type == pygame.MOUSEBUTTONUP:
-            if event.button == 3:
-                if self.active:
-                    for spr in self.selected:
-                        if spr is None:
-                            continue
-                        if spr.unit_type == TYPE_FIGHTER and spr.player_id == self.game.info.id:
-                            self.client.send(
-                                f'2_{spr.id}_{event.pos[0] - self.camera.off_x}_{event.pos[1] - self.camera.off_y}')
-                    self.clear()
-            elif event.button == 1:
-                if self.dragged:
-                    for spr in self.find_intersect():
-                        if spr.unit_type == TYPE_FIGHTER and spr.player_id == self.game.info.id:
-                            self.selected.append(spr)
-                    if self.selected:
-                        self.active = True
-                    self.dragged = False
-                    self.width = 0
-                    self.height = 0
-
-        if event.type == pygame.USEREVENT:
-            if event.user_type == pygame_gui.UI_BUTTON_PRESSED:
-                if event.ui_object_id == 'retarget':
-                    if self.active:
-                        for spr in self.selected:
-                            if type(spr) == Worker and spr.player_id == self.game.info.id:
-                                self.client.send(f'4_{spr.id}_{event.ui_element.type}')
-                    self.clear()
-
-        if event.type == pygame.MOUSEMOTION:
-            if pygame.mouse.get_pressed()[0] == 1 and not self.active:
-                self.mouse_moved(*event.rel)
-                return True
-        return False
-
-    def update(self, *args):
-        if self.active:
-            self.manager.update(*args)
-
-
 class MainManager:
-    def __init__(self, game, camera, client):
+    def __init__(self, game, camera, client, current_manager, managers):
         self.x = 0
         self.y = 0
         self.width = 0
@@ -412,6 +287,8 @@ class MainManager:
         self.game = game
         self.camera = camera
         self.client = client
+        self.current_manager = current_manager
+        self.managers = managers
         self.manager = UIManager(pygame.display.get_surface().get_size(), 'sprite-games/themes/game_theme.json')
         self.hided_manager = UIManager(pygame.display.get_surface().get_size(), 'sprite-games/themes/game_theme.json')
         UIButton(Rect(5, 5, 50, 50), 'DIG', self.hided_manager, object_id='retarget').type = STATE_DIG
@@ -429,6 +306,7 @@ class MainManager:
                 r2.centery = r1.centery
                 r2.right = r1.left - 5
                 UILabel(r2, clazz.name, self.manager)
+
                 b.id = build_id
                 build_i += 1
 
@@ -518,6 +396,17 @@ class MainManager:
                     self.dragged = False
                     self.width = 0
                     self.height = 0
+                else:
+                    collided = False
+                    for spr in self.game.buildings:
+                        if spr.player_id == self.game.info.id and spr.rect.collidepoint(event.pos) \
+                                and (issubclass(type(spr), ProductingBuild) or spr.can_upgraded):
+                            self.managers['product'].set_building(spr)
+                            self.current_manager[0] = 'product'
+                            collided = True
+                            break
+                    if collided:
+                        return
 
         if event.type == pygame.USEREVENT:
             if event.user_type == pygame_gui.UI_BUTTON_PRESSED:
@@ -546,12 +435,22 @@ class PlaceManager:
         self.build_id = None
         self.sprite = Sprite()
         self.group = Group(self.sprite)
+        self.manager = UIManager(pygame.display.get_surface().get_size())
 
     def set_build(self, build_id):
         self.build_id = build_id
         self.sprite.image = UNIT_TYPES[self.build_id].image
         self.sprite.rect = self.sprite.image.get_rect()
-        print('Now id is', build_id)
+        self.manager.clear_and_reset()
+        txt = 'Требования:'
+        r2 = Rect(5, 25, len(txt) * 9, 25)
+        UILabel(r2, txt, self.manager)
+        txt = f'{UNIT_TYPES[build_id].cost[0]} Монет; {UNIT_TYPES[build_id].cost[1]} Дерева'
+        r2 = Rect(5, 55, len(txt) * 9, 25)
+        UILabel(r2, txt, self.manager)
+        txt = f'{UNIT_TYPES[build_id].required_level} Уровень крепости'
+        r2 = Rect(5, 85, len(txt) * 9, 25)
+        UILabel(r2, txt, self.manager)
 
     def process_events(self, event):
         if self.build_id is None:
@@ -563,6 +462,7 @@ class PlaceManager:
     def draw_ui(self, screen):
         self.sprite.rect.center = pygame.mouse.get_pos()
         self.group.draw(screen)
+        self.manager.draw_ui(screen)
 
     def update(self, *args):
         pass
@@ -592,7 +492,11 @@ class ProductManager:
         if spr.can_upgraded:
             r1 = Rect(settings['WIDTH'] - 65, 45 + 75 * (max_i + 1), 50, 50)
             b = UIButton(r1, '', self.manager,
-                         object_id=f'upgrade_{get_class_id(type(spr))}')
+                         object_id=f'upgrade')
+            r2 = Rect(0, 0, 75, 25)
+            r2.centery = r1.centery
+            r2.right = r1.left
+            UILabel(r2, 'Улучшить', self.manager)
             b.build_id = spr.id
 
     def process_events(self, event):
@@ -624,7 +528,7 @@ class ClientWait:
         return True
 
     def waiting_screen(self, screen, client, game):
-        global cursor, FPS, clock
+        global cursor, clock
         players_info = [0, 0]
 
         def read(cmd, args):
@@ -686,6 +590,13 @@ class ClientWait:
         return True
 
     def game_screen(self, screen, client, game):
+        stats = {
+            'wood_chopped': 0.0,
+            'money_mined': 0.0,
+            'units_created': 0,
+            'build_created': 0
+        }
+
         def place(mouse_pos, clazz):
             client.send(f'1_{clazz}_{mouse_pos[0] - camera.off_x}_{mouse_pos[1] - camera.off_y}')
 
@@ -724,6 +635,15 @@ class ClientWait:
                     game.info.power = int(args[1])
                     game.info.max_power = int(args[2])
                     return
+                elif args[0] == '3':  # Money mined
+                    stats['money_mined'] += float(args[1])
+                elif args[0] == '4':  # Wood chopped
+                    stats['wood_chopped'] += float(args[1])
+                elif args[0] == '5':  # Unit created
+                    stats['build_created'] += 1
+                elif args[0] == '6':  # Building completed
+                    stats['units_created'] += 1
+
             elif cmd == '4':
                 en = game.find_with_id(int(args[0]))
                 if en is not None:
@@ -742,8 +662,10 @@ class ClientWait:
             elif cmd == '8':
                 if args[0] == '0':
                     if args[1] == '0':
-                        print('No resources')
+                        print('No money')
                     elif args[1] == '1':
+                        print('No wood')
+                    elif args[1] == '2':
                         print('No meat')
                 elif args[0] == '1':
                     print('No place')
@@ -775,24 +697,22 @@ class ClientWait:
         background = pygame.image.load('sprite-games/small_map.png')
         # font = pygame.font.Font(None, 50)
         update_settings()
+        particles = Group()
         small_font = pygame.font.Font(None, 25)
-        client.setEventCallback(listen)
         running = True
+        client.setEventCallback(listen)
         camera = Camera(game.sprites, particles)
-        current_area = SelectArea(game, camera, client)
+
         pygame.time.set_timer(CLIENT_EVENT_UPDATE, 1000 // 60)
         pygame.time.set_timer(CLIENT_EVENT_SEC, 1000 // 1)
 
+        current_manager = ['main']
+
         managers = {}
-        current_manager = 'main'
-
-        main_manager = MainManager(game, camera, client)
-
-        managers['place'] = PlaceManager(place)
+        main_manager = MainManager(game, camera, client, current_manager, managers)
         managers['main'] = main_manager
-        managers['retarget'] = current_area
+        managers['place'] = PlaceManager(place)
         managers['product'] = ProductManager(screen)
-        global FPS
         print(game.other_nicks)
         fps_count = 60
         minimap = pygame.image.load('sprite-games/minimap.png')
@@ -802,42 +722,30 @@ class ClientWait:
 
         while running and client.connected:
             for event in pygame.event.get():
-                if event.type == pygame.MOUSEBUTTONUP and current_manager == 'main':
-                    collided = False
-                    for spr in game.buildings:
-                        if spr.player_id == game.info.id and spr.rect.collidepoint(event.pos) \
-                                and (issubclass(type(spr), ProductingBuild) or spr.can_upgraded):
-                            managers['product'].set_building(spr)
-                            current_manager = 'product'
-                            collided = True
-                            break
-                    if collided:
-                        continue
-
-                managers[current_manager].process_events(event)
+                managers[current_manager[0]].process_events(event)
                 if settings['PARTICLES']:
                     particles.update(event)
 
+                # /* Проверка на нажатие одной из кнопок мэнеджеров
                 if event.type == pygame.USEREVENT:
                     if event.user_type == pygame_gui.UI_BUTTON_PRESSED:
                         if event.ui_object_id == 'back':
-                            current_manager = 'main'
+                            current_manager[0] = 'main'
                         elif event.ui_object_id.startswith('place'):
                             managers['place'].set_build(event.ui_element.id)
-                            current_manager = 'place'
+                            current_manager[0] = 'place'
                         elif event.ui_object_id.startswith('product'):
                             btn = event.ui_element
                             client.send(f'3_{btn.build_id}_{btn.class_id}')
                         elif event.ui_object_id.startswith('upgrade'):
                             client.send(f'5_{event.ui_element.build_id}')
+                # */
 
                 if event.type == pygame.QUIT:
                     running = False
                 if event.type == pygame.KEYUP:
                     if event.key == pygame.K_ESCAPE:
-                        if current_manager == 'retarget':
-                            managers[current_manager].clear()
-                        current_manager = 'main'
+                        current_manager[0] = 'main'
                     elif event.key == pygame.K_F12:
                         running = False
 
@@ -845,30 +753,32 @@ class ClientWait:
                     camera.update()
 
                 if event.type in [CLIENT_EVENT_UPDATE, CLIENT_EVENT_SEC]:
-                    game.update(event, game)
+                    game.update(event, game)   # Обновление всех юнитов
 
                 if event.type == CLIENT_EVENT_SEC:
+                    # /* Создание партиклов дыма
                     if settings['PARTICLES']:
                         for entity in pygame.sprite.spritecollide(camera_area, game.sprites, False):
                             if type(entity) == Workshop:
-                                Particle('workshop', entity.x, entity.y, camera)
+                                Particle('workshop', entity.x, entity.y, camera, particles)
                             elif type(entity) == Forge:
-                                Particle('forge', entity.x, entity.y, camera)
+                                Particle('forge', entity.x, entity.y, camera, particles)
                             elif type(entity) == Farm:
-                                Particle('farm', entity.x, entity.y, camera)
-                    game.update(event, game)
+                                Particle('farm', entity.x, entity.y, camera, particles)
+                    # */
 
-            game.lock.acquire()
-            # /* Отрисовка заднего фона
+            # /* Отрисовка
             if settings["BACKGROUND"]:
-                for i in range(3):
-                    for j in range(3):
-                        screen.blit(background,
-                                    (camera.off_x % 965 + (j - 1) * 965, camera.off_y % 545 + (i - 1) * 545))
+                for i in range(-1, 2):
+                    for j in range(-1, 2):
+                        screen.blit(background, (camera.off_x % 965 + j * 965, camera.off_y % 545 + i * 545))
             else:
                 screen.fill((96, 128, 56))
-            # */
+
+            game.lock.acquire()
             game.drawSprites(screen)
+            if settings['PARTICLES']:
+                particles.draw(screen)
             for spr in pygame.sprite.spritecollide(camera_area, game.sprites, False):
                 if spr.can_upgraded:
                     text = small_font.render(f'{spr.level} lvl.', 1, (255, 125, 0))
@@ -893,8 +803,8 @@ class ClientWait:
                     text = small_font.render(str(spr.max_health), 1, COLOR_LIST[spr.player_id])
                     screen.blit(text, spr.rect.topright)
 
-            managers[current_manager].update(1 / 60)
-            managers[current_manager].draw_ui(screen)
+            managers[current_manager[0]].update(1 / 60)
+            managers[current_manager[0]].draw_ui(screen)
             screen.blit(minimap, (0, 692))
             text = small_font.render(str(game.info.money), 1, (100, 255, 100))
             screen.blit(text, (35, 805))
@@ -903,14 +813,14 @@ class ClientWait:
             text = small_font.render(f'{game.info.power}/{game.info.max_power}', 1, Color('palevioletred3'))
             screen.blit(text, (260, 805))
             screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
-            if settings['PARTICLES']:
-                particles.draw(screen)
             text = small_font.render(f'FPS: {fps_count}', 1, pygame.Color('red' if fps_count < 40 else 'green'))
             screen.blit(text, (0, 0))
 
             pygame.display.flip()
+            # */
+
             game.lock.release()
-            fps_count = 1000 // clock.tick(FPS)
+            fps_count = 1000 // clock.tick(60)
         client.disconnect('Application closed.')
         return False
 
