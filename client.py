@@ -2,11 +2,10 @@ import socket
 import threading
 from random import choice
 from threading import Lock
-import pygame
+
 import pygame_gui
 from pygame import Color
-from pygame.rect import Rect
-from pygame.sprite import Group, Sprite
+from pygame.sprite import Group
 from pygame_gui import UIManager
 from pygame_gui.elements import UIButton, UILabel
 
@@ -706,9 +705,14 @@ class ClientWait:
                 en.update_rect()
                 game.lock.release()
                 return
+            elif cmd == '11':
+                win[0] = True
+            elif cmd == '12':
+                win[0] = False
             else:
                 print('Taken message:', cmd, args)
 
+        win = [None]
         background = pygame.image.load('sprite-games/small_map.png')
         # font = pygame.font.Font(None, 50)
         update_settings()
@@ -757,12 +761,14 @@ class ClientWait:
                 # */
 
                 if event.type == pygame.QUIT:
-                    running = False
+                    client.disconnect('Application closed.')
+                    return False, stats
                 if event.type == pygame.KEYUP:
                     if event.key == pygame.K_ESCAPE:
                         current_manager[0] = 'main'
                     elif event.key == pygame.K_F12:
-                        running = False
+                        client.disconnect('Application closed.')
+                        return False, stats
 
                 if event.type == CLIENT_EVENT_UPDATE:
                     camera.update()
@@ -836,8 +842,11 @@ class ClientWait:
 
             game.lock.release()
             fps_count = 1000 // clock.tick(60)
+        while win[0] is None and client.connected:
+            print('Wait for result')
+
         client.disconnect('Application closed.')
-        return False, stats
+        return win[0], stats
 
 
 def main():

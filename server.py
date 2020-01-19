@@ -1,13 +1,10 @@
 import socket
 import threading
 from math import radians, cos, sin
-from random import randint
 from threading import Lock
 
-import pygame
 from pygame import sprite
 from pygame.sprite import Group
-from constants import SERVER_EVENT_SEC, SERVER_EVENT_UPDATE, SERVER_EVENT_SYNC, SCREEN_WIDTH, SCREEN_HEIGHT
 
 from units import *
 
@@ -36,6 +33,10 @@ class ClientConnection:
         self.ready = False
         ClientConnection.curr_id += 1
         self.connected = True
+
+    def disconnect(self, msg):
+        print('Disconnected', msg)
+        self.conn.close()
 
     def send(self, msg):
         if self.connected:
@@ -165,6 +166,23 @@ class ServerGame:
         self.buildings = Group()
         self.players = {}
         self.server = server
+
+    def find_losed_players(self):
+        self.lock.acquire()
+        losed = []
+        for pl in self.players.values():
+            if Fortress.get_player_level(pl.id) == 0:
+                if pl.power < 20:
+                    losed.append(pl)
+        for pl in losed:
+            pl.client.send('12')
+            pl.client.disconnect('You lose!!!')
+            print(pl.id, 'lose')
+        if len(self.players) == 1:
+            for i in self.players.values():
+                i.client.send('11')
+                i.client.disconnect('You win')
+        self.lock.release()
 
     def add_player(self, client, id):
         self.lock.acquire()
@@ -496,7 +514,6 @@ def main(screen, nicname):
                     button.get_anim(event)
         pygame.mouse.set_visible(0)
         screen.blit(background, (0, 0))
-        # Отрисовка информации!
         text = font.render(f'Сообщите ip остальным игрокам:', 1, (200, 200, 200))
         screen.blit(text, (650, 310))  # 5
         text = font.render(f'[{server_ip}]', 1, (255, 5, 5))
@@ -541,6 +558,8 @@ def main(screen, nicname):
                 if event.type == SERVER_EVENT_SEC:
                     update_players_info()
             elif event.type == SERVER_EVENT_SYNC:
+                game.find_losed_players()
+
                 game.lock.acquire()
                 for spr in game.sprites:
                     spr.send_updated(game)
@@ -551,7 +570,6 @@ def main(screen, nicname):
                     server.connected = False
                     return
         screen.blit(background, (0, 0))
-        # Отрисовка информации!
         pygame.display.flip()
         print('FPS', 1000 / clock.tick(60))
         clock.tick(60)
