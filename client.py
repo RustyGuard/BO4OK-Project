@@ -2,11 +2,10 @@ import socket
 import threading
 from random import choice
 from threading import Lock
-import pygame
+
 import pygame_gui
 from pygame import Color
-from pygame.rect import Rect
-from pygame.sprite import Group, Sprite
+from pygame.sprite import Group
 from pygame_gui import UIManager
 from pygame_gui.elements import UIButton, UILabel
 
@@ -512,6 +511,9 @@ class ProductManager:
 
 
 class ClientWait:
+    def gameover(self, win, stats):
+        print(win, stats)  # Функция окончание игры
+
     def play(self, screen=pygame.display.set_mode((0, 0)), ip='localhost', nick=''):
         client = Client(ip)
         if not client.connected:
@@ -523,8 +525,8 @@ class ClientWait:
         # Screens
         if not self.waiting_screen(screen, client, game):
             return False
-        if not self.game_screen(screen, client, game):
-            return False
+
+        self.gameover(*self.game_screen(screen, client, game))
         return True
 
     def waiting_screen(self, screen, client, game):
@@ -641,6 +643,8 @@ class ClientWait:
                     stats['wood_chopped'] += float(args[1])
                 elif args[0] == '5':  # Unit created
                     stats['build_created'] += 1
+                    sound1 = pygame.mixer.Sound('music/construction_completed.ogg')
+                    sound1.play()
                 elif args[0] == '6':  # Building completed
                     stats['units_created'] += 1
 
@@ -662,14 +666,24 @@ class ClientWait:
             elif cmd == '8':
                 if args[0] == '0':
                     if args[1] == '0':
+                        sound1 = pygame.mixer.Sound('music/need_gold.ogg')
+                        sound1.play()
                         print('No money')
                     elif args[1] == '1':
+                        sound1 = pygame.mixer.Sound('music/not_enough_wood.ogg')
+                        sound1.play()
                         print('No wood')
                     elif args[1] == '2':
+                        sound1 = pygame.mixer.Sound('music/build_a_farm.ogg')
+                        sound1.play()
                         print('No meat')
                 elif args[0] == '1':
+                    # sound1 = pygame.mixer.Sound('music/need_gold.ogg')
+                    # sound1.play()
                     print('No place')
                 elif args[0] == '2':
+                    # sound1 = pygame.mixer.Sound('music/need_gold.ogg')
+                    # sound1.play()
                     print('No fort level')
             elif cmd == '9':
                 game.lock.acquire()
@@ -691,9 +705,14 @@ class ClientWait:
                 en.update_rect()
                 game.lock.release()
                 return
+            elif cmd == '11':
+                win[0] = True
+            elif cmd == '12':
+                win[0] = False
             else:
                 print('Taken message:', cmd, args)
 
+        win = [None]
         background = pygame.image.load('sprite-games/small_map.png')
         # font = pygame.font.Font(None, 50)
         update_settings()
@@ -720,7 +739,7 @@ class ClientWait:
         camera_area = Sprite()
         camera_area.rect = Rect(0, 0, 1920, 1080)
 
-        while running and client.connected:
+        while running and client.connected and win[0] is None:
             for event in pygame.event.get():
                 managers[current_manager[0]].process_events(event)
                 if settings['PARTICLES']:
@@ -742,12 +761,14 @@ class ClientWait:
                 # */
 
                 if event.type == pygame.QUIT:
-                    running = False
+                    client.disconnect('Application closed.')
+                    return False, stats
                 if event.type == pygame.KEYUP:
                     if event.key == pygame.K_ESCAPE:
                         current_manager[0] = 'main'
                     elif event.key == pygame.K_F12:
-                        running = False
+                        client.disconnect('Application closed.')
+                        return False, stats
 
                 if event.type == CLIENT_EVENT_UPDATE:
                     camera.update()
@@ -821,8 +842,11 @@ class ClientWait:
 
             game.lock.release()
             fps_count = 1000 // clock.tick(60)
+        while win[0] is None and client.connected:
+            print('Wait for result')
+
         client.disconnect('Application closed.')
-        return False
+        return win[0], stats
 
 
 def main():
