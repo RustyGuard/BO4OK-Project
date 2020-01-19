@@ -739,7 +739,7 @@ class ClientWait:
         camera_area = Sprite()
         camera_area.rect = Rect(0, 0, 1920, 1080)
 
-        while running and client.connected:
+        while running and client.connected and win[0] is None:
             for event in pygame.event.get():
                 managers[current_manager[0]].process_events(event)
                 if settings['PARTICLES']:
