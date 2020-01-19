@@ -512,6 +512,9 @@ class ProductManager:
 
 
 class ClientWait:
+    def gameover(self, win, stats):
+        print(win, stats)  # Функция окончание игры
+
     def play(self, screen=pygame.display.set_mode((0, 0)), ip='localhost', nick=''):
         client = Client(ip)
         if not client.connected:
@@ -523,8 +526,8 @@ class ClientWait:
         # Screens
         if not self.waiting_screen(screen, client, game):
             return False
-        if not self.game_screen(screen, client, game):
-            return False
+
+        self.gameover(*self.game_screen(screen, client, game))
         return True
 
     def waiting_screen(self, screen, client, game):
@@ -834,7 +837,7 @@ class ClientWait:
             game.lock.release()
             fps_count = 1000 // clock.tick(60)
         client.disconnect('Application closed.')
-        return False
+        return False, stats
 
 
 def main():
