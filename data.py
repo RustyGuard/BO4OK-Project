@@ -45,7 +45,10 @@ def read_settings():
         elif a[1] == "FALSE":
             settings[a[0]] = False
         else:
-            settings[a[0]] = a[1]
+            try:
+                settings[a[0]] = int(a[1])
+            except ValueError:
+                settings[a[0]] = a[1]
     set.close()
     return settings
 
@@ -59,7 +62,7 @@ def write_settings(settings):
         elif settings[i] == False:
             wr.append(i + " FALSE")
         else:
-            wr.append(i + " " + settings[i])
+            wr.append(i + " " + str(settings[i]))
     set.seek(0)
     set.write("\n".join(wr))
     set.close()
@@ -354,10 +357,9 @@ def statistics(screen):
                         n -= 1
         screen.blit(background, (0, 0))
         all_buttons.draw(screen)
-        for y, result in enumerate(res[n:n+15]):
+        for y, result in enumerate(res[n:n + 15]):
             for x, i in enumerate(result[1:]):
                 screen.blit(font.render(i, 1, (255, 255, 255)), (50 + 212 * x, 180 + 57 * y))
         screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
         pygame.display.flip()
         clock.tick(FPS)
-
