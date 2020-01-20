@@ -14,6 +14,23 @@ MAX_PLAYERS = 10
 CURRENT_ID = 0
 ID_LOCK = Lock()
 
+settings = {}
+
+
+def update_settings():
+    with open('server_setting.txt', 'r') as setts:  # Settings
+        for i in setts.read().split("\n"):
+            a = i.split()
+            if a[1] == "TRUE":
+                settings[a[0]] = True
+            elif a[1] == "FALSE":
+                settings[a[0]] = False
+            else:
+                try:
+                    settings[a[0]] = int(a[1])
+                except ValueError:
+                    settings[a[0]] = a[1]
+
 
 def get_curr_id():
     global CURRENT_ID
@@ -434,10 +451,10 @@ def main(screen, nicname):
             pl.client.send(f'3_2_{pl.power}_{Farm.get_player_meat(pl.id)}')
         game.lock.release()
 
-    with open('server_setting.txt') as settings:
-        server_ip = settings.readline()
-        if server_ip == 'auto':
-            server_ip = socket.gethostbyname(socket.gethostname())
+    update_settings()
+    server_ip = settings['IP']
+    if server_ip == 'auto':
+        server_ip = socket.gethostbyname(socket.gethostname())
     print('\n\tYour ip is:', server_ip, '\n')
     server = Server(server_ip)
     game = ServerGame(server)
@@ -558,7 +575,8 @@ def main(screen, nicname):
                 if event.type == SERVER_EVENT_SEC:
                     update_players_info()
             elif event.type == SERVER_EVENT_SYNC:
-                game.find_losed_players()
+                if not settings['ONE_PLAYER_MODE']:
+                    game.find_losed_players()
 
                 game.lock.acquire()
                 for spr in game.sprites:

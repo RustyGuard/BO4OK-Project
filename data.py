@@ -50,7 +50,10 @@ def read_settings():
         elif a[1] == "FALSE":
             settings[a[0]] = False
         else:
-            settings[a[0]] = a[1]
+            try:
+                settings[a[0]] = int(a[1])
+            except ValueError:
+                settings[a[0]] = a[1]
     set.close()
     return settings
 
@@ -65,7 +68,7 @@ def write_settings(settings):
         elif settings[i] == False:
             wr.append(i + " FALSE")
         else:
-            wr.append(i + " " + settings[i])
+            wr.append(i + " " + str(settings[i]))
     set.seek(0)
     set.write("\n".join(wr))
     set.close()
@@ -371,9 +374,12 @@ def statistics(screen):
         screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
         pygame.display.flip()
         clock.tick(FPS)
+<<<<<<< HEAD
 
 
 def gameover(win, stats):
     """ Функция окончания игры """
     write_statistics(stats)  # запись статитстики
     # тут крутая анимация пройгрыша
+=======
+>>>>>>> 2ebe56d6f8a9479d52dbdbb1e0dcbdc4c3072dd8

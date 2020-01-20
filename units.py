@@ -98,6 +98,9 @@ class Unit(Sprite):
         self.rect.centerx = int(self.x) + self.offsetx
         self.rect.centery = int(self.y) + self.offsety
 
+    def update_image(self):
+        pass
+
     def get_args(self):
         return ''
 
@@ -856,28 +859,93 @@ class Workshop(ProductingBuild):
         super().__init__(x, y, id, player_id, 5, [Ballista])
 
 
+class MagicBall(TwistUnit):
+    image = pygame.image.load(f'sprite-games/building/turret/3/magic_ball.png')
+    name = 'Magic Ball'
+    placeable = False
+    unit_type = TYPE_PROJECTILE
+
+    def __init__(self, x, y, id, player_id, angle):
+        super().__init__(x, y, id, player_id, MagicBall.image)
+        self.set_angle(int(angle))
+        self.time = 1200
+        self.damage = UNIT_STATS[MagicBall][1] * Forge.get_mult(self)[1]
+
+    def update(self, event, game):
+        if event.type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
+            self.move_to_angle(3, game)
+            if event.type == SERVER_EVENT_UPDATE:
+                if self.x < -5000 or self.x > 5000 or self.y < -5000 or self.y > 5000:
+                    game.kill(self)
+                    return
+
+                self.time -= 1
+                if self.time <= 0:
+                    game.kill(self)
+                for spr in game.get_intersect(self):
+                    if spr.player_id not in [-1, self.player_id] and spr.unit_type != TYPE_PROJECTILE:
+                        spr.take_damage(self.damage, game)
+                        return
+
+    def get_args(self):
+        return f'_{self.angle}'
+
+    def move(self, x, y, game):
+        if x != 0:
+            self.x += x
+        if y != 0:
+            self.y += y
+        self.update_rect()
+
+
 class ArcherTower(Fighter):
-    cost = (200.0, 20.0)
+    cost = (1.0, 1.0)  # 200, 20
     placeable = True
     name = 'Башня'
     images = []
-    for i in range(10):
-        images.append(pygame.image.load(f'sprite-games/building/turret/{team_id[i]}.png'))
-    image = images[0]
+    level_costs = [(0.0, 0.0), (0.0, 0.0), (0.0, 0.0)]  # Поменять
+    images = [[pygame.image.load(f'sprite-games/building/turret/{team_id[i]}.png') for i in range(10)],
+              [pygame.image.load(f'sprite-games/building/turret/2/{team_id[i]}.png') for i in range(10)],
+              [pygame.image.load(f'sprite-games/building/turret/3/{team_id[i]}.png') for i in range(10)]]
+    image = images[0][0]
     required_level = 1  # Поменять этот пример
     unit_type = TYPE_BUILDING
 
     def __init__(self, x, y, id, player_id):
         self.archer_image = Archer.images[player_id]
-        self.tower_image = ArcherTower.images[player_id]
-
-        super().__init__(x, y, id, player_id, ArcherTower.images[player_id])
+        self.player_id = player_id
+        super().__init__(x, y, id, player_id, ArcherTower.images[1][player_id])
+        self.level = 0
+        self.can_upgraded = True
         self.update_image()
 
     def update_image(self):
-        self.image = Surface(self.tower_image.get_rect().size, pygame.SRCALPHA)
-        self.image.blit(self.tower_image, (0, 0))
+        self.image = Surface(ArcherTower.images[self.level - 1][self.player_id].get_rect().size, pygame.SRCALPHA)
+        self.image.blit(ArcherTower.images[self.level - 1][self.player_id], (0, 0))
         self.image.blit(pygame.transform.rotate(self.archer_image, -self.angle), (10, 10))
+
+    def next_level(self, game):
+        if self.level == 3:
+            print('Already on max level!')
+            return
+        self.level += 1
+        self.levels_update()
+
+    def levels_update(self):
+        # вот это все отбалансить
+        if self.level == 2:
+            self.delay_time = 20
+        elif self.level == 3:
+            self.delay_time = 100
+
+    def level_cost(self, game):
+        if self.level == 3:
+            print('Max level!')
+            return None
+        return ArcherTower.level_costs[self.level - 1]
+
+    def can_be_upgraded(self, game):
+        return 3 > self.level >= 0
 
     def update(self, event, game):
         if not self.is_alive():
@@ -904,7 +972,10 @@ class ArcherTower(Fighter):
                     self.update_delay()
                 if self.turn_around(3):
                     if event.type == SERVER_EVENT_UPDATE:
-                        self.throw_projectile(game, Arrow)
+                        if self.level != 3:
+                            self.throw_projectile(game, Arrow)
+                        else:
+                            self.throw_projectile(game, MagicBall)
 
             elif self.target[0] == TARGET_NONE:
                 if event.type == SERVER_EVENT_UPDATE:
@@ -1186,7 +1257,8 @@ UNIT_TYPES = {
     14: DragonLore,
     15: Workshop,
     16: Forge,
-    17: Farm
+    17: Farm,
+    18: MagicBall
 }
 
 UNIT_STATS = {  # (max_health, base_dmg)
@@ -1207,7 +1279,8 @@ UNIT_STATS = {  # (max_health, base_dmg)
     DragonLore: (1500, 0),  # DragonLore,
     Workshop: (1200, 0),  # Workshop,
     Forge: (800, 0),  # Forge
-    Farm: (500, 0)  # Farm
+    Farm: (500, 0),  # Farm
+    MagicBall: (1, 120)  # Magic Ball
 }
 
 

@@ -663,6 +663,7 @@ class ClientWait:
             elif cmd == '7':
                 en = game.find_with_id(int(args[0]))
                 en.level = int(args[1])
+                en.update_image()
             elif cmd == '8':
                 if args[0] == '0':
                     if args[1] == '0':

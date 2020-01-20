@@ -1,1 +1,2 @@
-localhost
+IP localhost
+ONE_PLAYER_MODE TRUE
