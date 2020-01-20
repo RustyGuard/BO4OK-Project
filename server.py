@@ -195,10 +195,10 @@ class ServerGame:
             pl.client.send('12')
             pl.client.disconnect('You lose!!!')
             print(pl.id, 'lose')
-        if len(self.players) == 1:
-            for i in self.players.values():
-                i.client.send('11')
-                i.client.disconnect('You win')
+        # if len(self.players) == 1:
+        #     for i in self.players.values():
+        #         i.client.send('11')
+                # i.client.disconnect('You win') тестовая жопа #,коментарий убрать
         self.lock.release()
 
     def add_player(self, client, id):
