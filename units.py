@@ -98,6 +98,9 @@ class Unit(Sprite):
         self.rect.centerx = int(self.x) + self.offsetx
         self.rect.centery = int(self.y) + self.offsety
 
+    def update_image(self):
+        pass
+
     def get_args(self):
         return ''
 
@@ -911,18 +914,15 @@ class ArcherTower(Fighter):
     def __init__(self, x, y, id, player_id):
         self.archer_image = Archer.images[player_id]
         self.player_id = player_id
+        super().__init__(x, y, id, player_id, ArcherTower.images[1][player_id])
+        self.level = 0
         self.can_upgraded = True
-        self.level = 2
-        super().__init__(x, y, id, player_id, ArcherTower.images[self.level - 1][player_id])
-        self.level = 2
         self.update_image()
-        self.levels_update()  # временно здесь
 
     def update_image(self):
         self.image = Surface(ArcherTower.images[self.level - 1][self.player_id].get_rect().size, pygame.SRCALPHA)
         self.image.blit(ArcherTower.images[self.level - 1][self.player_id], (0, 0))
-        if self.level == 1:
-            self.image.blit(pygame.transform.rotate(self.archer_image, -self.angle), (10, 10))
+        self.image.blit(pygame.transform.rotate(self.archer_image, -self.angle), (10, 10))
 
     def next_level(self, game):
         if self.level == 3:
@@ -934,8 +934,6 @@ class ArcherTower(Fighter):
     def levels_update(self):
         # вот это все отбалансить
         if self.level == 2:
-            self.max_health += 400
-            self.health += 400
             self.delay_time = 20
         elif self.level == 3:
             self.delay_time = 100
@@ -1259,7 +1257,8 @@ UNIT_TYPES = {
     14: DragonLore,
     15: Workshop,
     16: Forge,
-    17: Farm
+    17: Farm,
+    18: MagicBall
 }
 
 UNIT_STATS = {  # (max_health, base_dmg)
