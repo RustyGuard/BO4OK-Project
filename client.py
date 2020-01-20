@@ -511,9 +511,6 @@ class ProductManager:
 
 
 class ClientWait:
-    def gameover(self, win, stats):
-        print(win, stats)  # Функция окончание игры
-
     def play(self, screen=pygame.display.set_mode((0, 0)), ip='localhost', nick=''):
         client = Client(ip)
         if not client.connected:
@@ -526,8 +523,7 @@ class ClientWait:
         if not self.waiting_screen(screen, client, game):
             return False
 
-        self.gameover(*self.game_screen(screen, client, game))
-        return True
+        return self.game_screen(screen, client, game)
 
     def waiting_screen(self, screen, client, game):
         global cursor, clock
@@ -592,6 +588,10 @@ class ClientWait:
         return True
 
     def game_screen(self, screen, client, game):
+        sound1 = pygame.mixer.Sound('music/game.ogg')
+        sound1.play(-1)
+        sound2 = pygame.mixer.Sound('music/game1.ogg')
+        sound2.play(-1)
         stats = {
             'wood_chopped': 0.0,
             'money_mined': 0.0,
@@ -774,7 +774,7 @@ class ClientWait:
                     camera.update()
 
                 if event.type in [CLIENT_EVENT_UPDATE, CLIENT_EVENT_SEC]:
-                    game.update(event, game)   # Обновление всех юнитов
+                    game.update(event, game)  # Обновление всех юнитов
 
                 if event.type == CLIENT_EVENT_SEC:
                     # /* Создание партиклов дыма

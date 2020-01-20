@@ -1,6 +1,7 @@
-import pygame, sqlite3, datetime
+﻿import pygame, sqlite3, datetime
 from client import ClientWait
 
+# инициализация глобальный перемен функций
 cursor = pygame.image.load('sprite-games/menu/cursor.png')
 FPS = 60
 clock = pygame.time.Clock()
@@ -8,6 +9,8 @@ nicname = ""
 
 
 class Button(pygame.sprite.Sprite):
+    """ Класс универсальной кнопки """
+
     def __init__(self, group, name, image, way, f=None):
         super().__init__(group)
         if not f:
@@ -23,19 +26,21 @@ class Button(pygame.sprite.Sprite):
         self.f = f
 
     def get_event(self, event):
-        if event.type == pygame.MOUSEMOTION:
+        """ Функция обработки анимации и нажатия кнопки """
+        if event.type == pygame.MOUSEMOTION:  # Анимация кнопки
             if not self.f:
                 if self.rect.collidepoint(event.pos):
                     self.image = self.anim
                 else:
                     if self.image == self.anim:
                         self.image = self.stok_image
-        if event.type == pygame.MOUSEBUTTONDOWN:
+        if event.type == pygame.MOUSEBUTTONDOWN:  # функция нажатия на кнопку
             if self.rect.collidepoint(event.pos):
                 return [self.name, nicname]
 
 
 def read_settings():
+    """ Функция чтения файла с настройками """
     set = open('settings.txt', 'r')
     settings = {}
     for i in set.read().split("\n"):
@@ -51,6 +56,7 @@ def read_settings():
 
 
 def write_settings(settings):
+    """ Функция записи измененения настронек """
     wr = []
     set = open('settings.txt', 'w+')
     for i in settings:
@@ -66,6 +72,7 @@ def write_settings(settings):
 
 
 def menu(screen):
+    """ Функция окна гланого меню """
     global cursor, FPS, clock
     background = pygame.image.load('sprite-games/menu/background.png')
     screen.blit(background, (0, 0))
@@ -95,13 +102,18 @@ def menu(screen):
 
 
 def headpiece(screen):
+    """ Функция заставки создателей """
+    global clock
     FPS = 200
+
+    # инициализация изображений
     Bo4ok = pygame.image.load('sprite-games/headpiece/Bo4ok.png')
     Games = pygame.image.load('sprite-games/headpiece/Games.png')
     Potick1 = pygame.image.load('sprite-games/headpiece/Potick1.png')
     Potick2 = pygame.image.load('sprite-games/headpiece/Potick2.png')
     Stone = pygame.image.load('sprite-games/headpiece/Stone.png')
     Water = pygame.image.load('sprite-games/headpiece/Water.png')
+
     Bo4ok_rect = [-900, 500]
     Potick1_rect = [-400, 500]
     running = True
@@ -133,10 +145,6 @@ def headpiece(screen):
             else:
                 Timer += 1
         screen.fill(pygame.Color("white"))
-        # flip = pygame.transform.rotate(Stone, n)
-        # rot_rect = flip.get_rect(center=(1272, 566))
-        # n += 1
-        # screen.blit(flip, rot_rect)
         screen.blit(Stone, (1170, 500))
         screen.blit(Bo4ok, Bo4ok_rect)
         screen.blit(Potick1, Potick1_rect)
@@ -148,15 +156,15 @@ def headpiece(screen):
 
 
 def ip(screen):
+    """ Функция окна подключения к игре по айпи """
     global cursor, FPS, clock, nicname
     background = pygame.image.load('sprite-games/play/ip основа.png')
-    not_connect = pygame.image.load('sprite-games/play/neconectitsya.png')
     screen.blit(background, (0, 0))
     image = {"OK": (1085, 709),
              "back_menu": (558, 709)}
+
     way = "play"
     ip = ""
-    f = False
 
     all_buttons = pygame.sprite.Group()
     for i in image:
@@ -173,7 +181,7 @@ def ip(screen):
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if button.rect.collidepoint(event.pos):
                         if button.name == "OK":
-                            ClientWait().play(screen, ip if ip != '' else 'localhost', nick=nicname)
+                            gameover(ClientWait().play(screen, ip if ip != '' else 'localhost', nick=nicname))
                         return ["play", nicname]
                 if button.get_event(event):
                     return button.get_event(event)
@@ -185,14 +193,13 @@ def ip(screen):
         screen.blit(background, (0, 0))
         all_buttons.draw(screen)
         screen.blit(font.render(ip, 1, (255, 255, 255)), (565, 460))
-        if f:
-            screen.blit(not_connect, (650, 600))
         screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
         pygame.display.flip()
         clock.tick(FPS)
 
 
 def play(screen):
+    """ Функция мерню подключеия/создания сессии """
     global cursor, FPS, clock, nicname
     background = pygame.image.load('sprite-games/play/Основа1.png')
     screen.blit(background, (0, 0))
@@ -234,6 +241,7 @@ def play(screen):
 
 
 def settings(screen):
+    """ функция окна настроек """
     global cursor, FPS, clock
     background = pygame.image.load('sprite-games/settings/background.png')
     screen.blit(background, (0, 0))
@@ -242,7 +250,7 @@ def settings(screen):
     tick_field_image = {"BACKGROUND": (15, 183),
                         "CAMERA": (15, 315)}
     way = "settings"
-    settings = read_settings()
+    settings = read_settings()  # чтение существующих настроек
 
     all_buttons = pygame.sprite.Group()
     Button(all_buttons, "back_menu", (12, 12), way)
@@ -263,7 +271,7 @@ def settings(screen):
                     return button.get_event(event)
             for tick_field in all_tick_field:
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    if tick_field.rect.collidepoint(event.pos):
+                    if tick_field.rect.collidepoint(event.pos):  # изменение состояния определённой настройки
                         if settings[tick_field.name]:
                             settings[tick_field.name] = False
                         else:
@@ -284,6 +292,7 @@ def settings(screen):
 
 
 def titers(screen):
+    """ Функция титров с создателями и проделанной работой """
     global FPS, clock
     i1 = pygame.image.load('sprite-games/титры/1.png')
     i2 = pygame.image.load('sprite-games/титры/2.png')
@@ -309,7 +318,8 @@ def titers(screen):
         clock.tick(FPS)
 
 
-def write_statistics(a, stats):
+def write_statistics(stats):
+    """ Функция чтения статистики из .db файла """
     statistics = sqlite3.connect("statistics.db")
     statistics.execute(f"INSERT INTO stats({', '.join([i for i in stats])}, datetime) "
                        f"VALUES({', '.join([stats[i] for i in stats])}, "
@@ -319,6 +329,7 @@ def write_statistics(a, stats):
 
 
 def statistics(screen):
+    """ Функция окна со стотистикой пользователя """
     global cursor, FPS, clock
     background = pygame.image.load('sprite-games/statistics/background.png')
     screen.blit(background, (0, 0))
@@ -354,10 +365,15 @@ def statistics(screen):
                         n -= 1
         screen.blit(background, (0, 0))
         all_buttons.draw(screen)
-        for y, result in enumerate(res[n:n+15]):
+        for y, result in enumerate(res[n:n + 15]):
             for x, i in enumerate(result[1:]):
                 screen.blit(font.render(i, 1, (255, 255, 255)), (50 + 212 * x, 180 + 57 * y))
         screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
         pygame.display.flip()
         clock.tick(FPS)
 
+
+def gameover(win, stats):
+    """ Функция окончания игры """
+    write_statistics(stats)  # запись статитстики
+    # тут крутая анимация пройгрыша

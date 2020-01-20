@@ -6,13 +6,13 @@ pygame.init()
 pygame.mixer.init()
 pygame.mouse.set_visible(False)
 
-musik = pygame.mixer.music.load('music/menu.mp3')
-pygame.mixer.music.play(-1)
+musik = pygame.mixer.music.load('music/menu.ogg')
+pygame.mixer.music.play(-1)  # запуск фоновой мелодии меню
 
 screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
-data.headpiece(screen)
-window, nicname = data.menu(screen)
-while window:
+data.headpiece(screen)  # вызов заставки
+window, nicname = data.menu(screen)  # запуск игрового цикла
+while window:  # P.s Это сдаелано для оптимизации,дабы инициализации других окон не весела в программе
     if window == "play":
         window, nicname = data.play(screen)
     if window == "settings":
