@@ -521,9 +521,13 @@ class ClientWait:
 
         # Screens
         if not self.waiting_screen(screen, client, game):
-            return Falsef
+            return False
 
-        return self.game_screen(screen, client, game)
+        pygame.mixer.music.pause()
+        game = self.game_screen(screen, client, game)
+        self.sound1.stop()
+        self.sound2.stop()
+        return game
 
     def waiting_screen(self, screen, client, game):
         global cursor, clock
@@ -588,12 +592,12 @@ class ClientWait:
         return True
 
     def game_screen(self, screen, client, game):
-        sound1 = pygame.mixer.Sound('music/game.ogg')
-        sound1.play(-1)
-        sound2 = pygame.mixer.Sound('music/game1.ogg')
-        sound2.play(-1)
-        sound1.set_volume(0.2)
-        sound2.set_volume(0.2)
+        self.sound1 = pygame.mixer.Sound('music/game.ogg')
+        self.sound1.play(-1)
+        self.sound2 = pygame.mixer.Sound('music/game1.ogg')
+        self.sound2.play(-1)
+        self.sound1.set_volume(0.2)
+        self.sound2.set_volume(0.2)
         stats = {
             'wood_chopped': 0.0,
             'money_mined': 0.0,

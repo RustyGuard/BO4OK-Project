@@ -35,8 +35,9 @@ class Button(pygame.sprite.Sprite):
                     if self.image == self.anim:
                         self.image = self.stok_image
         if event.type == pygame.MOUSEBUTTONDOWN:  # функция нажатия на кнопку
-            if self.rect.collidepoint(event.pos):
-                return [self.name, nicname]
+            if event.button == 1:
+                if self.rect.collidepoint(event.pos):
+                    return [self.name, nicname]
 
 
 def read_settings():
@@ -103,14 +104,12 @@ def menu(screen):
         all_buttons.draw(screen)
         screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
         pygame.display.flip()
-        print(1000 / clock.tick(60))
         clock.tick(FPS)
 
 
 def headpiece(screen):
     """ Функция заставки создателей """
     global clock
-    FPS = 200
 
     # инициализация изображений
     Bo4ok = pygame.image.load('sprite-games/headpiece/Bo4ok.png')
@@ -126,7 +125,9 @@ def headpiece(screen):
     clock = pygame.time.Clock()
     Timer = 0
     f = False
-    n = 0
+    pygame.mixer.music.load('9.mp3')
+    pygame.mixer.music.play()
+    pygame.mixer.music.set_volume(0.2)
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -135,18 +136,19 @@ def headpiece(screen):
                 if event.key == pygame.K_ESCAPE:
                     return
         if Bo4ok_rect[0] < 232:
-            Bo4ok_rect[0] += 10
-            Potick1_rect[0] += 10
+            Bo4ok_rect[0] += 4.4
+            Potick1_rect[0] += 4.4
         else:
             Potick1 = Potick2
             Bo4ok_rect[0] = 410
             Potick1_rect[0] = 910
             if not f:
                 Timer += 1
-                if Timer == 101:
+                if Timer > 48:
                     f = True
                     Timer = 0
-            if Timer == 300:
+            if Timer > 140:
+                pygame.mixer.music.stop()
                 return
             else:
                 Timer += 1
@@ -158,10 +160,10 @@ def headpiece(screen):
         if f:
             screen.blit(Water, (990, 558))
         pygame.display.flip()
-        clock.tick(FPS)
+        clock.tick(30)
 
 
-def ip(screen):
+def ip(screen, musik):
     """ Функция окна подключения к игре по айпи """
     global cursor, FPS, clock, nicname
     background = pygame.image.load('sprite-games/play/ip основа.png')
@@ -187,9 +189,9 @@ def ip(screen):
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if button.rect.collidepoint(event.pos):
                         if button.name == "OK":
-                            pygame.mixer.music.pause()
-                            gameover(ClientWait().play(screen, ip if ip != '' else 'localhost', nick=nicname))
-                            pygame.mixer.music.unpause()
+                            musik.stop()
+                            gameover(screen, ClientWait().play(screen, ip if ip != '' else 'localhost', nick=nicname))
+                            musik.play(-1)
                         return ["play", nicname]
                 if button.get_event(event):
                     return button.get_event(event)
@@ -329,11 +331,11 @@ def titers(screen):
 
 
 def write_statistics(stats):
-    """ Функция чтения статистики из .db файла """
+    """ Функция записи статистики в .db файл """
     statistics = sqlite3.connect("statistics.db")
-    statistics.execute(f"INSERT INTO stats({', '.join([i for i in stats])}, datetime) "
-                       f"VALUES({', '.join([stats[i] for i in stats])}, "
-                       f"{datetime.datetime.today().strftime('%Y/%m/%d %H:%M')})")
+    a = "', '".join([str(stats[i]) for i in stats])
+    statistics.execute(
+        f"INSERT INTO stats({', '.join([i for i in stats])}, datetime) VALUES('{a}', '{datetime.datetime.today().strftime('%Y/%m/%d %H:%M')}')")
     statistics.commit()
     statistics.close()
 
@@ -355,7 +357,6 @@ def statistics(screen):
 
     font = pygame.font.Font(None, 80)
     n = 0
-    n_max = len(res)
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -368,7 +369,7 @@ def statistics(screen):
                     return button.get_event(event)
             if event.type == pygame.MOUSEBUTTONUP:
                 if str(event).split()[5][0] == "5":
-                    if n + 1 < n_max:
+                    if n + 15 < len(res):
                         n += 1
                 if str(event).split()[5][0] == "4":
                     if n > 0:
@@ -383,8 +384,64 @@ def statistics(screen):
         clock.tick(FPS)
 
 
-def gameover(stats):
+def gameover(screen, game):
     """ Функция окончания игры """
-    write_statistics(stats[1])  # запись статитстики
-    # тут крутая анимация пройгрыша
+    write_statistics(game[1])  # запись статитстики
+    global clock
 
+    # инициализация изображений
+    sword = pygame.image.load('sprite-games/over/sword.png')
+    sword1 = pygame.image.load('sprite-games/over/swords.png')
+    if game[0]:
+        win = pygame.image.load('sprite-games/over/win.png')
+    else:
+        win = pygame.image.load('sprite-games/over/loose.png')
+
+    f = False
+    coords = [[-2000, 0], [-2000, 2000], [0, 2000], [2000, 2000], [2000, 0], [2000, -2000], [0, -2000], [-2000, -2000]]
+
+    pygame.mixer.music.load('9.mp3')
+    pygame.mixer.music.play()
+    pygame.mixer.music.set_volume(0.2)
+    n = 0
+    k = 1
+    timer = 0
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_ESCAPE:
+                    return
+
+        screen.fill(pygame.Color("black"))
+        if f:
+            flip = pygame.transform.rotate(sword1, n)
+            rot_rect = flip.get_rect(center=(960, 540))
+            n += 1 * k // 1
+            screen.blit(flip, rot_rect)
+            screen.blit(win, win.get_rect(center=(960, 540)))
+            k += 0.2
+            timer += 1
+            if timer == 210:
+                pygame.mixer.music.stop()
+                return
+        else:
+            for n, i in enumerate(coords):
+                cor = []
+                for j in i:
+                    if j < -100:
+                        cor.append(j + 25)
+                    elif j > 100:
+                        cor.append(j - 25)
+                    else:
+                        cor.append(j)
+                if cor[0] == -100 and cor[1] == 100:
+                    f = True
+                coords[n] = cor
+            for n, i in enumerate(coords):
+                flip = pygame.transform.rotate(sword, (n + 1 // 2) * 45)
+                rot_rect = flip.get_rect(center=(960 + i[0], 540 + i[1]))
+                screen.blit(flip, rot_rect)
+        pygame.display.flip()
+        clock.tick(30)
