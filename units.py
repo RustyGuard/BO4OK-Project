@@ -255,7 +255,7 @@ class BallistaArrow(TwistUnit):
     unit_type = TYPE_PROJECTILE
 
     def __init__(self, x, y, id, player_id, angle):
-        super().__init__(x, y, id, player_id, Arrow.image)
+        super().__init__(x, y, id, player_id, BallistaArrow.image)
         self.set_angle(int(angle))
         self.time = 1200
         self.live_time = 5

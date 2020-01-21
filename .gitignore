@@ -102,9 +102,5 @@ venv.bak/
 
 # mypy
 .mypy_cache/
-.idea/
 run.bat
-.idea/misc.xml
-.idea/BO4OK-Project.iml
-.idea/misc.xml
-.idea/BO4OK-Project.iml
+.idea/
