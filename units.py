@@ -561,60 +561,60 @@ class Worker(Fighter):
         self.find_new_target(game, 2000)
 
     def update(self, event, game):
-        if event.type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
+        if event.type not in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
+            return
 
-            if self.target[0] == TARGET_MOVE:
-                self.move_to_point(event, game, 1.5, 1)
+        if self.target[0] == TARGET_MOVE:
+            self.move_to_point(event, game, 1.5, 1)
+            return
+
+        elif self.target[0] == TARGET_ATTACK:
+            if event.type == SERVER_EVENT_UPDATE and not self.target[1].is_alive():
+                self.set_target(TARGET_NONE, None, game)
+                if self.state == STATE_FIGHT:
+                    self.state = STATE_ANY_WORK
                 return
 
-            elif self.target[0] == TARGET_ATTACK:
-                if event.type == SERVER_EVENT_UPDATE and not self.target[1].is_alive():
-                    self.set_target(TARGET_NONE, None, game)
-                    if self.state == STATE_FIGHT:
-                        self.state = STATE_ANY_WORK
-                    return
-
-                self.find_target_angle()
-                if event.type == SERVER_EVENT_UPDATE:
-                    self.update_delay()
-                near = self.close_to_attack()
-                if self.turn_around(2):
-                    if near:
-                        if event.type == SERVER_EVENT_UPDATE:
-                            if type(self.target[1]) == Mine:
-                                if self.single_attack(game):
-                                    self.money += MONEY_PER_PUNCH
-                                    if self.is_full():
-                                        self.find_new_target(game, 3000)
-                                        return
-                            elif type(self.target[1]) == Tree:
-                                if self.single_attack(game):
-                                    self.wood += WOOD_PER_PUNCH
-                                    if self.is_full():
-                                        self.find_new_target(game, 3000)
-                                        return
-                            elif type(self.target[1]) == UncompletedBuilding:
-                                if self.single_attack(game, -5):
-                                    if self.target[1].health >= self.target[1].max_health:
-                                        if not self.find_new_target(game, 3000):
-                                            self.set_target(TARGET_NONE, None)
-                                            return
-                            elif type(self.target[1]) == Fortress and self.player_id == self.target[1].player_id:
-                                game.give_resources(self.player_id, (self.money, self.wood))
-                                self.money = 0
-                                self.wood = 0
-                                self.find_new_target(game, 3000)
+            self.find_target_angle()
+            if event.type == SERVER_EVENT_UPDATE:
+                self.update_delay()
+            near = self.close_to_attack()
+            if self.turn_around(2):
+                if near:
+                    if event.type == SERVER_EVENT_UPDATE:
+                        if isinstance(self.target[1], Mine):
+                            if self.single_attack(game):
+                                self.money += MONEY_PER_PUNCH
+                                if self.is_full():
+                                    self.find_new_target(game, 3000)
+                                    return
+                        elif isinstance(self.target[1], Tree):
+                            if self.single_attack(game):
+                                self.wood += WOOD_PER_PUNCH
+                                if self.is_full():
+                                    self.find_new_target(game, 3000)
+                                    return
+                        elif isinstance(self.target[1], UncompletedBuilding):
+                            if (self.single_attack(game, -5)) and \
+                                    (self.target[1].health >= self.target[1].max_health) and \
+                                    (not self.find_new_target(game, 3000)):
+                                self.set_target(TARGET_NONE, None)
                                 return
-                            else:
-                                self.single_attack(game)
-                    else:
-                        self.move_to_angle(1.5, game)
-                elif not near:
-                    self.move_to_angle(1, game)
+                        elif isinstance(self.target[1], Fortress) and self.player_id == self.target[1].player_id:
+                            game.give_resources(self.player_id, (self.money, self.wood))
+                            self.wood = self.money = 0
+                            self.find_new_target(game, 3000)
+                            return
+                        else:
+                            self.single_attack(game)
+                else:
+                    self.move_to_angle(1.5, game)
+            elif not near:
+                self.move_to_angle(1, game)
 
-            elif self.target[0] == TARGET_NONE:
-                if event.type == SERVER_EVENT_UPDATE:
-                    self.find_new_target(game, 3000)
+        elif self.target[0] == TARGET_NONE:
+            if event.type == SERVER_EVENT_UPDATE:
+                self.find_new_target(game, 3000)
 
         if not self.is_alive():
             if event.type == SERVER_EVENT_UPDATE:
