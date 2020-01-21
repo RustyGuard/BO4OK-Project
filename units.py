@@ -217,7 +217,7 @@ class Arrow(TwistUnit):
     def __init__(self, x, y, id, player_id, angle):
         super().__init__(x, y, id, player_id, Arrow.image)
         self.set_angle(int(angle))
-        self.time = 1200
+        self.time = 300
         self.damage = UNIT_STATS[Arrow][1] * Forge.get_mult(self)[1]
 
     def update(self, event, game):
@@ -561,60 +561,60 @@ class Worker(Fighter):
         self.find_new_target(game, 2000)
 
     def update(self, event, game):
-        if event.type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
+        if event.type not in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
+            return
 
-            if self.target[0] == TARGET_MOVE:
-                self.move_to_point(event, game, 1.5, 1)
+        if self.target[0] == TARGET_MOVE:
+            self.move_to_point(event, game, 1.5, 1)
+            return
+
+        elif self.target[0] == TARGET_ATTACK:
+            if event.type == SERVER_EVENT_UPDATE and not self.target[1].is_alive():
+                self.set_target(TARGET_NONE, None, game)
+                if self.state == STATE_FIGHT:
+                    self.state = STATE_ANY_WORK
                 return
 
-            elif self.target[0] == TARGET_ATTACK:
-                if event.type == SERVER_EVENT_UPDATE and not self.target[1].is_alive():
-                    self.set_target(TARGET_NONE, None, game)
-                    if self.state == STATE_FIGHT:
-                        self.state = STATE_ANY_WORK
-                    return
-
-                self.find_target_angle()
-                if event.type == SERVER_EVENT_UPDATE:
-                    self.update_delay()
-                near = self.close_to_attack()
-                if self.turn_around(2):
-                    if near:
-                        if event.type == SERVER_EVENT_UPDATE:
-                            if type(self.target[1]) == Mine:
-                                if self.single_attack(game):
-                                    self.money += MONEY_PER_PUNCH
-                                    if self.is_full():
-                                        self.find_new_target(game, 3000)
-                                        return
-                            elif type(self.target[1]) == Tree:
-                                if self.single_attack(game):
-                                    self.wood += WOOD_PER_PUNCH
-                                    if self.is_full():
-                                        self.find_new_target(game, 3000)
-                                        return
-                            elif type(self.target[1]) == UncompletedBuilding:
-                                if self.single_attack(game, -5):
-                                    if self.target[1].health >= self.target[1].max_health:
-                                        if not self.find_new_target(game, 3000):
-                                            self.set_target(TARGET_NONE, None)
-                                            return
-                            elif type(self.target[1]) == Fortress and self.player_id == self.target[1].player_id:
-                                game.give_resources(self.player_id, (self.money, self.wood))
-                                self.money = 0
-                                self.wood = 0
-                                self.find_new_target(game, 3000)
+            self.find_target_angle()
+            if event.type == SERVER_EVENT_UPDATE:
+                self.update_delay()
+            near = self.close_to_attack()
+            if self.turn_around(2):
+                if near:
+                    if event.type == SERVER_EVENT_UPDATE:
+                        if isinstance(self.target[1], Mine):
+                            if self.single_attack(game):
+                                self.money += MONEY_PER_PUNCH
+                                if self.is_full():
+                                    self.find_new_target(game, 3000)
+                                    return
+                        elif isinstance(self.target[1], Tree):
+                            if self.single_attack(game):
+                                self.wood += WOOD_PER_PUNCH
+                                if self.is_full():
+                                    self.find_new_target(game, 3000)
+                                    return
+                        elif isinstance(self.target[1], UncompletedBuilding):
+                            if (self.single_attack(game, -5)) and \
+                                    (self.target[1].health >= self.target[1].max_health) and \
+                                    (not self.find_new_target(game, 3000)):
+                                self.set_target(TARGET_NONE, None)
                                 return
-                            else:
-                                self.single_attack(game)
-                    else:
-                        self.move_to_angle(1.5, game)
-                elif not near:
-                    self.move_to_angle(1, game)
+                        elif isinstance(self.target[1], Fortress) and self.player_id == self.target[1].player_id:
+                            game.give_resources(self.player_id, (self.money, self.wood))
+                            self.wood = self.money = 0
+                            self.find_new_target(game, 3000)
+                            return
+                        else:
+                            self.single_attack(game)
+                else:
+                    self.move_to_angle(1.5, game)
+            elif not near:
+                self.move_to_angle(1, game)
 
-            elif self.target[0] == TARGET_NONE:
-                if event.type == SERVER_EVENT_UPDATE:
-                    self.find_new_target(game, 3000)
+        elif self.target[0] == TARGET_NONE:
+            if event.type == SERVER_EVENT_UPDATE:
+                self.find_new_target(game, 3000)
 
         if not self.is_alive():
             if event.type == SERVER_EVENT_UPDATE:
@@ -868,12 +868,12 @@ class MagicBall(TwistUnit):
     def __init__(self, x, y, id, player_id, angle):
         super().__init__(x, y, id, player_id, MagicBall.image)
         self.set_angle(int(angle))
-        self.time = 1200
+        self.time = 300
         self.damage = UNIT_STATS[MagicBall][1] * Forge.get_mult(self)[1]
 
     def update(self, event, game):
         if event.type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
-            self.move_to_angle(3, game)
+            self.move_to_angle(1.5, game)
             if event.type == SERVER_EVENT_UPDATE:
                 if self.x < -5000 or self.x > 5000 or self.y < -5000 or self.y > 5000:
                     game.kill(self)
@@ -899,11 +899,11 @@ class MagicBall(TwistUnit):
 
 
 class ArcherTower(Fighter):
-    cost = (1.0, 1.0)  # 200, 20
+    cost = (200.0, 20.0)  # 200, 20
     placeable = True
     name = 'Башня'
     images = []
-    level_costs = [(0.0, 0.0), (0.0, 0.0), (0.0, 0.0)]  # Поменять
+    level_costs = [(30.0, 30.0), (40.0, 40.0), (70.0, 50.0)]  # Поменять
     images = [[pygame.image.load(f'sprite-games/building/turret/{team_id[i]}.png') for i in range(10)],
               [pygame.image.load(f'sprite-games/building/turret/2/{team_id[i]}.png') for i in range(10)],
               [pygame.image.load(f'sprite-games/building/turret/3/{team_id[i]}.png') for i in range(10)]]
@@ -922,7 +922,8 @@ class ArcherTower(Fighter):
     def update_image(self):
         self.image = Surface(ArcherTower.images[self.level - 1][self.player_id].get_rect().size, pygame.SRCALPHA)
         self.image.blit(ArcherTower.images[self.level - 1][self.player_id], (0, 0))
-        self.image.blit(pygame.transform.rotate(self.archer_image, -self.angle), (10, 10))
+        if self.level == 1:
+            self.image.blit(pygame.transform.rotate(self.archer_image, -self.angle), (10, 10))
 
     def next_level(self, game):
         if self.level == 3:
@@ -1138,6 +1139,7 @@ class UncompletedBuilding(Unit):
                            ignore_space=True, ignore_money=True, ignore_fort_level=True)
                 self.completed = True
                 game.safe_send(self.player_id, '3_5')
+                game.kill(self)
 
     def get_args(self):
         return f'_{get_class_id(self.clazz)}'

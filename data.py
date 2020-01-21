@@ -63,9 +63,9 @@ def write_settings(settings):
     wr = []
     set = open('settings.txt', 'w+')
     for i in settings:
-        if settings[i] == True:
+        if settings[i] is True:
             wr.append(i + " TRUE")
-        elif settings[i] == False:
+        elif settings[i] is False:
             wr.append(i + " FALSE")
         else:
             wr.append(i + " " + str(settings[i]))
