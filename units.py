@@ -217,7 +217,7 @@ class Arrow(TwistUnit):
     def __init__(self, x, y, id, player_id, angle):
         super().__init__(x, y, id, player_id, Arrow.image)
         self.set_angle(int(angle))
-        self.time = 1200
+        self.time = 300
         self.damage = UNIT_STATS[Arrow][1] * Forge.get_mult(self)[1]
 
     def update(self, event, game):
@@ -868,12 +868,12 @@ class MagicBall(TwistUnit):
     def __init__(self, x, y, id, player_id, angle):
         super().__init__(x, y, id, player_id, MagicBall.image)
         self.set_angle(int(angle))
-        self.time = 1200
+        self.time = 300
         self.damage = UNIT_STATS[MagicBall][1] * Forge.get_mult(self)[1]
 
     def update(self, event, game):
         if event.type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
-            self.move_to_angle(3, game)
+            self.move_to_angle(1.5, game)
             if event.type == SERVER_EVENT_UPDATE:
                 if self.x < -5000 or self.x > 5000 or self.y < -5000 or self.y > 5000:
                     game.kill(self)
@@ -1138,6 +1138,7 @@ class UncompletedBuilding(Unit):
                            ignore_space=True, ignore_money=True, ignore_fort_level=True)
                 self.completed = True
                 game.safe_send(self.player_id, '3_5')
+                game.kill(self)
 
     def get_args(self):
         return f'_{get_class_id(self.clazz)}'
