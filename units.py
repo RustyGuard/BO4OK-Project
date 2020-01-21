@@ -1165,7 +1165,7 @@ class Ballista(Fighter):
     def __init__(self, x, y, id, player_id):
         self.image = Ballista.images[player_id]
         super().__init__(x, y, id, player_id, Ballista.images[player_id])
-        self.delay_time = 180
+        self.delay_time = 400
 
     def update(self, event, game):
         if not self.is_alive():
