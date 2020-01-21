@@ -86,6 +86,10 @@ class Server:
         for c in self.clients:
             c.send(msg)
 
+    def disconnect(self):
+        self.connected = False
+        self.s.close()
+
     def send_others(self, client, msg):
         for c in self.clients:
             if c != client:
@@ -523,8 +527,7 @@ def main(screen, nicname):
                 for button in cancel_buttons:
                     a = button.get_event(event)
                     if a:
-                        server.s.close()
-                        server.connected = False
+                        server.disconnect()
                         return
             if event.type == pygame.MOUSEMOTION:
                 for button in cancel_buttons:
@@ -567,8 +570,7 @@ def main(screen, nicname):
     while running and len(game.players) > 0:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                server.s.close()
-                server.connected = False
+                server.disconnect()
                 return
             elif event.type in [SERVER_EVENT_UPDATE, SERVER_EVENT_SEC]:
                 game.update(event, game)
@@ -584,13 +586,13 @@ def main(screen, nicname):
                 game.lock.release()
             elif event.type == pygame.KEYUP:
                 if event.key == pygame.K_ESCAPE:
-                    server.s.close()
-                    server.connected = False
+                    server.disconnect()
                     return
         screen.blit(background, (0, 0))
         pygame.display.flip()
         print('FPS', 1000 / clock.tick(60))
         clock.tick(60)
+    server.disconnect()
 
 
 if __name__ == '__main__':
