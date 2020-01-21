@@ -521,7 +521,7 @@ class ClientWait:
 
         # Screens
         if not self.waiting_screen(screen, client, game):
-            return False
+            return Falsef
 
         return self.game_screen(screen, client, game)
 
@@ -592,6 +592,8 @@ class ClientWait:
         sound1.play(-1)
         sound2 = pygame.mixer.Sound('music/game1.ogg')
         sound2.play(-1)
+        sound1.set_volume(0.2)
+        sound2.set_volume(0.2)
         stats = {
             'wood_chopped': 0.0,
             'money_mined': 0.0,
@@ -714,7 +716,7 @@ class ClientWait:
                 print('Taken message:', cmd, args)
 
         win = [None]
-        background = pygame.image.load('sprite-games/small_map.png')
+        background = pygame.image.load('sprite-games/small_map.png').convert()
         # font = pygame.font.Font(None, 50)
         update_settings()
         particles = Group()

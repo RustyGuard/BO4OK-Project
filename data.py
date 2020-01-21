@@ -77,7 +77,7 @@ def write_settings(settings):
 def menu(screen):
     """ Функция окна гланого меню """
     global cursor, FPS, clock
-    background = pygame.image.load('sprite-games/menu/background.png')
+    background = pygame.image.load('sprite-games/menu/background.png').convert()
     screen.blit(background, (0, 0))
     image = {"play": (28, 950),
              "settings": (400, 950),
@@ -98,9 +98,12 @@ def menu(screen):
                 if button.get_event(event):
                     return button.get_event(event)
         screen.blit(background, (0, 0))
+        screen.blit(background, (0, 0))
+        screen.blit(background, (0, 0))
         all_buttons.draw(screen)
         screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
         pygame.display.flip()
+        print(1000 / clock.tick(60))
         clock.tick(FPS)
 
 
@@ -167,7 +170,7 @@ def ip(screen):
              "back_menu": (558, 709)}
 
     way = "play"
-    ip = ""
+    ip = "192.168.0."
 
     all_buttons = pygame.sprite.Group()
     for i in image:
@@ -184,7 +187,9 @@ def ip(screen):
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if button.rect.collidepoint(event.pos):
                         if button.name == "OK":
+                            pygame.mixer.music.pause()
                             gameover(ClientWait().play(screen, ip if ip != '' else 'localhost', nick=nicname))
+                            pygame.mixer.music.unpause()
                         return ["play", nicname]
                 if button.get_event(event):
                     return button.get_event(event)
@@ -378,8 +383,8 @@ def statistics(screen):
         clock.tick(FPS)
 
 
-def gameover(win, stats):
+def gameover(stats):
     """ Функция окончания игры """
-    write_statistics(stats)  # запись статитстики
+    write_statistics(stats[1])  # запись статитстики
     # тут крутая анимация пройгрыша
 

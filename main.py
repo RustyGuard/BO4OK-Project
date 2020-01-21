@@ -8,6 +8,7 @@ pygame.mouse.set_visible(False)
 
 musik = pygame.mixer.music.load('music/menu.ogg')
 pygame.mixer.music.play(-1)  # запуск фоновой мелодии меню
+pygame.mixer.music.set_volume(0.2)
 
 screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 data.headpiece(screen)  # вызов заставки
@@ -28,9 +29,7 @@ while window:  # P.s Это сдаелано для оптимизации,да�
         server.main(screen, nicname)
         window = "play"
     if window == "connect":
-        pygame.mixer.music.pause()
         window = data.ip(screen)[0]
-        pygame.mixer.music.unpause()
     if window == "back_menu":
         window = data.menu(screen)[0]
     if window == "exit":
