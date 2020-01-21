@@ -899,11 +899,11 @@ class MagicBall(TwistUnit):
 
 
 class ArcherTower(Fighter):
-    cost = (1.0, 1.0)  # 200, 20
+    cost = (200.0, 20.0)  # 200, 20
     placeable = True
     name = 'Башня'
     images = []
-    level_costs = [(0.0, 0.0), (0.0, 0.0), (0.0, 0.0)]  # Поменять
+    level_costs = [(30.0, 30.0), (40.0, 40.0), (70.0, 50.0)]  # Поменять
     images = [[pygame.image.load(f'sprite-games/building/turret/{team_id[i]}.png') for i in range(10)],
               [pygame.image.load(f'sprite-games/building/turret/2/{team_id[i]}.png') for i in range(10)],
               [pygame.image.load(f'sprite-games/building/turret/3/{team_id[i]}.png') for i in range(10)]]
