@@ -393,7 +393,7 @@ def place_fortresses(game):
         print('Placing stopped.')
 
 
-def main(screen, nicname):
+def main(screen):
     pygame.mouse.set_visible(0)
     connect_info = [0, 0]
 
@@ -544,7 +544,6 @@ def main(screen, nicname):
         screen.blit(text, (650, 455))  # 150
         all_buttons.draw(screen)
         cursor.rect.topleft = pygame.mouse.get_pos()
-        screen.blit(font1.render(nicname, 1, (255, 255, 255)), (810, 740))
         cancel_buttons.draw(screen)
         all_cursor.draw(screen)
         pygame.display.flip()
@@ -597,5 +596,5 @@ def main(screen, nicname):
 
 if __name__ == '__main__':
     pygame.init()
-    main(pygame.display.set_mode((1000, 1000)), 'PRIMER_NICK_ISACH')
+    main(pygame.display.set_mode((1000, 1000)))
     print('\n\tServer closed.\n')
