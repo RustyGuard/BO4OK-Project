@@ -922,7 +922,8 @@ class ArcherTower(Fighter):
     def update_image(self):
         self.image = Surface(ArcherTower.images[self.level - 1][self.player_id].get_rect().size, pygame.SRCALPHA)
         self.image.blit(ArcherTower.images[self.level - 1][self.player_id], (0, 0))
-        self.image.blit(pygame.transform.rotate(self.archer_image, -self.angle), (10, 10))
+        if self.level == 1:
+            self.image.blit(pygame.transform.rotate(self.archer_image, -self.angle), (10, 10))
 
     def next_level(self, game):
         if self.level == 3:
