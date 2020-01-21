@@ -26,7 +26,7 @@ while window:  # P.s Это сдаелано для оптимизации,да�
         data.titers(screen)
         window = "back_menu"
     if window == "host":
-        server.main(screen, nicname)
+        server.main(screen)
         window = "play"
     if window == "connect":
         window = data.ip(screen)[0]

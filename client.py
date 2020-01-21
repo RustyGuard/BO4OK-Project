@@ -521,7 +521,7 @@ class ClientWait:
 
         # Screens
         if not self.waiting_screen(screen, client, game):
-            return Falsef
+            return False
 
         return self.game_screen(screen, client, game)
 
