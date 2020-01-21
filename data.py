@@ -268,9 +268,11 @@ def settings(screen):
                 exit()
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_ESCAPE:
+                    write_settings(settings)
                     return ["back_menu", nicname]
             for button in all_buttons:
                 if button.get_event(event):
+                    write_settings(settings)
                     return button.get_event(event)
             for tick_field in all_tick_field:
                 if event.type == pygame.MOUSEBUTTONDOWN:
@@ -315,8 +317,8 @@ def titers(screen):
         screen.blit(i1, (0, 0))
         screen.blit(i2, i2_rect)
         screen.blit(i3, i3_rect)
-        i2_rect[1] -= 0.5
-        i3_rect[1] -= 0.5
+        i2_rect[1] -= 2
+        i3_rect[1] -= 2
         pygame.display.flip()
         clock.tick(FPS)
 
