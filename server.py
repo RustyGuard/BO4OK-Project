@@ -50,7 +50,6 @@ class ClientConnection:
         self.ready = False
         ClientConnection.curr_id += 1
         self.connected = True
-        self.nick = None
 
     def disconnect(self, msg):
         print('Disconnected', msg)
@@ -173,9 +172,9 @@ class Server:
 
 class Player:
     def __init__(self, client):
-        self.client: ClientConnection = client
+        self.client = client
         self.money = 150.0
-        self.wood = 100.0
+        self.wood = 100
         self.max_forge_level = 0
         self.id = -2
         self.power = 0
@@ -186,48 +185,8 @@ class ServerGame:
         self.lock = Lock()
         self.sprites = Group()
         self.buildings = Group()
-        self.players: Dict[int, Player] = {}
-        self.server: Server = server
-
-    def claim_money(self, player_id: int, costs: Tuple[float, float]):
-        pl = self.players.get(player_id)
-        if pl is None:
-            return False
-        if pl.money < costs[0]:
-            print('Not enough money')
-            pl.client.send('8_0_0')
-            return False
-        if pl.wood < costs[1]:
-            print('Not enough wood')
-            pl.client.send('8_0_1')
-            return False
-        pl.money -= costs[0]
-        pl.wood -= costs[1]
-        pl.client.send(f'3_1_{pl.money}_{pl.wood}')
-        return True
-
-    def claim_unit_cost(self, player_id: int, clazz):
-        pl = self.players.get(player_id)
-        if pl is None:
-            return False
-        if pl.money < clazz.cost[0]:
-            print('Not enough money')
-            pl.client.send('8_0_0')
-            return False
-        if pl.wood < clazz.cost[1]:
-            print('Not enough wood')
-            pl.client.send('8_0_1')
-            return False
-        if Farm.get_player_meat(player_id) < pl.power + clazz.power_cost:
-            print('Not enough meat')
-            pl.client.send('8_0_2')
-            return False
-        pl.money -= clazz.cost[0]
-        pl.wood -= clazz.cost[1]
-        pl.power += clazz.power_cost
-        pl.client.send(f'3_1_{pl.money}_{pl.wood}')
-        pl.client.send(f'3_2_{pl.power}_{Farm.get_player_meat(pl.id)}')
-        return True
+        self.players = {}
+        self.server = server
 
     def find_losed_players(self):
         self.lock.acquire()
@@ -246,7 +205,7 @@ class ServerGame:
                 i.client.disconnect('You win')
         self.lock.release()
 
-    def add_player(self, client: ClientConnection, id: int):
+    def add_player(self, client, id):
         self.lock.acquire()
         p = Player(client)
         p.id = id
@@ -255,7 +214,27 @@ class ServerGame:
         self.players[id] = p
         self.lock.release()
 
-    def give_resources(self, player_id: int, costs: Tuple[float, float]):
+    def get_player_money(self, player_id):
+        pl = self.players.get(player_id)
+        if pl is None:
+            return 0
+        return pl.money
+
+    def get_player_wood(self, player_id):
+        pl = self.players.get(player_id)
+        if pl is None:
+            return 0
+        return pl.wood
+
+    def take_resources(self, player_id, costs):
+        pl = self.players.get(player_id)
+        if pl is None:
+            return
+        pl.money -= costs[0]
+        pl.wood -= costs[1]
+        pl.client.send(f'3_1_{pl.money}_{pl.wood}')
+
+    def give_resources(self, player_id, costs):
         pl = self.players.get(player_id)
         if pl is None:
             return
@@ -265,35 +244,65 @@ class ServerGame:
         pl.client.send(f'3_3_{costs[0]}')
         pl.client.send(f'3_4_{costs[1]}')
 
+    def has_enought(self, player_id, costs):
+        pl = self.players.get(player_id)
+        if pl is None:
+            return False
+        return pl.money >= costs[0] and pl.wood >= costs[1]
+
+    def remove_player(self, client):
+        self.lock.acquire()
+        for i, j in self.players.items():
+            if j.client == client:
+                p = i
+                break
+        self.players.pop(p, None)
+        self.lock.release()
+
     def update(self, *args):
         self.sprites.update(*args)
 
-    def place(self, build_class, x, y, player_id, *args,
-              ignore_space=False, ignore_money=False, ignore_fort_level=False):
+    def place(self, build_class, x, y, player_id, *args, ignore_space=False, ignore_money=False,
+              ignore_fort_level=False):
         self.lock.acquire()
-
-        building = None
         if ignore_fort_level or build_class.required_level <= Fortress.get_player_level(player_id):
-            building = build_class(x, y, get_curr_id(), player_id, *args)
-            if ignore_space or (not sprite.spritecollideany(building, self.sprites)):
-                if ignore_money or self.claim_money(player_id, build_class.cost):
-                    self.server.send_all(
-                        f'1_{get_class_id(build_class)}_{x}_{y}_{building.id}_{player_id}{building.get_args()}')
-                    self.sprites.add(building)
-                    if building.unit_type == TYPE_BUILDING:
-                        self.buildings.add(building)
-                    if building.can_upgraded:
-                        building.next_level(self)
-                        self.server.send_all(f'7_{building.id}_{building.level}')
-            else:
-                self.safe_send(player_id, '8_1')
-                building.kill()
-                building = None
+            if ignore_money or self.has_enought(player_id, build_class.cost):
+                building = build_class(x, y, get_curr_id(), player_id, *args)
+                if ignore_space or (not sprite.spritecollideany(building, self.sprites)):
 
+                    if player_id == -1 or (self.players[player_id].power <= Farm.get_player_meat(player_id)):
+                        if not ignore_money:
+                            self.take_resources(player_id, build_class.cost)
+                        self.server.send_all(
+                            f'1_{get_class_id(build_class)}_{x}_{y}_{building.id}_{player_id}{building.get_args()}')
+                        self.sprites.add(building)
+                        if building.unit_type == TYPE_BUILDING:
+                            self.buildings.add(building)
+                        if building.can_upgraded:
+                            building.next_level(self)
+                            self.server.send_all(f'7_{building.id}_{building.level}')
+                    else:
+                        print('Not enought meat!')
+                        self.safe_send(player_id, '8_0_2')
+                        building.kill()
+                else:
+                    print(f'No place {build_class}')
+                    self.safe_send(player_id, '8_1')
+                    building = None
+            else:
+                print(f'No money {player_id} {build_class} {build_class.cost}')
+                pl = self.players.get(player_id)
+                if pl is not None:
+                    self.safe_send(player_id, f'8_0_{"0" if pl.money < build_class.cost[0] else "1"}')
+                building = None
+        else:
+            print(f'No fortress level', build_class.required_level)
+            self.safe_send(player_id, '8_2')
+            building = None
         self.lock.release()
         return building
 
-    def safe_send(self, player_id: int, msg: str):
+    def safe_send(self, player_id, msg):
         pl = self.players.get(player_id)
         if pl is None:
             return
@@ -301,22 +310,30 @@ class ServerGame:
 
     def place_building(self, build_class, x, y, player_id):
         self.lock.acquire()
-
-        building = None
         if build_class.required_level <= Fortress.get_player_level(player_id):
-            building = UncompletedBuilding(x, y, get_curr_id(), player_id, get_class_id(build_class))
-            if not sprite.spritecollideany(building, self.sprites):
-                if self.claim_money(player_id, build_class.cost):
+            if self.has_enought(player_id, build_class.cost):
+                building = UncompletedBuilding(x, y, get_curr_id(), player_id, get_class_id(build_class))
+                if not sprite.spritecollideany(building, self.sprites):
+                    self.take_resources(player_id, build_class.cost)
                     self.server.send_all(
                         f'1_{get_class_id(UncompletedBuilding)}_{x}_{y}_{building.id}_{player_id}{building.get_args()}')
                     self.sprites.add(building)
                     if building.unit_type == TYPE_BUILDING:
                         self.buildings.add(building)
+                else:
+                    print(f'No place {build_class}')
+                    self.safe_send(player_id, '8_1')
+                    building = None
             else:
-                self.safe_send(player_id, '8_1')
-                building.kill()
+                print(f'No money {player_id} {build_class} {build_class.cost}')
+                pl = self.players.get(player_id)
+                if pl is not None:
+                    self.safe_send(player_id, f'8_0_{"0" if pl.money < build_class.cost[0] else "1"}')
                 building = None
-
+        else:
+            print(f'No fortress level', build_class.required_level)
+            self.safe_send(player_id, '8_2')
+            building = None
         self.lock.release()
         return building
 
@@ -346,20 +363,8 @@ class ServerGame:
         self.server.send_all(f'4_{spr.id}')
         spr.kill()
 
-    def remove_player(self, client: ClientConnection):
-        self.lock.acquire()
-        p = None
-        for i, j in self.players.items():
-            if j.client == client:
-                p = i
-                break
-        if p is None:
-            print('No player with', client, client.id)
-        self.players.pop(p, None)
-        self.lock.release()
 
-
-def place_fortresses(game: ServerGame):
+def place_fortresses(game):
     print('Placing started.')
     players_count = len(game.players.values())
     angle = 0
@@ -411,7 +416,7 @@ def main(screen):
         elif cmd == '3':
             en = game.find_with_id(int(args[0]))
             if en is not None:
-                en.add_to_queque(UNIT_TYPES[int(args[1])], game)
+                en.add_to_queque(UNIT_TYPES[int(args[1])])
         elif cmd == '4':
             en = game.find_with_id(int(args[0]))
             if type(en) == Worker and en.player_id == client.id:
@@ -421,9 +426,14 @@ def main(screen):
             en = game.find_with_id(int(args[0]))
             if en.can_upgraded and en.can_be_upgraded(game):
                 cost = en.level_cost(game)
-                if game.claim_money(client.id, cost):
+                if game.has_enought(client.id, cost):
+                    game.take_resources(client.id, cost)
                     en.next_level(game)
                     server.send_all(f'7_{en.id}_{en.level}')
+                else:
+                    pl = game.players.get(client.id)
+                    if pl is not None:
+                        game.safe_send(client.id, f'8_0_{"0" if pl.money < cost[0] else "1"}')
         else:
             print('Invalid command')
 
@@ -508,7 +518,7 @@ def main(screen):
     Button(cancel_buttons, "cancel")
     all_cursor = pygame.sprite.Group()
     cursor = Cursor(all_cursor)
-    # font1 = pygame.font.Font(None, 80)
+    font1 = pygame.font.Font(None, 80)
     while not server.is_ready():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:

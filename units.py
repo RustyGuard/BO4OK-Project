@@ -1,6 +1,5 @@
 import math
 from random import randint
-from typing import Dict, Tuple
 
 import pygame
 from pygame.rect import Rect
@@ -10,7 +9,6 @@ from pygame.surface import Surface
 from constants import *
 
 # States
-
 STATE_DIG = 0
 STATE_FIGHT = 1
 STATE_BUILD = 2
@@ -35,7 +33,6 @@ team_id = [
 class Unit(Sprite):
     game = None
     power_cost = 0
-    unit_type = TYPE_BUILDING  # Default value
 
     def __init__(self, x, y, id, player_id):
         self.id = id
@@ -307,6 +304,8 @@ class Fighter(TwistUnit):
         self.delay = 0
         self.delay_time = 120
         self.damage = UNIT_STATS[type(self)][1] * Forge.get_mult(self)[1]
+        if Unit.game is not None:
+            Unit.game.players[self.player_id].power += self.power_cost
 
     def move_to_point(self, event, game, straight_speed, turn_speed, twist_speed=1):
         if event.type == SERVER_EVENT_UPDATE:
@@ -388,6 +387,9 @@ class Fighter(TwistUnit):
             self.delay += self.delay_time
             game.place(clazz, int(self.x), int(self.y), self.player_id, int(self.angle + randint(-spread, spread)),
                        ignore_space=True, ignore_money=True, ignore_fort_level=True)
+
+    def mass_attack(self, game):
+        pass
 
     def update_delay(self):
         if self.delay > 0:
@@ -552,7 +554,6 @@ class Worker(Fighter):
         self.wood = 0
         self.capacity = 25
         self.state = STATE_ANY_WORK
-        self.delay_time = 60
 
     def take_damage(self, dmg, game):
         super().take_damage(dmg, game)
@@ -625,17 +626,17 @@ class Worker(Fighter):
 
     def is_valid_enemy(self, enemy):
         if self.is_full():
-            return isinstance(enemy, Fortress) and enemy.player_id == self.player_id
+            return type(enemy) == Fortress and enemy.player_id == self.player_id
         if self.state == STATE_ANY_WORK:
-            return isinstance(enemy, (Mine, Tree, UncompletedBuilding)) and enemy.player_id in [-1, self.player_id]
+            return type(enemy) in [Mine, Tree, UncompletedBuilding] and enemy.player_id in [-1, self.player_id]
         if self.state == STATE_DIG:
-            return isinstance(enemy, Mine)
+            return type(enemy) == Mine
         elif self.state == STATE_CHOP:
-            return isinstance(enemy, Tree)
+            return type(enemy) == Tree
         elif self.state == STATE_BUILD:
-            return isinstance(enemy, UncompletedBuilding)
+            return type(enemy) == UncompletedBuilding
         elif self.state == STATE_FIGHT:
-            return super().is_valid_enemy(enemy) and not isinstance(enemy, Dragon)
+            return super().is_valid_enemy(enemy) and type(enemy) != Dragon
 
 
 class ProductingBuild(Unit):
@@ -646,17 +647,16 @@ class ProductingBuild(Unit):
         self.valid_types = valid_types
         super().__init__(x, y, id, player_id)
 
-    def add_to_queque(self, clazz, game):
+    def add_to_queque(self, clazz):
         if clazz in self.valid_types:
-            if game.claim_unit_cost(self.player_id, clazz):
-                self.units_tray.append(clazz)
+            self.units_tray.append(clazz)
 
     def create_unit(self, game, clazz):
         if clazz is not None:
             if game.place(clazz,
                           int(self.x) - randint(self.rect.width // 2 + 25, self.rect.width + self.rect.width // 2),
                           int(self.y) - randint(-50, 50),
-                          self.player_id, ignore_space=True, ignore_money=True, ignore_fort_level=True) is not None:
+                          self.player_id, ignore_space=True, ignore_money=False, ignore_fort_level=True) is not None:
                 game.safe_send(self.player_id, '3_6')
 
     def update(self, event, game):
@@ -764,7 +764,7 @@ class Forge(Unit):
             elif player_forge_level == 2:
                 damage_mult *= K_DAMAGE_UP
         if unit.unit_type == TYPE_BUILDING:
-            if not isinstance(unit, UncompletedBuilding):
+            if type(unit) != UncompletedBuilding:
                 if player_forge_level == 3:
                     health_mult *= K_BUILDHP_UP
                 elif player_forge_level == 4:
@@ -902,6 +902,7 @@ class ArcherTower(Fighter):
     cost = (200.0, 20.0)  # 200, 20
     placeable = True
     name = 'Башня'
+    images = []
     level_costs = [(30.0, 30.0), (40.0, 40.0), (70.0, 50.0)]  # Поменять
     images = [[pygame.image.load(f'sprite-games/building/turret/{team_id[i]}.png') for i in range(10)],
               [pygame.image.load(f'sprite-games/building/turret/2/{team_id[i]}.png') for i in range(10)],
@@ -1034,7 +1035,7 @@ class FireProjectile(TwistUnit):
                         return
                     for spr in game.get_intersect(self):
                         if (spr != self) and (spr.unit_type != TYPE_PROJECTILE) \
-                                and (spr.player_id not in [self.player_id, -1]) and not isinstance(spr, Dragon):
+                                and (spr.player_id not in [self.player_id, -1]) and type(spr) != Dragon:
                             spr.take_damage(self.damage, game)
 
     def get_args(self):

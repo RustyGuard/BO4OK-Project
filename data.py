@@ -1,11 +1,11 @@
 ﻿import pygame, sqlite3, datetime
-from client import ClientWait
 
 # инициализация глобальный перемен функций
 cursor = pygame.image.load('sprite-games/menu/cursor.png')
 FPS = 60
 clock = pygame.time.Clock()
 nicname = ""
+ip_a = "192.168.0."
 
 
 class Button(pygame.sprite.Sprite):
@@ -37,7 +37,39 @@ class Button(pygame.sprite.Sprite):
         if event.type == pygame.MOUSEBUTTONDOWN:  # функция нажатия на кнопку
             if event.button == 1:
                 if self.rect.collidepoint(event.pos):
-                    return [self.name, nicname]
+                    return self.name
+
+
+class Music:
+    def __init__(self):
+        pygame.mixer.music.load('music/menu.ogg')
+        self.sounds = {}
+        for i in ["creators", "build_a_farm", "click", "construction_completed", "eror", "game", "game1", "investigation_completed", "headpiece"]:
+            self.sounds[i] = pygame.mixer.Sound(f'music/{i}.ogg')
+        self.set_musik_volume()
+
+    def set_musik_volume(self):
+        volume = float(read_settings()["VOLUME"])
+        pygame.mixer.music.set_volume(volume)
+        for i in self.sounds:
+            self.sounds[i].set_volume(volume)
+
+    def all_stop(self):
+        pygame.mixer.music.pause()
+        for i in self.sounds:
+            self.sounds[i].stop()
+
+    def update(self, name_window):
+        self.all_stop()
+        if name_window != "game":
+            if name_window in ["headpiece", "creators"]:
+                self.sounds[name_window].play()
+            else:
+                pygame.mixer.music.unpause()
+        else:
+            for i in ["game", "game1"]:
+                self.sounds[i].play(-1)
+
 
 
 def read_settings():
@@ -125,16 +157,13 @@ def headpiece(screen):
     clock = pygame.time.Clock()
     Timer = 0
     f = False
-    pygame.mixer.music.load('9.mp3')
-    pygame.mixer.music.play()
-    pygame.mixer.music.set_volume(0.2)
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_ESCAPE:
-                    return
+                    return "back_menu"
         if Bo4ok_rect[0] < 232:
             Bo4ok_rect[0] += 4.4
             Potick1_rect[0] += 4.4
@@ -149,7 +178,7 @@ def headpiece(screen):
                     Timer = 0
             if Timer > 140:
                 pygame.mixer.music.stop()
-                return
+                return "back_menu"
             else:
                 Timer += 1
         screen.fill(pygame.Color("white"))
@@ -163,16 +192,15 @@ def headpiece(screen):
         clock.tick(30)
 
 
-def ip(screen, musik):
+def ip(screen):
     """ Функция окна подключения к игре по айпи """
-    global cursor, FPS, clock, nicname
+    global cursor, FPS, clock, ip_a
     background = pygame.image.load('sprite-games/play/ip основа.png')
     screen.blit(background, (0, 0))
     image = {"OK": (1085, 709),
              "back_menu": (558, 709)}
 
     way = "play"
-    ip = "192.168.0."
 
     all_buttons = pygame.sprite.Group()
     for i in image:
@@ -184,25 +212,23 @@ def ip(screen, musik):
                 exit()
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_ESCAPE:
-                    return ["play", nicname]
+                    return "play"
             for button in all_buttons:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if button.rect.collidepoint(event.pos):
                         if button.name == "OK":
-                            musik.stop()
-                            gameover(screen, ClientWait().play(screen, ip if ip != '' else 'localhost', nick=nicname))
-                            musik.play(-1)
-                        return ["play", nicname]
+                            return ["OK", ip_a]
+                        return ["play", ip_a]
                 if button.get_event(event):
                     return button.get_event(event)
             if event.type == pygame.KEYDOWN:
                 if event.unicode in "1234567890.:":
-                    ip += event.unicode
+                    ip_a += event.unicode
                 if event.key == 8:
-                    ip = ip[:-1]
+                    ip_a = ip_a[:-1]
         screen.blit(background, (0, 0))
         all_buttons.draw(screen)
-        screen.blit(font.render(ip, 1, (255, 255, 255)), (565, 460))
+        screen.blit(font.render(ip_a, 1, (255, 255, 255)), (565, 460))
         screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
         pygame.display.flip()
         clock.tick(FPS)
@@ -233,7 +259,7 @@ def play(screen):
                     return ["back_menu", nicname]
             for button in all_buttons:
                 if button.get_event(event):
-                    return button.get_event(event)
+                    return [button.get_event(event), nicname]
             if event.type == pygame.KEYDOWN:
                 if event.unicode in "ёйцукенгшщзхъфывапролджэячсмить" \
                                     "бюqwertyuiopasdfghjklzxcvbnm1234567890" or \
@@ -276,7 +302,7 @@ def settings(screen):
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_ESCAPE:
                     write_settings(settings)
-                    return ["back_menu", nicname]
+                    return "back_menu"
             for button in all_buttons:
                 if button.get_event(event):
                     write_settings(settings)
@@ -311,16 +337,13 @@ def titers(screen):
     i3 = pygame.image.load('sprite-games/титры/3.png')
     i2_rect = [450, 1080]
     i3_rect = [450, 2530]
-    sound1 = pygame.mixer.Sound('music/settings.ogg')
-    sound1.play()
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_ESCAPE:
-                    sound1.stop()
-                    return
+                    return "back_menu"
         screen.blit(i1, (0, 0))
         screen.blit(i2, i2_rect)
         screen.blit(i3, i3_rect)
@@ -363,7 +386,7 @@ def statistics(screen):
                 exit()
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_ESCAPE:
-                    return ["back_menu", nicname]
+                    return "back_menu"
             for button in all_buttons:
                 if button.get_event(event):
                     return button.get_event(event)
@@ -400,21 +423,20 @@ def gameover(screen, game):
     f = False
     coords = [[-2000, 0], [-2000, 2000], [0, 2000], [2000, 2000], [2000, 0], [2000, -2000], [0, -2000], [-2000, -2000]]
 
-    pygame.mixer.music.load('9.mp3')
-    pygame.mixer.music.play()
-    pygame.mixer.music.set_volume(0.2)
     n = 0
     k = 1
     timer = 0
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                return
+                exit()
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_ESCAPE:
                     return
 
-        screen.fill(pygame.Color("black"))
+        # for i in sprites:
+            # screen.blit(i[0], i[0])
+        screen.fill((0, 255, 100))
         if f:
             flip = pygame.transform.rotate(sword1, n)
             rot_rect = flip.get_rect(center=(960, 540))
