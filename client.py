@@ -162,14 +162,14 @@ class Camera:
         if x != 0 or y != 0:
             self.off_x += x * int(self.speed)
             self.off_y += y * int(self.speed)
-            if self.off_x < -5000:
-                self.off_x = -5000
-            if self.off_x > 5000:
-                self.off_x = 5000
-            if self.off_y < -5000:
-                self.off_y = -5000
-            if self.off_y > 5000:
-                self.off_y = 5000
+            if self.off_x < -WORLD_SIZE // 2 + settings['WIDTH']:
+                self.off_x = -WORLD_SIZE // 2 + settings['WIDTH']
+            if self.off_x > WORLD_SIZE // 2:
+                self.off_x = WORLD_SIZE // 2
+            if self.off_y < -WORLD_SIZE // 2 + settings['HEIGHT']:
+                self.off_y = -WORLD_SIZE // 2 + settings['HEIGHT']
+            if self.off_y > WORLD_SIZE // 2:
+                self.off_y = WORLD_SIZE // 2
             self.speed += CAMERA_STEP_FASTER
             self.speed = min(CAMERA_MAX_SPEED, self.speed)
             for spr in self.sprites:
@@ -719,8 +719,7 @@ class ClientWait:
                 print('Taken message:', cmd, args)
 
         win = [None]
-        background = pygame.image.load('sprite-games/small_map.png').convert()
-        # font = pygame.font.Font(None, 50)
+        background = pygame.image.load('sprite-games/map.png').convert()
         update_settings()
         particles = Group()
         small_font = pygame.font.Font(None, 25)
@@ -796,9 +795,7 @@ class ClientWait:
 
             # /* Отрисовка
             if settings["BACKGROUND"]:
-                for i in range(-1, 2):
-                    for j in range(-1, 2):
-                        screen.blit(background, (camera.off_x % 965 + j * 965, camera.off_y % 545 + i * 545))
+                screen.blit(background, (camera.off_x - WORLD_SIZE // 2, camera.off_y - WORLD_SIZE // 2))
             else:
                 screen.fill((96, 128, 56))
 

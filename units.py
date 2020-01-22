@@ -68,11 +68,11 @@ class Unit(Sprite):
                         self.rect.right = spr.rect.left
                     self.x = self.rect.centerx - self.offsetx
                     break
-            if self.x < -5000:
-                self.x = -5000
+            if self.x < -WORLD_SIZE // 2:
+                self.x = -WORLD_SIZE // 2
                 self.rect.centerx = int(self.x) + self.offsetx
-            if self.x > 5000:
-                self.x = 5000
+            if self.x > WORLD_SIZE // 2:
+                self.x = WORLD_SIZE // 2
                 self.rect.centerx = int(self.x) + self.offsetx
 
         if y != 0:
@@ -86,11 +86,11 @@ class Unit(Sprite):
                         self.rect.bottom = spr.rect.top
                     self.y = self.rect.centery - self.offsety
                     break
-                if self.y < -5000:
-                    self.y = -5000
+                if self.y < -WORLD_SIZE // 2:
+                    self.y = -WORLD_SIZE // 2
                     self.rect.centery = int(self.y) + self.offsety
-                if self.y > 5000:
-                    self.y = 5000
+                if self.y > WORLD_SIZE // 2:
+                    self.y = WORLD_SIZE // 2
                     self.rect.centery = int(self.y) + self.offsety
 
     def set_offset(self, x, y):
@@ -227,7 +227,7 @@ class Arrow(TwistUnit):
         if event.type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
             self.move_to_angle(3, game)
             if event.type == SERVER_EVENT_UPDATE:
-                if self.x < -5000 or self.x > 5000 or self.y < -5000 or self.y > 5000:
+                if self.x < -WORLD_SIZE // 2 or self.x > WORLD_SIZE // 2 or self.y < -WORLD_SIZE // 2 or self.y > WORLD_SIZE // 2:
                     game.kill(self)
                     return
 
@@ -269,7 +269,7 @@ class BallistaArrow(TwistUnit):
         if event.type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
             self.move_to_angle(3, game)
             if event.type == SERVER_EVENT_UPDATE:
-                if self.x < -5000 or self.x > 5000 or self.y < -5000 or self.y > 5000:
+                if self.x < -WORLD_SIZE // 2 or self.x > WORLD_SIZE // 2 or self.y < -WORLD_SIZE // 2 or self.y > WORLD_SIZE // 2:
                     game.kill(self)
                     return
 
@@ -875,7 +875,7 @@ class MagicBall(TwistUnit):
         if event.type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
             self.move_to_angle(1.5, game)
             if event.type == SERVER_EVENT_UPDATE:
-                if self.x < -5000 or self.x > 5000 or self.y < -5000 or self.y > 5000:
+                if self.x < -WORLD_SIZE // 2 or self.x > WORLD_SIZE // 2 or self.y < -WORLD_SIZE // 2 or self.y > WORLD_SIZE // 2:
                     game.kill(self)
                     return
 
