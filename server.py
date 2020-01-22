@@ -459,7 +459,7 @@ def main(screen):
     thread = threading.Thread(target=server.thread_connection, daemon=True)
     thread.start()
     font = pygame.font.Font(None, 50)
-    background = pygame.image.load('sprite-games/play/Основа1.png')
+    background = pygame.image.load('sprite-games/play/Основа1.png').convert()
     pygame.mouse.set_visible(0)
     image = {"host": (330, 250),
              "connect": (330, 455),
@@ -555,7 +555,7 @@ def main(screen):
     pygame.time.set_timer(SERVER_EVENT_UPDATE, 1000 // 60)
     pygame.time.set_timer(SERVER_EVENT_SEC, 1000 // 1)
     pygame.time.set_timer(SERVER_EVENT_SYNC, 10000)
-    background = pygame.image.load('sprite-games/menu/background.png')
+    background = pygame.image.load('sprite-games/menu/background.png').convert()
     while running and len(game.players) > 0:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:

@@ -548,16 +548,15 @@ class ClientWait:
 
         client.setEventCallback(read)
         running = True
-        font = pygame.font.Font(None, 50)
-        SIRCLE_SIZE = 100
-        OFFSET_X = 600
-        OFFSET_Y = 500
+        font = pygame.font.Font(None, 75)
+        offset_x = 600
+        offset_y = 500
 
         manager = UIManager(screen.get_size(), 'sprite-games/themes/theme.json')
         ready_button = UIButton(
-            pygame.Rect(OFFSET_X, OFFSET_Y + SIRCLE_SIZE - 100, 355, 91),
+            pygame.Rect(offset_x, offset_y, 355, 91),
             '', manager, object_id='ready')
-        background = pygame.image.load('sprite-games/menu/background.png')
+        background = pygame.image.load('sprite-games/menu/background.png').convert()
         aa = [pygame.image.load(f'sprite-games/play/expectation/{i}.png') for i in range(1, 5)]
         a = 0
         while running and not game.started:
@@ -576,9 +575,9 @@ class ClientWait:
             manager.update(1 / 60)
             screen.blit(background, (0, 0))
             manager.draw_ui(screen)
-            text = font.render(f'{players_info[0]}/{players_info[1]} players.', 1, (200, 200, 200))
-            screen.blit(text, (OFFSET_X, OFFSET_Y - SIRCLE_SIZE / 2))
-            screen.blit(aa[a // 10], (OFFSET_X + 250, OFFSET_Y - SIRCLE_SIZE / 2))
+            text = font.render(f'{players_info[0]}/{players_info[1]} игроков.', 1, (255, 255, 255))
+            screen.blit(text, (offset_x, offset_y - 120))
+            screen.blit(aa[a // 10], (offset_x, offset_y - 55))
             screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
             a += 1
             if a == 40:
