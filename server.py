@@ -364,11 +364,7 @@ class ServerGame:
         spr.kill()
 
 
-<<<<<<< HEAD
 def place_fortresses(game):
-=======
-def test_place_fortresses(game: ServerGame):
->>>>>>> e51cb3a9f07ca00934686f124738a0069cc0c3e6
     print('Placing started.')
     players_count = len(game.players.values())
     angle = 0
@@ -388,39 +384,7 @@ def test_place_fortresses(game: ServerGame):
         game.place(Farm, x, y, player_id,
                    ignore_money=True, ignore_fort_level=True, ignore_space=True)
 
-        trees_left = 15
-        tree_x, tree_y = randint(x - 500, x + 500), randint(y - 500, y + 500)
-        while trees_left > 0:
-            if game.place(Tree, tree_x, tree_y, -1, ignore_money=True, ignore_fort_level=True) is not None:
-                trees_left -= 1
-            tree_x, tree_y = randint(x - 500, x + 500), randint(y - 500, y + 500)
-        print('Placing stopped.')
-
-
-def place_fortresses(game: ServerGame):
-    print('Placing started.')
-    players_count = len(game.players.values())
-    angle = 0
-    game.place(Mine, 0, 0, -1,
-               ignore_money=True, ignore_fort_level=True, ignore_space=True)
-
-    for player_id, player in game.players.items():
-        x, y = cos(radians(angle)), sin(radians(angle))
-        angle += 360 / players_count
-        x, y = int(x * 3500), int(y * 3500)
-        game.place(Fortress, x, y, player_id,
-                   ignore_money=True, ignore_fort_level=True, ignore_space=True)
-        player.client.send(f'6_{-x + SCREEN_WIDTH // 2}_{-y + SCREEN_HEIGHT // 2}')
-
-        x, y = int(x * 1.25), int(y * 1.25)
-        game.place(Mine, x, y, -1,
-                   ignore_money=True, ignore_fort_level=True, ignore_space=True)
-
-        x, y = int(x * 0.05), int(y * 0.05)
-        game.place(Mine, x, y, -1,
-                   ignore_money=True, ignore_fort_level=True, ignore_space=True)
-
-        trees_left = 15
+        trees_left = 30
         tree_x, tree_y = randint(x - 500, x + 500), randint(y - 500, y + 500)
         while trees_left > 0:
             if game.place(Tree, tree_x, tree_y, -1, ignore_money=True, ignore_fort_level=True) is not None:
@@ -505,11 +469,11 @@ def main(screen):
     thread = threading.Thread(target=server.thread_connection, daemon=True)
     thread.start()
     font = pygame.font.Font(None, 50)
-    background = pygame.image.load('sprite-games/play/Основа1.png').convert()
+    background = pygame.image.load('sprite-games/play/Основа1.png')
     pygame.mouse.set_visible(0)
     image = {"host": (330, 250),
              "connect": (330, 455),
-             "back_menu": (340, 700),
+             "menu": (340, 700),
              "cancel": (1311, 700)}
 
     class Button(pygame.sprite.Sprite):
@@ -554,10 +518,7 @@ def main(screen):
     Button(cancel_buttons, "cancel")
     all_cursor = pygame.sprite.Group()
     cursor = Cursor(all_cursor)
-<<<<<<< HEAD
     font1 = pygame.font.Font(None, 80)
-=======
->>>>>>> e51cb3a9f07ca00934686f124738a0069cc0c3e6
     while not server.is_ready():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -574,13 +535,13 @@ def main(screen):
         pygame.mouse.set_visible(0)
         screen.blit(background, (0, 0))
         text = font.render(f'Сообщите ip остальным игрокам:', 1, (200, 200, 200))
-        screen.blit(text, (650, 310))
+        screen.blit(text, (650, 310))  # 5
         text = font.render(f'[{server_ip}]', 1, (255, 5, 5))
-        screen.blit(text, (650, 355))
+        screen.blit(text, (650, 355))  # 50
         text = font.render(f'Подключено [{connect_info[0]}/{MAX_PLAYERS}]', 1, (200, 200, 200))
-        screen.blit(text, (650, 405))
+        screen.blit(text, (650, 405))  # 100
         text = font.render(f'Готово: [{connect_info[1]}]', 1, (200, 200, 200))
-        screen.blit(text, (650, 455))
+        screen.blit(text, (650, 455))  # 150
         all_buttons.draw(screen)
         cursor.rect.topleft = pygame.mouse.get_pos()
         cancel_buttons.draw(screen)
@@ -604,8 +565,7 @@ def main(screen):
     pygame.time.set_timer(SERVER_EVENT_UPDATE, 1000 // 60)
     pygame.time.set_timer(SERVER_EVENT_SEC, 1000 // 1)
     pygame.time.set_timer(SERVER_EVENT_SYNC, 10000)
-    background = pygame.image.load('sprite-games/menu/background.png').convert()
-    current_fps = 60
+    background = pygame.image.load('sprite-games/menu/background.png')
     while running and len(game.players) > 0:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -628,9 +588,8 @@ def main(screen):
                     server.disconnect()
                     return
         screen.blit(background, (0, 0))
-        screen.blit(font.render(f'FPS: {current_fps}', 1, (200, 200, 200)), (0, 0))
         pygame.display.flip()
-        current_fps = 1000 // clock.tick(60)
+        print('FPS', 1000 / clock.tick(60))
         clock.tick(60)
     server.disconnect()
 

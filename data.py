@@ -44,7 +44,7 @@ class Music:
     def __init__(self):
         pygame.mixer.music.load('music/menu.ogg')
         self.sounds = {}
-        for i in ["creators", "build_a_farm", "click", "construction_completed", "eror", "game", "game1", "investigation_completed", "headpiece"]:
+        for i in ["creators", "build_a_farm", "click", "construction_completed", "eror", "investigation_completed", "headpiece"]:
             self.sounds[i] = pygame.mixer.Sound(f'music/{i}.ogg')
         self.set_musik_volume()
 
@@ -61,14 +61,10 @@ class Music:
 
     def update(self, name_window):
         self.all_stop()
-        if name_window != "game":
-            if name_window in ["headpiece", "creators"]:
-                self.sounds[name_window].play()
-            else:
-                pygame.mixer.music.unpause()
+        if name_window in ["headpiece", "creators"]:
+            self.sounds[name_window].play()
         else:
-            for i in ["game", "game1"]:
-                self.sounds[i].play(-1)
+            pygame.mixer.music.unpause()
 
 
 
@@ -163,7 +159,7 @@ def headpiece(screen):
                 running = False
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_ESCAPE:
-                    return "back_menu"
+                    return "menu"
         if Bo4ok_rect[0] < 232:
             Bo4ok_rect[0] += 4.4
             Potick1_rect[0] += 4.4
@@ -178,7 +174,7 @@ def headpiece(screen):
                     Timer = 0
             if Timer > 140:
                 pygame.mixer.music.stop()
-                return "back_menu"
+                return "menu"
             else:
                 Timer += 1
         screen.fill(pygame.Color("white"))
@@ -198,7 +194,7 @@ def ip(screen):
     background = pygame.image.load('sprite-games/play/ip основа.png')
     screen.blit(background, (0, 0))
     image = {"OK": (1085, 709),
-             "back_menu": (558, 709)}
+             "menu": (558, 709)}
 
     way = "play"
 
@@ -212,7 +208,7 @@ def ip(screen):
                 exit()
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_ESCAPE:
-                    return "play"
+                    return ["play", ip_a]
             for button in all_buttons:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if button.rect.collidepoint(event.pos):
@@ -242,7 +238,7 @@ def play(screen):
     FPS = 60
     image = {"host": (330, 250),
              "connect": (330, 455),
-             "back_menu": (340, 700)}
+             "menu": (340, 700)}
     way = "play"
 
     all_buttons = pygame.sprite.Group()
@@ -256,7 +252,7 @@ def play(screen):
                 exit()
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_ESCAPE:
-                    return ["back_menu", nicname]
+                    return ["menu", nicname]
             for button in all_buttons:
                 if button.get_event(event):
                     return [button.get_event(event), nicname]
@@ -281,20 +277,27 @@ def settings(screen):
     global cursor, FPS, clock
     background = pygame.image.load('sprite-games/settings/background.png')
     screen.blit(background, (0, 0))
-    fon = pygame.image.load('sprite-games/settings/fon.png')
-    camera = pygame.image.load('sprite-games/settings/camera.png')
     tick_field_image = {"BACKGROUND": (15, 183),
-                        "CAMERA": (15, 315)}
+                        "CAMERA": (15, 315),
+                        "FPS": (15, 447),
+                        "DEBUG": (15, 579),
+                        "PARTICLES": (15, 711)}
     way = "settings"
     settings = read_settings()  # чтение существующих настроек
 
     all_buttons = pygame.sprite.Group()
-    Button(all_buttons, "back_menu", (12, 12), way)
+    Button(all_buttons, "menu", (12, 12), way)
+
+    all_volume_cursor = pygame.sprite.Group()
+    Button(all_volume_cursor, "volume_cursor", (float(settings["VOLUME"]) * 664 + 98, 953), way)
 
     all_tick_field = pygame.sprite.Group()
     for i in tick_field_image:
         Button(all_tick_field, i, tick_field_image[i], way, 1)
 
+    flag_volume_cursor = False
+    mouse_x = 0
+    volume_cursor_x = 0
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -302,18 +305,36 @@ def settings(screen):
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_ESCAPE:
                     write_settings(settings)
-                    return "back_menu"
-            for button in all_buttons:
-                if button.get_event(event):
-                    write_settings(settings)
-                    return button.get_event(event)
-            for tick_field in all_tick_field:
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    if tick_field.rect.collidepoint(event.pos):  # изменение состояния определённой настройки
-                        if settings[tick_field.name]:
-                            settings[tick_field.name] = False
-                        else:
-                            settings[tick_field.name] = True
+                    return "menu"
+            if flag_volume_cursor:
+                for volume_cursor in all_volume_cursor:
+                    if 98 <= volume_cursor_x - mouse_x + pygame.mouse.get_pos()[0] <= 762:
+                        volume_cursor.rect.x = volume_cursor_x - mouse_x + pygame.mouse.get_pos()[0]
+                    if 98 > volume_cursor_x - mouse_x + pygame.mouse.get_pos()[0]:
+                        volume_cursor.rect.x = 98
+                    if 762 < volume_cursor_x - mouse_x + pygame.mouse.get_pos()[0]:
+                        volume_cursor.rect.x = 762
+                    pygame.mixer.music.set_volume((volume_cursor.rect.x - 98) / 664)
+                    if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                        flag_volume_cursor = False
+                        settings["VOLUME"] = (volume_cursor.rect.x - 98) / 664
+            else:
+                for button in all_buttons:
+                    if button.get_event(event):
+                        write_settings(settings)
+                        return button.get_event(event)
+                for volume_cursor in all_volume_cursor:
+                    if volume_cursor.get_event(event):
+                        flag_volume_cursor = True
+                        mouse_x = pygame.mouse.get_pos()[0]
+                        volume_cursor_x = volume_cursor.rect.x
+                for tick_field in all_tick_field:
+                    if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                        if tick_field.rect.collidepoint(event.pos):  # изменение состояния определённой настройки
+                            if settings[tick_field.name]:
+                                settings[tick_field.name] = False
+                            else:
+                                settings[tick_field.name] = True
         for tick_field in all_tick_field:
             if settings[tick_field.name]:
                 tick_field.image = tick_field.anim
@@ -322,8 +343,7 @@ def settings(screen):
         screen.blit(background, (0, 0))
         all_buttons.draw(screen)
         all_tick_field.draw(screen)
-        screen.blit(fon, (170, 208))
-        screen.blit(camera, (170, 340))
+        all_volume_cursor.draw(screen)
         screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
         pygame.display.flip()
         clock.tick(FPS)
@@ -343,7 +363,7 @@ def titers(screen):
                 return
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_ESCAPE:
-                    return "back_menu"
+                    return "menu"
         screen.blit(i1, (0, 0))
         screen.blit(i2, i2_rect)
         screen.blit(i3, i3_rect)
@@ -371,7 +391,7 @@ def statistics(screen):
     way = "settings"
 
     all_buttons = pygame.sprite.Group()
-    Button(all_buttons, "back_menu", (12, 12), way)
+    Button(all_buttons, "menu", (12, 12), way)
 
     con = sqlite3.connect("statistics.db")
     req = "SELECT * FROM stats"
@@ -386,13 +406,13 @@ def statistics(screen):
                 exit()
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_ESCAPE:
-                    return "back_menu"
+                    return "menu"
             for button in all_buttons:
                 if button.get_event(event):
                     return button.get_event(event)
             if event.type == pygame.MOUSEBUTTONUP:
                 if str(event).split()[5][0] == "5":
-                    if n + 15 < len(res):
+                    if n + 14 < len(res):
                         n += 1
                 if str(event).split()[5][0] == "4":
                     if n > 0:
@@ -401,7 +421,7 @@ def statistics(screen):
         all_buttons.draw(screen)
         for y, result in enumerate(res[n:n + 15]):
             for x, i in enumerate(result[1:]):
-                screen.blit(font.render(i, 1, (255, 255, 255)), (50 + 212 * x, 180 + 57 * y))
+                screen.blit(font.render(i, 1, (255, 255, 255)), (52 + 212 * x, 237 + 57 * y))
         screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
         pygame.display.flip()
         clock.tick(FPS)
@@ -432,7 +452,7 @@ def gameover(screen, game):
                 exit()
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_ESCAPE:
-                    return
+                    return "menu"
 
         # for i in sprites:
             # screen.blit(i[0], i[0])
@@ -447,7 +467,7 @@ def gameover(screen, game):
             timer += 1
             if timer == 210:
                 pygame.mixer.music.stop()
-                return
+                return "menu"
         else:
             for n, i in enumerate(coords):
                 cor = []
