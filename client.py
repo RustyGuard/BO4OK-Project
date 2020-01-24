@@ -838,6 +838,10 @@ class ClientWait:
             screen.blit(text, (145, 805))
             text = small_font.render(f'{game.info.power}/{game.info.max_power}', 1, Color('palevioletred3'))
             screen.blit(text, (260, 805))
+            # Minimap
+            #for i in Fortress.instances:
+                #pygame.dr
+
             screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
             text = small_font.render(f'FPS: {fps_count}', 1, pygame.Color('red' if fps_count < 40 else 'green'))
             screen.blit(text, (0, 0))
