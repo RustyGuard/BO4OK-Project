@@ -104,3 +104,4 @@ venv.bak/
 .mypy_cache/
 run.bat
 .idea/
+statistics.db
