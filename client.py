@@ -2,7 +2,7 @@ import socket
 import threading
 from random import choice
 from threading import Lock
-
+import data
 import pygame_gui
 from pygame import Color
 from pygame.sprite import Group
@@ -13,6 +13,8 @@ from units import *
 
 cursor = pygame.image.load('sprite-games/menu/cursor.png')
 clock = pygame.time.Clock()
+pygame.mixer.init()
+music = data.Music("game", ["game", "game1"])
 
 settings = {}
 
@@ -523,10 +525,9 @@ class ClientWait:
         if not self.waiting_screen(screen, client, game):
             return False
 
-        pygame.mixer.music.pause()
+        music.game_sounds_play()
         game = self.game_screen(screen, client, game)
-        self.sound1.stop()
-        self.sound2.stop()
+        music.all_stop()
         return game
 
     def waiting_screen(self, screen, client, game):
@@ -591,12 +592,6 @@ class ClientWait:
         return True
 
     def game_screen(self, screen, client, game):
-        self.sound1 = pygame.mixer.Sound('music/game.ogg')
-        self.sound1.play(-1)
-        self.sound2 = pygame.mixer.Sound('music/game1.ogg')
-        self.sound2.play(-1)
-        self.sound1.set_volume(0.2)
-        self.sound2.set_volume(0.2)
         stats = {
             'wood_chopped': 0.0,
             'money_mined': 0.0,

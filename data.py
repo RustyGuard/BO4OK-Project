@@ -2,7 +2,6 @@
 
 # инициализация глобальный перемен функций
 cursor = pygame.image.load('sprite-games/menu/cursor.png')
-FPS = 60
 clock = pygame.time.Clock()
 nicname = ""
 ip_a = "192.168.0."
@@ -45,31 +44,41 @@ class Button(pygame.sprite.Sprite):
 
 
 class Music:
-    def __init__(self):
-        pygame.mixer.music.load('music/menu.ogg')
+    def __init__(self, window, sounds):
+        if window == "menu":
+            pygame.mixer.music.load('music/menu.ogg')
+        self.window = window
         self.sounds = {}
-        for i in ["creators", "build_a_farm", "click", "construction_completed", "eror", "investigation_completed", "headpiece"]:
+        for i in sounds:
             self.sounds[i] = pygame.mixer.Sound(f'music/{i}.ogg')
         self.set_musik_volume()
 
     def set_musik_volume(self):
         volume = float(read_settings()["VOLUME"])
-        pygame.mixer.music.set_volume(volume)
+        if self.window == "menu":
+            pygame.mixer.music.set_volume(volume)
         for i in self.sounds:
             self.sounds[i].set_volume(volume)
 
     def all_stop(self):
-        pygame.mixer.music.pause()
+        if self.window == "menu":
+            pygame.mixer.music.pause()
         for i in self.sounds:
             self.sounds[i].stop()
+
+    def game_sounds_play(self):
+        pygame.mixer.music.pause()
+        for i in self.sounds:
+            self.sounds[i].play(-1)
+        self.set_musik_volume()
 
     def update(self, name_window):
         self.all_stop()
         if name_window in ["headpiece", "creators"]:
-            self.sounds[name_window].play()
+            self.sounds[name_window].play(-1)
         else:
             pygame.mixer.music.unpause()
-
+        self.set_musik_volume()
 
 
 def read_settings():
@@ -109,7 +118,7 @@ def write_settings(settings):
 
 def menu(screen):
     """ Функция окна гланого меню """
-    global cursor, FPS, clock
+    global cursor, clock
     background = pygame.image.load('sprite-games/menu/background.png').convert()
     screen.blit(background, (0, 0))
     image = {"play": (28, 950),
@@ -136,7 +145,7 @@ def menu(screen):
         all_buttons.draw(screen)
         screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
         pygame.display.flip()
-        clock.tick(FPS)
+        clock.tick(60)
 
 
 def headpiece(screen):
@@ -194,7 +203,7 @@ def headpiece(screen):
 
 def ip(screen):
     """ Функция окна подключения к игре по айпи """
-    global cursor, FPS, clock, ip_a
+    global cursor, clock, ip_a
     background = pygame.image.load('sprite-games/play/ip основа.png').convert()
     screen.blit(background, (0, 0))
     image = {"OK": (1085, 709),
@@ -231,15 +240,14 @@ def ip(screen):
         screen.blit(font.render(ip_a, 1, (255, 255, 255)), (565, 460))
         screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
         pygame.display.flip()
-        clock.tick(FPS)
+        clock.tick(60)
 
 
 def play(screen):
     """ Функция мерню подключеия/создания сессии """
-    global cursor, FPS, clock, nicname
+    global cursor, clock, nicname
     background = pygame.image.load('sprite-games/play/Основа1.png').convert()
     screen.blit(background, (0, 0))
-    FPS = 60
     image = {"host": (330, 250),
              "connect": (330, 455),
              "menu": (340, 700)}
@@ -262,10 +270,9 @@ def play(screen):
                     return [button.get_event(event), nicname]
             if event.type == pygame.KEYDOWN:
                 if event.unicode in "ёйцукенгшщзхъфывапролджэячсмить" \
-                                    "бюqwertyuiopasdfghjklzxcvbnm1234567890" or \
-                        event.unicode in "ёйцукенгшщзхъфывапролджэячсми" \
-                                         "тьбюqwertyuiopasdfghjklzxcvbnm1234567890".upper():
-                    nicname += event.unicode
+                                    "бюqwertyuiopasdfghjklzxcvbnm1234567890 _-":
+                    if len(nicname) < 11:
+                        nicname += event.unicode
                 if event.key == 8:
                     nicname = nicname[:-1]
         screen.blit(background, (0, 0))
@@ -273,12 +280,12 @@ def play(screen):
         screen.blit(font.render(nicname, 1, (255, 255, 255)), (810, 740))
         screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
         pygame.display.flip()
-        clock.tick(FPS)
+        clock.tick(60)
 
 
 def settings(screen):
     """ функция окна настроек """
-    global cursor, FPS, clock
+    global cursor, clock
     background = pygame.image.load('sprite-games/settings/background.png').convert()
     screen.blit(background, (0, 0))
     tick_field_image = {"BACKGROUND": (15, 183),
@@ -350,15 +357,15 @@ def settings(screen):
         all_volume_cursor.draw(screen)
         screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
         pygame.display.flip()
-        clock.tick(FPS)
+        clock.tick(60)
 
 
 def titers(screen):
     """ Функция титров с создателями и проделанной работой """
-    global FPS, clock
+    global clock
     i1 = pygame.image.load('sprite-games/титры/1.png').convert()
-    i2 = pygame.image.load('sprite-games/титры/4.png')
-    i2_rect = [200, 1080]
+    i2 = pygame.image.load('sprite-games/титры/5.png')
+    i2_rect = [200, 1200]
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -368,9 +375,11 @@ def titers(screen):
                     return "menu"
         screen.blit(i1, (0, 0))
         screen.blit(i2, i2_rect)
-        i2_rect[1] -= 2
+        i2_rect[1] -= 1
+        if i2_rect[1] < -4765:
+            return "menu"
         pygame.display.flip()
-        clock.tick(FPS)
+        clock.tick(60)
 
 
 def write_statistics(stats):
@@ -385,7 +394,7 @@ def write_statistics(stats):
 
 def statistics(screen):
     """ Функция окна со стотистикой пользователя """
-    global cursor, FPS, clock
+    global cursor, clock
     background = pygame.image.load('sprite-games/statistics/background.png').convert()
     screen.blit(background, (0, 0))
     way = "settings"
@@ -419,12 +428,12 @@ def statistics(screen):
                         n -= 1
         screen.blit(background, (0, 0))
         all_buttons.draw(screen)
-        for y, result in enumerate(res[n:n + 14]):
+        for y, result in enumerate(res[n:n + 14][::-1]):
             for x, i in enumerate(result[1:]):
                 screen.blit(font.render(i, 1, (255, 255, 255)), (52 + 212 * x, 237 + 57 * y))
         screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
         pygame.display.flip()
-        clock.tick(FPS)
+        clock.tick(60)
 
 
 def gameover(screen, game):
@@ -455,7 +464,7 @@ def gameover(screen, game):
                     return "menu"
 
         # for i in sprites:
-            # screen.blit(i[0], i[0])
+        # screen.blit(i[0], i[0])
         screen.fill((0, 255, 100))
         if f:
             flip = pygame.transform.rotate(sword1, n)
