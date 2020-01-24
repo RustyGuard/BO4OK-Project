@@ -297,7 +297,7 @@ def settings(screen):
 
     all_tick_field = pygame.sprite.Group()
     for i in tick_field_image:
-        Button(all_tick_field, i, tick_field_image[i], way, 1)
+        Button(all_tick_field, i, tick_field_image[i], way, 2)
 
     flag_volume_cursor = False
     mouse_x = 0
