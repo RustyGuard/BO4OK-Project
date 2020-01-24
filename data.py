@@ -16,9 +16,13 @@ class Button(pygame.sprite.Sprite):
         if not f:
             self.stok_image = pygame.image.load(f'sprite-games/{way}/{name}.png')
             self.anim = pygame.image.load(f'sprite-games/{way}/anim/{name}.png')
-        else:
+        elif f == 1:
+            self.stok_image = self.anim = pygame.image.load(f'sprite-games/{way}/anim/{name}.png')
+        elif f == 2:
             self.stok_image = pygame.image.load(f'sprite-games/{way}/field.png')
             self.anim = pygame.image.load(f'sprite-games/{way}/tick_field.png')
+        elif f == 3:
+            self.stok_image = self.anim = pygame.image.load(f'sprite-games/{way}/{name}.png')
         self.name = name
         self.image = self.stok_image
         self.rect = self.image.get_rect()
@@ -191,7 +195,7 @@ def headpiece(screen):
 def ip(screen):
     """ Функция окна подключения к игре по айпи """
     global cursor, FPS, clock, ip_a
-    background = pygame.image.load('sprite-games/play/ip основа.png')
+    background = pygame.image.load('sprite-games/play/ip основа.png').convert()
     screen.blit(background, (0, 0))
     image = {"OK": (1085, 709),
              "menu": (558, 709)}
@@ -233,7 +237,7 @@ def ip(screen):
 def play(screen):
     """ Функция мерню подключеия/создания сессии """
     global cursor, FPS, clock, nicname
-    background = pygame.image.load('sprite-games/play/Основа1.png')
+    background = pygame.image.load('sprite-games/play/Основа1.png').convert()
     screen.blit(background, (0, 0))
     FPS = 60
     image = {"host": (330, 250),
@@ -275,7 +279,7 @@ def play(screen):
 def settings(screen):
     """ функция окна настроек """
     global cursor, FPS, clock
-    background = pygame.image.load('sprite-games/settings/background.png')
+    background = pygame.image.load('sprite-games/settings/background.png').convert()
     screen.blit(background, (0, 0))
     tick_field_image = {"BACKGROUND": (15, 183),
                         "CAMERA": (15, 315),
@@ -293,7 +297,7 @@ def settings(screen):
 
     all_tick_field = pygame.sprite.Group()
     for i in tick_field_image:
-        Button(all_tick_field, i, tick_field_image[i], way, 1)
+        Button(all_tick_field, i, tick_field_image[i], way, 2)
 
     flag_volume_cursor = False
     mouse_x = 0
@@ -352,11 +356,9 @@ def settings(screen):
 def titers(screen):
     """ Функция титров с создателями и проделанной работой """
     global FPS, clock
-    i1 = pygame.image.load('sprite-games/титры/1.png')
-    i2 = pygame.image.load('sprite-games/титры/2.png')
-    i3 = pygame.image.load('sprite-games/титры/3.png')
-    i2_rect = [450, 1080]
-    i3_rect = [450, 2530]
+    i1 = pygame.image.load('sprite-games/титры/1.png').convert()
+    i2 = pygame.image.load('sprite-games/титры/4.png')
+    i2_rect = [200, 1080]
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -366,9 +368,7 @@ def titers(screen):
                     return "menu"
         screen.blit(i1, (0, 0))
         screen.blit(i2, i2_rect)
-        screen.blit(i3, i3_rect)
         i2_rect[1] -= 2
-        i3_rect[1] -= 2
         pygame.display.flip()
         clock.tick(FPS)
 
@@ -386,7 +386,7 @@ def write_statistics(stats):
 def statistics(screen):
     """ Функция окна со стотистикой пользователя """
     global cursor, FPS, clock
-    background = pygame.image.load('sprite-games/statistics/background.png')
+    background = pygame.image.load('sprite-games/statistics/background.png').convert()
     screen.blit(background, (0, 0))
     way = "settings"
 
@@ -419,7 +419,7 @@ def statistics(screen):
                         n -= 1
         screen.blit(background, (0, 0))
         all_buttons.draw(screen)
-        for y, result in enumerate(res[n:n + 15]):
+        for y, result in enumerate(res[n:n + 14]):
             for x, i in enumerate(result[1:]):
                 screen.blit(font.render(i, 1, (255, 255, 255)), (52 + 212 * x, 237 + 57 * y))
         screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))

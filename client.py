@@ -719,7 +719,7 @@ class ClientWait:
                 print('Taken message:', cmd, args)
 
         win = [None]
-        background = pygame.image.load('sprite-games/map.png').convert()
+        background = pygame.image.load('sprite-games/small_map.png').convert()
         update_settings()
         particles = Group()
         small_font = pygame.font.Font(None, 25)
@@ -795,7 +795,9 @@ class ClientWait:
 
             # /* Отрисовка
             if settings["BACKGROUND"]:
-                screen.blit(background, (camera.off_x - WORLD_SIZE // 2, camera.off_y - WORLD_SIZE // 2))
+                for i in range(-1, 2):
+                    for j in range(-1, 2):
+                        screen.blit(background, (camera.off_x % 965 + j * 965, camera.off_y % 545 + i * 545))
             else:
                 screen.fill((96, 128, 56))
 
@@ -836,6 +838,18 @@ class ClientWait:
             screen.blit(text, (145, 805))
             text = small_font.render(f'{game.info.power}/{game.info.max_power}', 1, Color('palevioletred3'))
             screen.blit(text, (260, 805))
+
+            # Minimap
+            for i in Fortress.instances:
+                rect = (MINIMAP_OFFSETX + (i.x + WORLD_SIZE / 2) / WORLD_SIZE * MINIMAP_SIZEX - MINIMAP_ICON_SIZE / 2,
+                        MINIMAP_OFFSETY + (i.y + WORLD_SIZE / 2) / WORLD_SIZE * MINIMAP_SIZEY - MINIMAP_ICON_SIZE / 2,
+                        MINIMAP_ICON_SIZE, MINIMAP_ICON_SIZE)
+                print(rect)
+                pygame.draw.rect(screen, COLOR_LIST[i.player_id], rect)
+            if settings['DEBUG']:
+                pygame.draw.rect(screen, (255, 0, 0), (MINIMAP_OFFSETX, MINIMAP_OFFSETY, MINIMAP_SIZEX, MINIMAP_SIZEY),
+                                 1)
+
             screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
             text = small_font.render(f'FPS: {fps_count}', 1, pygame.Color('red' if fps_count < 40 else 'green'))
             screen.blit(text, (0, 0))
