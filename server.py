@@ -3,10 +3,9 @@ import threading
 from math import radians, cos, sin
 from threading import Lock
 from typing import Tuple, Dict
-
 from pygame import sprite
 from pygame.sprite import Group
-
+import data
 from units import *
 
 NEED_PLAYERS = 1
@@ -460,7 +459,7 @@ def main(screen):
         else:
             print('Invalid command')
 
-    def connect_player(client):
+    def connect_player(_):
         connect_info[0] += 1
 
     def disconnect_player(client):
@@ -499,62 +498,25 @@ def main(screen):
              "back_menu": (340, 700),
              "cancel": (1311, 700)}
 
-    class Button(pygame.sprite.Sprite):
-        def __init__(self, group, name, image1=None):
-            super().__init__(group)
-            if image1:
-                self.stok_image = pygame.image.load(f'sprite-games/play/anim/{name}.png')
-            else:
-                self.stok_image = pygame.image.load(f'sprite-games/play/{name}.png')
-            self.anim = pygame.image.load(f'sprite-games/play/anim/{name}.png')
-            self.name = name
-            self.image = self.stok_image
-            self.rect = self.image.get_rect()
-            self.rect.topleft = image[name]
-
-        def get_anim(self, event):
-            if self.rect.collidepoint(event.pos):
-                self.image = self.anim
-            else:
-                if self.image == self.anim:
-                    self.image = self.stok_image
-
-        def get_event(self, event):
-            if self.rect.collidepoint(event.pos):
-                if self.name == "back" or self.name == "cancel":
-                    return True
-
-    class Cursor(pygame.sprite.Sprite):
-        def __init__(self, group):
-            super().__init__(group)
-            self.image = pygame.image.load('sprite-games/menu/cursor.png')
-            self.rect = self.image.get_rect()
-
     all_buttons = pygame.sprite.Group()
     for n, i in enumerate(image):
         if n < 3:
             if n == 0:
-                Button(all_buttons, i, 1)
+                data.Button(all_buttons, i, image[i], "play", 1)
             else:
-                Button(all_buttons, i)
+                data.Button(all_buttons, i, image[i], "play", 3)
     cancel_buttons = pygame.sprite.Group()
-    Button(cancel_buttons, "cancel")
-    all_cursor = pygame.sprite.Group()
-    cursor = Cursor(all_cursor)
+    data.Button(cancel_buttons, "cancel", image["cancel"], "play")
     while not server.is_ready():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                for button in cancel_buttons:
-                    a = button.get_event(event)
-                    if a:
-                        server.disconnect()
-                        return
-            if event.type == pygame.MOUSEMOTION:
-                for button in cancel_buttons:
-                    button.get_anim(event)
-        pygame.mouse.set_visible(0)
+            for button in cancel_buttons:
+                if button.get_event(event):
+                    server.disconnect()
+                    return
+            for button in all_buttons:
+                button.get_event(event)
         screen.blit(background, (0, 0))
         text = font.render(f'Сообщите ip остальным игрокам:', 1, (200, 200, 200))
         screen.blit(text, (650, 310))
@@ -565,9 +527,8 @@ def main(screen):
         text = font.render(f'Готово: [{connect_info[1]}]', 1, (200, 200, 200))
         screen.blit(text, (650, 455))
         all_buttons.draw(screen)
-        cursor.rect.topleft = pygame.mouse.get_pos()
         cancel_buttons.draw(screen)
-        all_cursor.draw(screen)
+        screen.blit(data.cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
         pygame.display.flip()
 
     nicknames = []
@@ -601,7 +562,6 @@ def main(screen):
             elif event.type == SERVER_EVENT_SYNC:
                 if not settings['ONE_PLAYER_MODE']:
                     game.find_losed_players()
-
                 game.lock.acquire()
                 for spr in game.sprites:
                     spr.send_updated(game)

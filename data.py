@@ -16,9 +16,13 @@ class Button(pygame.sprite.Sprite):
         if not f:
             self.stok_image = pygame.image.load(f'sprite-games/{way}/{name}.png')
             self.anim = pygame.image.load(f'sprite-games/{way}/anim/{name}.png')
-        else:
+        elif f == 1:
+            self.stok_image = self.anim = pygame.image.load(f'sprite-games/{way}/anim/{name}.png')
+        elif f == 2:
             self.stok_image = pygame.image.load(f'sprite-games/{way}/field.png')
             self.anim = pygame.image.load(f'sprite-games/{way}/tick_field.png')
+        elif f == 3:
+            self.stok_image = self.anim = pygame.image.load(f'sprite-games/{way}/{name}.png')
         self.name = name
         self.image = self.stok_image
         self.rect = self.image.get_rect()
@@ -415,7 +419,7 @@ def statistics(screen):
                         n -= 1
         screen.blit(background, (0, 0))
         all_buttons.draw(screen)
-        for y, result in enumerate(res[n:n + 15]):
+        for y, result in enumerate(res[n:n + 14]):
             for x, i in enumerate(result[1:]):
                 screen.blit(font.render(i, 1, (255, 255, 255)), (52 + 212 * x, 237 + 57 * y))
         screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
