@@ -838,9 +838,17 @@ class ClientWait:
             screen.blit(text, (145, 805))
             text = small_font.render(f'{game.info.power}/{game.info.max_power}', 1, Color('palevioletred3'))
             screen.blit(text, (260, 805))
+
             # Minimap
-            #for i in Fortress.instances:
-                #pygame.dr
+            for i in Fortress.instances:
+                rect = (MINIMAP_OFFSETX + (i.x + WORLD_SIZE / 2) / WORLD_SIZE * MINIMAP_SIZEX - MINIMAP_ICON_SIZE / 2,
+                        MINIMAP_OFFSETY + (i.y + WORLD_SIZE / 2) / WORLD_SIZE * MINIMAP_SIZEY - MINIMAP_ICON_SIZE / 2,
+                        MINIMAP_ICON_SIZE, MINIMAP_ICON_SIZE)
+                print(rect)
+                pygame.draw.rect(screen, COLOR_LIST[i.player_id], rect)
+            if settings['DEBUG']:
+                pygame.draw.rect(screen, (255, 0, 0), (MINIMAP_OFFSETX, MINIMAP_OFFSETY, MINIMAP_SIZEX, MINIMAP_SIZEY),
+                                 1)
 
             screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
             text = small_font.render(f'FPS: {fps_count}', 1, pygame.Color('red' if fps_count < 40 else 'green'))
