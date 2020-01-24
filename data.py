@@ -191,7 +191,7 @@ def headpiece(screen):
 def ip(screen):
     """ Функция окна подключения к игре по айпи """
     global cursor, FPS, clock, ip_a
-    background = pygame.image.load('sprite-games/play/ip основа.png')
+    background = pygame.image.load('sprite-games/play/ip основа.png').convert()
     screen.blit(background, (0, 0))
     image = {"OK": (1085, 709),
              "menu": (558, 709)}
@@ -233,7 +233,7 @@ def ip(screen):
 def play(screen):
     """ Функция мерню подключеия/создания сессии """
     global cursor, FPS, clock, nicname
-    background = pygame.image.load('sprite-games/play/Основа1.png')
+    background = pygame.image.load('sprite-games/play/Основа1.png').convert()
     screen.blit(background, (0, 0))
     FPS = 60
     image = {"host": (330, 250),
@@ -275,7 +275,7 @@ def play(screen):
 def settings(screen):
     """ функция окна настроек """
     global cursor, FPS, clock
-    background = pygame.image.load('sprite-games/settings/background.png')
+    background = pygame.image.load('sprite-games/settings/background.png').convert()
     screen.blit(background, (0, 0))
     tick_field_image = {"BACKGROUND": (15, 183),
                         "CAMERA": (15, 315),
@@ -352,11 +352,9 @@ def settings(screen):
 def titers(screen):
     """ Функция титров с создателями и проделанной работой """
     global FPS, clock
-    i1 = pygame.image.load('sprite-games/титры/1.png')
-    i2 = pygame.image.load('sprite-games/титры/2.png')
-    i3 = pygame.image.load('sprite-games/титры/3.png')
-    i2_rect = [450, 1080]
-    i3_rect = [450, 2530]
+    i1 = pygame.image.load('sprite-games/титры/1.png').convert()
+    i2 = pygame.image.load('sprite-games/титры/4.png')
+    i2_rect = [200, 1080]
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -366,9 +364,7 @@ def titers(screen):
                     return "menu"
         screen.blit(i1, (0, 0))
         screen.blit(i2, i2_rect)
-        screen.blit(i3, i3_rect)
         i2_rect[1] -= 2
-        i3_rect[1] -= 2
         pygame.display.flip()
         clock.tick(FPS)
 
@@ -386,7 +382,7 @@ def write_statistics(stats):
 def statistics(screen):
     """ Функция окна со стотистикой пользователя """
     global cursor, FPS, clock
-    background = pygame.image.load('sprite-games/statistics/background.png')
+    background = pygame.image.load('sprite-games/statistics/background.png').convert()
     screen.blit(background, (0, 0))
     way = "settings"
 
