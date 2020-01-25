@@ -9,8 +9,8 @@ pygame.mouse.set_visible(False)
 
 screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 music = Music("menu", ["creators", "build_a_farm", "click",
-                       "construction_completed", "eror",
-                       "investigation_completed", "headpiece"])
+                       "construction_completed", "investigation_completed",
+                       "headpiece"])
 
 window = "headpiece"  # запуск игрового цикла
 ip_host = nickname = None

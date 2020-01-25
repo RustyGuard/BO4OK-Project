@@ -499,21 +499,21 @@ def main(screen):
     thread = threading.Thread(target=server.thread_connection, daemon=True)
     thread.start()
     font = pygame.font.Font(None, 50)
-    background = pygame.image.load('sprite-games/play/Основа1.png').convert()
+    background = pygame.image.load('sprite-games/data/play.png').convert()
     image = {"host": (330, 250),
              "connect": (330, 455),
-             "back_menu": (340, 700),
+             "menu": (340, 700),
              "cancel": (1311, 700)}
 
     all_buttons = pygame.sprite.Group()
     for n, i in enumerate(image):
         if n < 3:
             if n == 0:
-                data.Button(all_buttons, i, image[i], "play", 1)
+                data.Button(all_buttons, i, image[i], 1)
             else:
-                data.Button(all_buttons, i, image[i], "play", 3)
+                data.Button(all_buttons, i, image[i], 3)
     cancel_buttons = pygame.sprite.Group()
-    data.Button(cancel_buttons, "cancel", image["cancel"], "play")
+    data.Button(cancel_buttons, "cancel", image["cancel"])
     while not server.is_ready():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -555,7 +555,7 @@ def main(screen):
     pygame.time.set_timer(SERVER_EVENT_UPDATE, 1000 // 60)
     pygame.time.set_timer(SERVER_EVENT_SEC, 1000 // 1)
     pygame.time.set_timer(SERVER_EVENT_SYNC, 10000)
-    background = pygame.image.load('sprite-games/menu/background.png').convert()
+    background = pygame.image.load('sprite-games/data/menu.png').convert()
     current_fps = 60
     while running and len(game.players) > 0:
         for event in pygame.event.get():

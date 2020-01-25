@@ -1,24 +1,4 @@
 {
-  "build_button": {
-    "misc": {
-      "shape": "ellipse"
-    },
-    "images": {
-      "normal_image": {
-        "path": "sprite-games/menu/build.png"
-      }
-    }
-  },
-  "retarget_button": {
-    "misc": {
-      "shape": "ellipse"
-    },
-    "images": {
-      "normal_image": {
-        "path": "sprite-games/menu/retarget.png"
-      }
-    }
-  },
   "place_4": {
     "misc": {
       "shape": "ellipse"

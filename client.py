@@ -11,7 +11,7 @@ from pygame_gui.elements import UIButton, UILabel
 
 from units import *
 
-cursor = pygame.image.load('sprite-games/menu/cursor.png')
+cursor = pygame.image.load('sprite-games/icon/cursor.png')
 clock = pygame.time.Clock()
 pygame.mixer.init()
 music = data.Music("game", ["game", "game1"])

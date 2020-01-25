@@ -1,7 +1,7 @@
 ﻿import pygame, sqlite3, datetime
 
 # инициализация глобальный перемен функций
-cursor = pygame.image.load('sprite-games/menu/cursor.png')
+cursor = pygame.image.load('sprite-games/icon/cursor.png')
 clock = pygame.time.Clock()
 nickname = ""
 ip_conect = "192.168.0."
@@ -10,18 +10,18 @@ ip_conect = "192.168.0."
 class Button(pygame.sprite.Sprite):
     """ Класс универсальной кнопки """
 
-    def __init__(self, group, name, image, way, button_type=None):
+    def __init__(self, group, name, image, button_type=None):
         super().__init__(group)
         if not button_type:
-            self.stok_image = pygame.image.load(f'sprite-games/{way}/{name}.png')
-            self.anim = pygame.image.load(f'sprite-games/{way}/anim/{name}.png')
+            self.stok_image = pygame.image.load(f'sprite-games/buttons/{name}.png')
+            self.anim = pygame.image.load(f'sprite-games/buttons/anim/{name}.png')
         elif button_type == 1:
-            self.stok_image = self.anim = pygame.image.load(f'sprite-games/{way}/anim/{name}.png')
+            self.stok_image = self.anim = pygame.image.load(f'sprite-games/buttons/anim/{name}.png')
         elif button_type == 2:
-            self.stok_image = pygame.image.load(f'sprite-games/{way}/field.png')
-            self.anim = pygame.image.load(f'sprite-games/{way}/tick_field.png')
+            self.stok_image = pygame.image.load(f'sprite-games/buttons/field.png')
+            self.anim = pygame.image.load(f'sprite-games/buttons/tick_field.png')
         elif button_type == 3:
-            self.stok_image = self.anim = pygame.image.load(f'sprite-games/{way}/{name}.png')
+            self.stok_image = self.anim = pygame.image.load(f'sprite-games/buttons/{name}.png')
         self.name = name
         self.image = self.stok_image
         self.rect = self.image.get_rect()
@@ -123,7 +123,7 @@ def write_settings(settings):
 def menu(screen):
     """ Функция окна гланого меню """
     global cursor, clock
-    background = pygame.image.load('sprite-games/menu/background.png').convert()
+    background = pygame.image.load('sprite-games/data/menu.png').convert()
     screen.blit(background, (0, 0))
 
     image = {"play": (28, 950),
@@ -131,11 +131,10 @@ def menu(screen):
              "statistics": (772, 950),
              "creators": (1145, 950),
              "exit": (1590, 950)}
-    way = "menu"
 
     all_buttons = pygame.sprite.Group()
     for i in image:
-        Button(all_buttons, i, image[i], way)
+        Button(all_buttons, i, image[i])
 
     while True:
         for event in pygame.event.get():
@@ -205,16 +204,15 @@ def headpiece(screen):
 def ip(screen):
     """ Функция окна подключения к игре по айпи """
     global cursor, clock, ip_conect
-    background = pygame.image.load('sprite-games/play/ip основа.png').convert()
+    background = pygame.image.load('sprite-games/data/ip.png').convert()
     screen.blit(background, (0, 0))
 
     image = {"OK": (1085, 709),
              "menu": (558, 709)}
-    way = "play"
 
     all_buttons = pygame.sprite.Group()
     for i in image:
-        Button(all_buttons, i, image[i], way)
+        Button(all_buttons, i, image[i])
 
     font = pygame.font.Font(None, 100)
     while True:
@@ -248,18 +246,17 @@ def ip(screen):
 def play(screen):
     """ Функция мерню подключеия/создания сессии """
     global cursor, clock, nickname
-    background = pygame.image.load('sprite-games/play/Основа1.png').convert()
+    background = pygame.image.load('sprite-games/data/play.png').convert()
     screen.blit(background, (0, 0))
 
     image = {"host": (330, 250),
              "connect": (330, 455),
              "menu": (340, 700)}
-    way = "play"
 
     all_buttons = pygame.sprite.Group()
     for n, i in enumerate(image):
         if n < 3:
-            Button(all_buttons, i, image[i], way)
+            Button(all_buttons, i, image[i])
 
     font = pygame.font.Font(None, 80)
     while True:
@@ -290,7 +287,7 @@ def play(screen):
 def settings(screen):
     """ функция окна настроек """
     global cursor, clock
-    background = pygame.image.load('sprite-games/settings/background.png').convert()
+    background = pygame.image.load('sprite-games/data/settings.png').convert()
     screen.blit(background, (0, 0))
 
     tick_field_image = {"BACKGROUND": (15, 183),
@@ -298,18 +295,17 @@ def settings(screen):
                         "FPS": (15, 447),
                         "DEBUG": (15, 579),
                         "PARTICLES": (15, 711)}
-    way = "settings"
     settings = read_settings()  # чтение существующих настроек
 
     all_buttons = pygame.sprite.Group()
-    Button(all_buttons, "menu", (12, 12), way)
+    Button(all_buttons, "menu", (12, 12))
 
     all_volume_cursor = pygame.sprite.Group()
-    Button(all_volume_cursor, "volume_cursor", (float(settings["VOLUME"]) * 664 + 98, 953), way)
+    Button(all_volume_cursor, "volume_cursor", (float(settings["VOLUME"]) * 664 + 98, 953))
 
     all_tick_field = pygame.sprite.Group()  # окошки с галочками
     for i in tick_field_image:
-        Button(all_tick_field, i, tick_field_image[i], way, 2)
+        Button(all_tick_field, i, tick_field_image[i], 2)
 
     flag_volume_cursor = False
     mouse_x = 0  # позиция курсора мыши во время нажатия на ползунок
@@ -368,8 +364,8 @@ def settings(screen):
 def titers(screen):
     """ Функция титров с создателями и проделанной работой """
     global clock
-    background = pygame.image.load('sprite-games/titers/background.png').convert()
-    titers = pygame.image.load('sprite-games/titers/titers.png')
+    background = pygame.image.load('sprite-games/data/titers_fon.png').convert()
+    titers = pygame.image.load('sprite-games/data/titers.png')
     titers_rect = [200, 1200]
     while True:
         for event in pygame.event.get():
@@ -401,12 +397,11 @@ def write_statistics(stats):
 def statistics(screen):
     """ Функция окна со стотистикой пользователя """
     global cursor, clock
-    background = pygame.image.load('sprite-games/statistics/background.png').convert()
+    background = pygame.image.load('sprite-games/data/statistics.png').convert()
     screen.blit(background, (0, 0))
-    way = "statistics"
 
     all_buttons = pygame.sprite.Group()
-    Button(all_buttons, "menu", (12, 12), way)
+    Button(all_buttons, "menu", (12, 12))
 
     stats = sqlite3.connect("statistics.db").cursor().execute("SELECT * FROM stats").fetchall()
 
@@ -440,27 +435,26 @@ def statistics(screen):
 
 
 def wait_window(screen, players_info, nickname):
-    background = pygame.image.load('sprite-games/play/Основа1.png').convert()
+    background = pygame.image.load('sprite-games/data/play.png').convert()
     image = {"host": (330, 250),
              "connect": (330, 455),
              "menu": (340, 700),
              "ready": (1311, 700)}
-    way = "play"
 
     all_buttons = pygame.sprite.Group()
     for n, i in enumerate(image):
         if n == 1:
-            Button(all_buttons, i, image[i], way, 1)
+            Button(all_buttons, i, image[i], 1)
         if n == 0:
-            Button(all_buttons, i, image[i], way, 3)
+            Button(all_buttons, i, image[i], 3)
 
     ready_buttons = pygame.sprite.Group()
-    Button(ready_buttons, "ready", image["ready"], way)
+    Button(ready_buttons, "ready", image["ready"])
 
     back_buttons = pygame.sprite.Group()
-    Button(back_buttons, "menu", image["menu"], way)
+    Button(back_buttons, "menu", image["menu"])
     # Анимация "ожидание..."
-    list_expectation = [pygame.image.load(f'sprite-games/play/expectation/{i}.png') for i in range(1, 5)]
+    list_expectation = [pygame.image.load(f'sprite-games/data/expectation/{i}.png') for i in range(1, 5)]
     anim_expectation_number = 0
 
     font = pygame.font.Font(None, 75)
