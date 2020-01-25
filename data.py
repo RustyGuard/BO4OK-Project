@@ -439,6 +439,60 @@ def statistics(screen):
         clock.tick(60)
 
 
+def wait_window(screen, players_info, nickname):
+    background = pygame.image.load('sprite-games/play/Основа1.png').convert()
+    image = {"host": (330, 250),
+             "connect": (330, 455),
+             "menu": (340, 700),
+             "ready": (1311, 700)}
+    way = "play"
+
+    all_buttons = pygame.sprite.Group()
+    for n, i in enumerate(image):
+        if n == 1:
+            Button(all_buttons, i, image[i], way, 1)
+        if n == 0:
+            Button(all_buttons, i, image[i], way, 3)
+
+    ready_buttons = pygame.sprite.Group()
+    Button(ready_buttons, "ready", image["ready"], way)
+
+    back_buttons = pygame.sprite.Group()
+    Button(back_buttons, "menu", image["menu"], way)
+    # Анимация "ожидание..."
+    list_expectation = [pygame.image.load(f'sprite-games/play/expectation/{i}.png') for i in range(1, 5)]
+    anim_expectation_number = 0
+
+    font = pygame.font.Font(None, 75)
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return False
+            elif event.type == pygame.KEYUP:
+                if event.key == pygame.K_ESCAPE:
+                    return False
+            for button in ready_buttons:
+                if button.get_event(event):
+                    return "client"
+            for button in back_buttons:
+                if button.get_event(event):
+                    return False
+        screen.blit(background, (0, 0))
+        all_buttons.draw(screen)
+        ready_buttons.draw(screen)
+        back_buttons.draw(screen)
+        text = font.render(f'{players_info[0]}/{players_info[1]} игроков.', 1, (255, 255, 255))
+        screen.blit(text, (700, 400))
+        screen.blit(font.render(nickname, 1, (255, 255, 255)), (810, 740))
+        screen.blit(list_expectation[anim_expectation_number // 10], (900, 300))
+        screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
+        anim_expectation_number += 1
+        if anim_expectation_number == 40:
+            anim_expectation_number = 0
+        pygame.display.flip()
+        clock.tick(60)
+
+
 def gameover(screen, game_result):
     """ Функция анимации окончания игры """
     write_statistics(game_result[1])  # запись статитстики
