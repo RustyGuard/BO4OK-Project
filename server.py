@@ -492,7 +492,6 @@ def main(screen):
     thread.start()
     font = pygame.font.Font(None, 50)
     background = pygame.image.load('sprite-games/play/Основа1.png').convert()
-    pygame.mouse.set_visible(0)
     image = {"host": (330, 250),
              "connect": (330, 455),
              "back_menu": (340, 700),

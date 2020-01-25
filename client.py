@@ -579,7 +579,7 @@ class ClientWait:
         client.start_thread()
 
         # Screens
-        if not self.waiting_screen(screen, client, game):
+        if not self.waiting_screen(screen, client, game, nick):
             return False
 
         music.game_sounds_play()
@@ -587,7 +587,7 @@ class ClientWait:
         music.all_stop()
         return game
 
-    def waiting_screen(self, screen, client, game):
+    def waiting_screen(self, screen, client, game, nickname):
         global cursor, clock
         players_info = [0, 0]
 
@@ -607,39 +607,56 @@ class ClientWait:
         client.setEventCallback(read)
         running = True
         font = pygame.font.Font(None, 75)
-        offset_x = 600
-        offset_y = 500
 
-        manager = UIManager(screen.get_size(), 'sprite-games/themes/theme.json')
-        ready_button = UIButton(
-            pygame.Rect(offset_x, offset_y, 355, 91),
-            '', manager, object_id='ready')
-        background = pygame.image.load('sprite-games/menu/background.png').convert()
-        aa = [pygame.image.load(f'sprite-games/play/expectation/{i}.png') for i in range(1, 5)]
-        a = 0
+        background = pygame.image.load('sprite-games/play/Основа1.png').convert()
+        image = {"host": (330, 250),
+                 "connect": (330, 455),
+                 "menu": (340, 700),
+                 "ready": (1311, 700)}
+        way = "play"
+
+        all_buttons = pygame.sprite.Group()
+        for n, i in enumerate(image):
+            if n == 1:
+                data.Button(all_buttons, i, image[i], way, 1)
+            if n == 0:
+                data.Button(all_buttons, i, image[i], way, 3)
+
+        ready_buttons = pygame.sprite.Group()
+        data.Button(ready_buttons, "ready", image["ready"], way)
+
+        back_buttons = pygame.sprite.Group()
+        data.Button(back_buttons, "menu", image["menu"], way)
+
+        list_expectation = [pygame.image.load(f'sprite-games/play/expectation/{i}.png') for i in range(1, 5)]
+        anim_expectation_number = 0
+
         while running and not game.started:
             for event in pygame.event.get():
-                manager.process_events(event)
                 if event.type == pygame.QUIT:
                     running = False
                 elif event.type == pygame.KEYUP:
                     if event.key == pygame.K_ESCAPE:
                         running = False
-                elif event.type == pygame.USEREVENT:
-                    if event.ui_element == ready_button:
+                for button in ready_buttons:
+                    if button.get_event(event):
                         client.send(f'10_{game.info.nick}')
-                        ready_button.disable()
-
-            manager.update(1 / 60)
+                        return True
+                for button in back_buttons:
+                    if button.get_event(event):
+                        running = False
             screen.blit(background, (0, 0))
-            manager.draw_ui(screen)
+            all_buttons.draw(screen)
+            ready_buttons.draw(screen)
+            back_buttons.draw(screen)
             text = font.render(f'{players_info[0]}/{players_info[1]} игроков.', 1, (255, 255, 255))
-            screen.blit(text, (offset_x, offset_y - 120))
-            screen.blit(aa[a // 10], (offset_x, offset_y - 55))
+            screen.blit(text, (700, 400))
+            screen.blit(font.render(nickname, 1, (255, 255, 255)), (810, 740))
+            screen.blit(list_expectation[anim_expectation_number // 10], (900, 300))
             screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
-            a += 1
-            if a == 40:
-                a = 0
+            anim_expectation_number += 1
+            if anim_expectation_number == 40:
+                anim_expectation_number = 0
             pygame.display.flip()
             clock.tick(60)
         print('Ended')

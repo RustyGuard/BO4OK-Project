@@ -13,14 +13,14 @@ music = Music("menu", ["creators", "build_a_farm", "click",
                        "investigation_completed", "headpiece"])
 
 window = "headpiece"  # запуск игрового цикла
-ip_host = nicname = None
+ip_host = nickname = None
 while window:  # P.s Это сдаелано для оптимизации,дабы инициализации других окон не весела в программе
     music.update(window)
     if window == "headpiece":
         window = headpiece(screen)
         pygame.mixer.music.play(-1)
     elif window == "play":
-        window, nicname = play(screen)
+        window, nickname = play(screen)
     elif window == "settings":
         window = settings(screen)
     elif window == "statistics":
@@ -33,7 +33,7 @@ while window:  # P.s Это сдаелано для оптимизации,да�
     elif window == "connect":
         window, ip_host = ip(screen)
     elif window == "OK":
-        game = ClientWait().play(screen, ip_host if ip_host != '' else 'localhost', nick=nicname)
+        game = ClientWait().play(screen, ip_host if ip_host != '' else 'localhost', nick=nickname)
         if game:
             music.update("headpiece")
             gameover(screen, game)

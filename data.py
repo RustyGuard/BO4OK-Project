@@ -3,7 +3,7 @@
 # инициализация глобальный перемен функций
 cursor = pygame.image.load('sprite-games/menu/cursor.png')
 clock = pygame.time.Clock()
-nicname = ""
+nickname = ""
 ip_conect = "192.168.0."
 
 
@@ -247,7 +247,7 @@ def ip(screen):
 
 def play(screen):
     """ Функция мерню подключеия/создания сессии """
-    global cursor, clock, nicname
+    global cursor, clock, nickname
     background = pygame.image.load('sprite-games/play/Основа1.png').convert()
     screen.blit(background, (0, 0))
 
@@ -268,20 +268,20 @@ def play(screen):
                 exit()
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_ESCAPE:
-                    return ["menu", nicname]
+                    return ["menu", nickname]
             for button in all_buttons:
                 if button.get_event(event):
-                    return [button.get_event(event), nicname]
+                    return [button.get_event(event), nickname]
             if event.type == pygame.KEYDOWN:
                 if event.unicode in "ёйцукенгшщзхъфывапролджэячсмить" \
                                     "бюqwertyuiopasdfghjklzxcvbnm1234567890 _-":
-                    if len(nicname) < 11:
-                        nicname += event.unicode
+                    if len(nickname) < 11:
+                        nickname += event.unicode
                 if event.key == 8:
-                    nicname = nicname[:-1]
+                    nickname = nickname[:-1]
         screen.blit(background, (0, 0))
         all_buttons.draw(screen)
-        screen.blit(font.render(nicname, 1, (255, 255, 255)), (810, 740))
+        screen.blit(font.render(nickname, 1, (255, 255, 255)), (810, 740))
         screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
         pygame.display.flip()
         clock.tick(60)
