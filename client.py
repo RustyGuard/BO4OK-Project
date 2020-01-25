@@ -300,6 +300,10 @@ class Game:
 
     def addEntity(self, type, x, y, id, player_id, camera, args):
         self.lock.acquire()
+        en = self.find_with_id(id)
+        if en:
+            print('Fantom', en)
+            en.kill()
         en = UNIT_TYPES[type](x, y, id, player_id, *args)
         en.offsetx = camera.off_x
         en.offsety = camera.off_y
