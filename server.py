@@ -12,6 +12,7 @@ NEED_PLAYERS = 1
 MAX_PLAYERS = 10
 
 CURRENT_ID = 0
+FREE_ID = []
 ID_LOCK = Lock()
 
 settings = {}
@@ -35,8 +36,14 @@ def update_settings():
 def get_curr_id():
     global CURRENT_ID
     ID_LOCK.acquire()
+    if FREE_ID:
+        ret = FREE_ID.pop(0)
+        print('Free id taken', ret)
+        ID_LOCK.release()
+        return ret
     c = CURRENT_ID
     CURRENT_ID += 1
+    print('Current id is', CURRENT_ID)
     ID_LOCK.release()
     return c
 
@@ -485,6 +492,7 @@ def main(screen):
     server = Server(server_ip)
     game = ServerGame(server)
     Unit.game = game
+    Unit.free_id = FREE_ID
     server.callback = pre_read
     server.connected_callback = connect_player
     server.disconnected_callback = disconnect_player

@@ -34,6 +34,7 @@ team_id = [
 
 class Unit(Sprite):  # родительский класс любого воина,существа или строения
     game = None
+    free_id = None
     power_cost = 0
     unit_type = TYPE_BUILDING  # Default value
 
@@ -52,6 +53,9 @@ class Unit(Sprite):  # родительский класс любого воин
         self.max_health = UNIT_STATS[type(self)][0] * Forge.get_mult(self)[0]
         self.health = self.max_health
         super().__init__()
+
+    def __str__(self):
+        return f'class{type(self)} x{self.x} y{self.y}'
 
     def is_alive(self):
         return self.health > 0
@@ -150,6 +154,12 @@ class Unit(Sprite):  # родительский класс любого воин
 
     def can_be_upgraded(self, game):
         return False
+
+    def kill(self):
+        if Unit.free_id is not None:
+            Unit.free_id.append(self.id)
+            print('id', self.id, 'free now')
+        super().kill()
 
 
 class TwistUnit(Unit):  # подкласс Unit имеющий угол вращения
