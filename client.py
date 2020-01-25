@@ -41,6 +41,54 @@ def random_nick():
     return (choice(adj).replace('\n', '') + ' ' + choice(noun).replace('\n', '')).capitalize()
 
 
+class Minimap:
+    def __init__(self):
+        self.rect = Rect(MINIMAP_OFFSETX, MINIMAP_OFFSETY, MINIMAP_SIZEX, MINIMAP_SIZEY)
+        self.font = pygame.font.Font(None, 25)
+        self.minimap = pygame.image.load('sprite-games/minimap.png')
+
+    def get_click(self, pos):
+        if self.rect.collidepoint(pos[0], pos[1]):
+            print((pos[0] - self.rect.x) / self.rect.width, (pos[1] - self.rect.y) / self.rect.height)
+            return (pos[0] - self.rect.x) / self.rect.width * WORLD_SIZE - WORLD_SIZE * 0.5, \
+                   (pos[1] - self.rect.y) / self.rect.height * WORLD_SIZE - WORLD_SIZE * 0.5
+            # return (pos[0] - self.rect.x) / self.rect.width * WORLD_SIZE * 0.5 + WORLD_SIZE * 0.5, \
+            #        (pos[1] - self.rect.y) / self.rect.height * WORLD_SIZE * 0.5 + WORLD_SIZE * 0.5
+        return None
+
+    def draw(self, camera, game, screen):
+        screen.blit(self.minimap, (0, 692))
+        text = self.font.render(str(game.info.money), 1, (100, 255, 100))
+        screen.blit(text, (35, 805))
+        text = self.font.render(str(game.info.wood), 1, Color('burlywood'))
+        screen.blit(text, (145, 805))
+        text = self.font.render(f'{game.info.power}/{game.info.max_power}', 1, Color('palevioletred3'))
+        screen.blit(text, (260, 805))
+
+        for i in game.buildings:
+            rect = (MINIMAP_OFFSETX + (i.x + WORLD_SIZE / 2) / WORLD_SIZE * MINIMAP_SIZEX - MINIMAP_ICON_SIZE / 2,
+                    MINIMAP_OFFSETY + (i.y + WORLD_SIZE / 2) / WORLD_SIZE * MINIMAP_SIZEY - MINIMAP_ICON_SIZE / 2,
+                    MINIMAP_ICON_SIZE, MINIMAP_ICON_SIZE)
+            pygame.draw.rect(screen, COLOR_LIST[i.player_id], rect)
+            if isinstance(i, Fortress):
+                color = Color('white')
+            elif isinstance(i, UncompletedBuilding):
+                color = Color('orange')
+            elif issubclass(type(i), ProductingBuild):
+                color = Color('red')
+            else:
+                color = 'blue'
+            pygame.draw.rect(screen, color, rect, 1)
+
+        rect = (MINIMAP_OFFSETX + (-camera.off_x + WORLD_SIZE / 2) / WORLD_SIZE * MINIMAP_SIZEX,
+                MINIMAP_OFFSETY + (-camera.off_y + WORLD_SIZE / 2) / WORLD_SIZE * MINIMAP_SIZEY,
+                settings['WIDTH'] / WORLD_SIZE * self.rect.width, settings['HEIGHT'] / WORLD_SIZE * self.rect.height)
+        pygame.draw.rect(screen, Color('red'), rect, 1)
+
+        if settings['DEBUG']:
+            pygame.draw.rect(screen, (255, 0, 0), (MINIMAP_OFFSETX, MINIMAP_OFFSETY, MINIMAP_SIZEX, MINIMAP_SIZEY), 1)
+
+
 class Particle(Sprite):
 
     def __init__(self, type_building, x, y, camera, particles):
@@ -186,6 +234,15 @@ class Camera:
     def set_pos(self, x, y):
         self.off_x = x
         self.off_y = y
+        if self.off_x < -WORLD_SIZE // 2 + settings['WIDTH']:
+            self.off_x = -WORLD_SIZE // 2 + settings['WIDTH']
+        if self.off_x > WORLD_SIZE // 2:
+            self.off_x = WORLD_SIZE // 2
+        if self.off_y < -WORLD_SIZE // 2 + settings['HEIGHT']:
+            self.off_y = -WORLD_SIZE // 2 + settings['HEIGHT']
+        if self.off_y > WORLD_SIZE // 2:
+            self.off_y = WORLD_SIZE // 2
+
         for part in self.particles:
             part.set_offset(self.off_x, self.off_y)
         for spr in self.sprites:
@@ -414,7 +471,7 @@ class MainManager:
                 if event.ui_object_id == 'retarget':
                     if self.active:
                         for spr in self.selected:
-                            if type(spr) == Worker and spr.player_id == self.game.info.id:
+                            if isinstance(spr, Worker) and spr.player_id == self.game.info.id:
                                 self.client.send(f'4_{spr.id}_{event.ui_element.type}')
                     self.clear()
 
@@ -734,16 +791,23 @@ class ClientWait:
         managers['product'] = ProductManager(screen)
         print(game.other_nicks)
         fps_count = 60
-        minimap = pygame.image.load('sprite-games/minimap.png')
 
         camera_area = Sprite()
         camera_area.rect = Rect(0, 0, 1920, 1080)
+
+        minimap = Minimap()
 
         while running and client.connected and win[0] is None:
             for event in pygame.event.get():
                 managers[current_manager[0]].process_events(event)
                 if settings['PARTICLES']:
                     particles.update(event)
+                if event.type == pygame.MOUSEBUTTONUP:
+                    click = minimap.get_click(event.pos)
+                    if click is not None:
+                        print(click)
+                        camera.set_pos(-click[0] + settings['WIDTH'] * 0.5, -click[1] + settings['HEIGHT'] * 0.5)
+                        continue
 
                 # /* Проверка на нажатие одной из кнопок мэнеджеров
                 if event.type == pygame.USEREVENT:
@@ -780,11 +844,11 @@ class ClientWait:
                     # /* Создание партиклов дыма
                     if settings['PARTICLES']:
                         for entity in pygame.sprite.spritecollide(camera_area, game.sprites, False):
-                            if type(entity) == Workshop:
+                            if isinstance(entity, Workshop):
                                 Particle('workshop', entity.x, entity.y, camera, particles)
-                            elif type(entity) == Forge:
+                            elif isinstance(entity, Forge):
                                 Particle('forge', entity.x, entity.y, camera, particles)
-                            elif type(entity) == Farm:
+                            elif isinstance(entity, Farm):
                                 Particle('farm', entity.x, entity.y, camera, particles)
                     # */
 
@@ -804,13 +868,13 @@ class ClientWait:
                 if spr.can_upgraded:
                     text = small_font.render(f'{spr.level} lvl.', 1, (255, 125, 0))
                     screen.blit(text, spr.rect.topleft)
-                if type(spr) == Fortress:
+                if isinstance(spr, Fortress):
                     text = small_font.render(game.get_player_nick(spr.player_id), 1, COLOR_LIST[spr.player_id])
                     screen.blit(text, spr.rect.bottomleft)
 
                 if spr.unit_type == TYPE_PROJECTILE or (spr.health == spr.max_health and not settings['DEBUG']):
                     continue
-                colors = ['gray', 'orange'] if type(spr) == UncompletedBuilding else ['red', 'green']
+                colors = ['gray', 'orange'] if isinstance(spr, UncompletedBuilding) else ['red', 'green']
                 rect = Rect(spr.rect.left, spr.rect.top - 5, spr.rect.width, 5)
                 pygame.draw.rect(screen, Color(colors[0]), rect)
                 rect.width = rect.width * spr.health / spr.max_health
@@ -824,27 +888,10 @@ class ClientWait:
                     text = small_font.render(str(spr.max_health), 1, COLOR_LIST[spr.player_id])
                     screen.blit(text, spr.rect.topright)
 
+            minimap.draw(camera, game, screen)
+
             managers[current_manager[0]].update(1 / 60)
             managers[current_manager[0]].draw_ui(screen)
-            screen.blit(minimap, (0, 692))
-            text = small_font.render(str(game.info.money), 1, (100, 255, 100))
-            screen.blit(text, (35, 805))
-            text = small_font.render(str(game.info.wood), 1, Color('burlywood'))
-            screen.blit(text, (145, 805))
-            text = small_font.render(f'{game.info.power}/{game.info.max_power}', 1, Color('palevioletred3'))
-            screen.blit(text, (260, 805))
-
-            # Minimap
-            for i in Fortress.instances:
-                rect = (MINIMAP_OFFSETX + (i.x + WORLD_SIZE / 2) / WORLD_SIZE * MINIMAP_SIZEX - MINIMAP_ICON_SIZE / 2,
-                        MINIMAP_OFFSETY + (i.y + WORLD_SIZE / 2) / WORLD_SIZE * MINIMAP_SIZEY - MINIMAP_ICON_SIZE / 2,
-                        MINIMAP_ICON_SIZE, MINIMAP_ICON_SIZE)
-                print(rect)
-                pygame.draw.rect(screen, COLOR_LIST[i.player_id], rect)
-            if settings['DEBUG']:
-                pygame.draw.rect(screen, (255, 0, 0), (MINIMAP_OFFSETX, MINIMAP_OFFSETY, MINIMAP_SIZEX, MINIMAP_SIZEY),
-                                 1)
-
             screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
             text = small_font.render(f'FPS: {fps_count}', 1, pygame.Color('red' if fps_count < 40 else 'green'))
             screen.blit(text, (0, 0))

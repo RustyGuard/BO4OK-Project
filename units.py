@@ -114,7 +114,7 @@ class Unit(Sprite):  # родительский класс любого воин
             return self.y
         raise Exception('Noooooo way!!!')
 
-    def get_update_args(self, arr): # получение данных из массива,для отправки на сервер
+    def get_update_args(self, arr):  # получение данных из массива,для отправки на сервер
         arr.append(str(get_class_id(type(self))))
         arr.append(str(int(self.x)))
         arr.append(str(int(self.y)))
@@ -125,7 +125,7 @@ class Unit(Sprite):  # родительский класс любого воин
         arr.append(str(self.level))
         return arr
 
-    def set_update_args(self, arr, game): # запись данных в массив,для отправки на сервер
+    def set_update_args(self, arr, game):  # запись данных в массив,для отправки на сервер
         arr.pop(0)
         self.x = float(arr.pop(0))
         self.y = float(arr.pop(0))
@@ -138,7 +138,7 @@ class Unit(Sprite):  # родительский класс любого воин
     def send_updated(self, game):  # отправлнение данных серверу
         game.server.send_all('9_' + '_'.join(self.get_update_args([])))
 
-    def take_damage(self, dmg, game): # получение урона
+    def take_damage(self, dmg, game):  # получение урона
         self.health -= dmg
         game.server.send_all(f'5_{self.id}_{self.health}_{self.max_health}')
 
@@ -192,12 +192,12 @@ class TwistUnit(Unit):  # подкласс Unit имеющий угол вращ
 
 
 class Mine(Unit):
-    placeable = False # шахту нельзя поставить вручную, они появляются в начале игры
+    placeable = False  # шахту нельзя поставить вручную, они появляются в начале игры
     name = 'Шахта'
     mine = pygame.image.load('sprite-games/building/mine/mine.png')
     image = mine
     required_level = 1
-    unit_type = TYPE_RESOURCE # тип юнитов хранящих ресурсы для добычи
+    unit_type = TYPE_RESOURCE  # тип юнитов хранящих ресурсы для добычи
 
     def __init__(self, x, y, id, player_id):
         self.image = Mine.mine
@@ -211,7 +211,7 @@ class Mine(Unit):
                 game.kill(self)
 
 
-class Arrow(TwistUnit): # Стрела
+class Arrow(TwistUnit):  # Стрела
     image = pygame.image.load(f'sprite-games/warrior/archer/arrow.png')
     name = 'Arrow'
     placeable = False  # объект нельзя поставить вручную,лишь может быть создан другим юнитом
@@ -263,7 +263,7 @@ class BallistaArrow(TwistUnit):  # Болт баллисты
         super().__init__(x, y, id, player_id, BallistaArrow.image)
         self.set_angle(int(angle))
         self.time = 1200
-        self.live_time = 5 # "прочность" болта,может задеть только 5 юнитов,после чего спрайт исчезает
+        self.live_time = 5  # "прочность" болта,может задеть только 5 юнитов,после чего спрайт исчезает
         self.striken = []  # список задетых снарядом юнитов,снаряд не ударит дважды по тому же обьъекту
         self.damage = UNIT_STATS[BallistaArrow][1] * Forge.get_mult(self)[1]
 
@@ -281,7 +281,7 @@ class BallistaArrow(TwistUnit):  # Болт баллисты
                 for spr in game.get_intersect(self):
                     if spr.player_id not in [-1, self.player_id] and spr.unit_type != TYPE_PROJECTILE:
                         if spr not in self.striken:
-                            self.live_time -= (1 if type(spr) != Dragon else 5) # дракон ломает болт с одного попадания
+                            self.live_time -= (1 if type(spr) != Dragon else 5)  # дракон ломает болт с одного попадания
                             spr.take_damage(self.damage, game)
                             self.striken.append(spr)
                             if self.live_time <= 0:
@@ -299,7 +299,7 @@ class BallistaArrow(TwistUnit):  # Болт баллисты
         self.update_rect()
 
 
-class Fighter(TwistUnit): # надкласс юнитов способных наносить урон и стрелять/добывать ресурсы
+class Fighter(TwistUnit):  # надкласс юнитов способных наносить урон и стрелять/добывать ресурсы
     power_cost = 0
 
     def __init__(self, x, y, id, player_id, default_image):
@@ -307,7 +307,7 @@ class Fighter(TwistUnit): # надкласс юнитов способных н�
         self.target_angle = 0
         self.target = (TARGET_NONE, None)
         self.delay = 0
-        self.delay_time = 120 # время задержки,чем ниже тем чаще атакует
+        self.delay_time = 120  # время задержки,чем ниже тем чаще атакует
         self.damage = UNIT_STATS[type(self)][1] * Forge.get_mult(self)[1]
 
     def move_to_point(self, event, game, straight_speed, turn_speed, twist_speed=1):
@@ -323,7 +323,7 @@ class Fighter(TwistUnit): # надкласс юнитов способных н�
         else:
             self.move_to_angle(turn_speed, game)
 
-    def set_target(self, target_type, coord, game=None): # задает цель атаки
+    def set_target(self, target_type, coord, game=None):  # задает цель атаки
         self.target = (target_type, coord)
         if game is None:
             return
@@ -334,13 +334,13 @@ class Fighter(TwistUnit): # надкласс юнитов способных н�
         elif target_type == TARGET_MOVE:
             game.server.send_all(f'2_{TARGET_MOVE}_{self.id}_{coord[0]}_{coord[1]}')
 
-    def find_target_angle(self): # находит угол между целью и объектом для поворота
+    def find_target_angle(self):  # находит угол между целью и объектом для поворота
         self.target_angle = int(
             math.degrees(math.atan2(self.target[1][1] - self.y, self.target[1][0] - self.x)))
         if self.target_angle < 0:
             self.target_angle += 360
 
-    def find_new_target(self, game, radius=1500): # ищет новую цель в определенном радиусе
+    def find_new_target(self, game, radius=1500):  # ищет новую цель в определенном радиусе
         area = Sprite()
         area.rect = Rect(0, 0, radius, radius)
         area.rect.center = self.rect.center
@@ -361,7 +361,7 @@ class Fighter(TwistUnit): # надкласс юнитов способных н�
     def is_valid_enemy(self, enemy):  # проверяет что цель не является снарядом или дружественным юнитом
         return enemy.player_id not in [-1, self.player_id] and enemy.unit_type != TYPE_PROJECTILE
 
-    def turn_around(self, speed=1): # поворот объекта с определенной скоростью
+    def turn_around(self, speed=1):  # поворот объекта с определенной скоростью
         angle_diff = self.target_angle - self.angle
         if angle_diff == 0:
             return True
@@ -378,14 +378,14 @@ class Fighter(TwistUnit): # надкласс юнитов способных н�
                 self.add_angle(speed)
         return False
 
-    def single_attack(self, game, damage=None): # атака по цели
+    def single_attack(self, game, damage=None):  # атака по цели
         if self.delay <= 0:
             self.target[1].take_damage(self.damage if damage is None else damage, game)
             self.delay += self.delay_time
             return True
         return False
 
-    def throw_projectile(self, game, clazz, spread=0): # Функция стрельбы.Spread отвечает за разброс
+    def throw_projectile(self, game, clazz, spread=0):  # Функция стрельбы.Spread отвечает за разброс
         if self.delay <= 0:
             self.delay += self.delay_time
             game.place(clazz, int(self.x), int(self.y), self.player_id, int(self.angle + randint(-spread, spread)),
@@ -395,7 +395,7 @@ class Fighter(TwistUnit): # надкласс юнитов способных н�
         if self.delay > 0:
             self.delay -= 1
 
-    def close_to_attack(self, distance=1): # проверяет наличие цели в пределах атаки
+    def close_to_attack(self, distance=1):  # проверяет наличие цели в пределах атаки
         return 2 * abs(self.target[1][0] - self.x) <= self.rect.width + self.target[1].rect.width + distance \
                and 2 * abs(self.target[1][1] - self.y) <= self.rect.height + self.target[1].rect.height + distance
 
@@ -427,11 +427,11 @@ class Fighter(TwistUnit): # надкласс юнитов способных н�
 
 
 class Archer(Fighter):
-    cost = (150.0, 3.0) # стоимость создания.Первый аргумент-золото,второй-дерево
-    placeable = False   # лучника нельзя поставить,можно создать только в казарме
+    cost = (150.0, 3.0)  # стоимость создания.Первый аргумент-золото,второй-дерево
+    placeable = False  # лучника нельзя поставить,можно создать только в казарме
     name = 'Лучник'
     power_cost = 2  # Поменять
-    images = []     # список с лучниками всех цветов,в инициализации выбирается цвет игрока
+    images = []  # список с лучниками всех цветов,в инициализации выбирается цвет игрока
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/warrior/archer/{team_id[i]}.png'))
     image = images[0]
@@ -439,7 +439,7 @@ class Archer(Fighter):
     unit_type = TYPE_FIGHTER
 
     def __init__(self, x, y, id, player_id):
-        self.image = Archer.images[player_id] # выбор цвета
+        self.image = Archer.images[player_id]  # выбор цвета
 
         super().__init__(x, y, id, player_id, Archer.images[player_id])
         self.delay_time = 60
@@ -473,7 +473,7 @@ class Archer(Fighter):
                 elif not near:
                     self.move_to_angle(0.5, game)
 
-            elif self.target[0] == TARGET_NONE: # если цели нет-находится новая
+            elif self.target[0] == TARGET_NONE:  # если цели нет-находится новая
                 if event.type == SERVER_EVENT_UPDATE:
                     self.find_new_target(game)
 
@@ -554,7 +554,7 @@ class Worker(Fighter):
         self.image = Worker.images[player_id]
 
         super().__init__(x, y, id, player_id, Worker.images[player_id])
-        self.money = 0 # число золота у рабочего с собой
+        self.money = 0  # число золота у рабочего с собой
         self.wood = 0  # число дерева у рабочего с собой
         self.capacity = 25  # вместимость рабочего(не понесет больше 25 ресурсов)
         self.state = STATE_ANY_WORK

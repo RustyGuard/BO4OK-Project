@@ -1,2 +1,2 @@
-IP auto
+IP localhost
 ONE_PLAYER_MODE TRUE
