@@ -776,7 +776,9 @@ class ClientWait:
         select_area = SelectArea(game, camera, client)
         minimap = Minimap()
 
-        while running and client.connected and win[0] is None:
+        while running and client.connected:
+            if win[0] is not None:
+                return win[0], stats
             for event in pygame.event.get():
                 if select_area.process_events(event):
                     continue
@@ -885,8 +887,6 @@ class ClientWait:
 
             game.lock.release()
             fps_count = 1000 // clock.tick(60)
-        while win[0] is None and client.connected:
-            print('Wait for result')
 
         client.disconnect('Application closed.')
         return win[0], stats
