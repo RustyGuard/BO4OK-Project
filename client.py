@@ -586,19 +586,19 @@ class ClientWait:
     def play(self, screen=pygame.display.set_mode((0, 0)), ip='localhost', nick=''):
         client = Client(ip)
         if not client.connected:
-            return False
+            return [None, None]
 
         game = Game(nick if nick != '' else random_nick())
         client.start_thread()
 
         # Screens
         if not self.waiting_screen(screen, client, game, nick):
-            return False
+            return [None, None]
 
         music.game_sounds_play()
-        game = self.game_screen(screen, client, game)
+        result = self.game_screen(screen, client, game)
         music.all_stop()
-        return game
+        return result
 
     def waiting_screen(self, screen, client, game, nickname):
         global cursor, clock
