@@ -34,7 +34,7 @@ while window:  # P.s Это сдаелано для оптимизации,да�
         window, ip_host = ip(screen)
     elif window == "OK":
         game = ClientWait().play(screen, ip_host if ip_host != '' else 'localhost', nick=nickname)
-        if game:
+        if game[0] is not None:
             music.update("headpiece")
             gameover(screen, game)
         window = "connect"
