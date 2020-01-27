@@ -324,6 +324,8 @@ class ServerGame:
                 self.safe_send(player_id, '8_1')
                 building.kill()
                 building = None
+        else:
+            self.safe_send(player_id, '8_2')
 
         self.lock.release()
         return building
@@ -468,10 +470,13 @@ def main(screen):
         elif cmd == '5':
             en = game.find_with_id(int(args[0]))
             if en.can_upgraded and en.can_be_upgraded(game):
-                cost = en.level_cost(game)
-                if game.claim_money(client.id, cost):
-                    en.next_level(game)
-                    server.send_all(f'7_{en.id}_{en.level}')
+                *cost, fort_need = en.level_cost(game)
+                if fort_need <= Fortress.get_player_level(client.id):
+                    if game.claim_money(client.id, cost):
+                        en.next_level(game)
+                        server.send_all(f'7_{en.id}_{en.level}')
+                else:
+                    game.safe_send(client.id, '8_2')
         else:
             print('Invalid command')
 

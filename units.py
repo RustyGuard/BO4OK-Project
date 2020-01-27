@@ -698,7 +698,7 @@ class Fortress(ProductingBuild):  # Крепость, задает уровен�
     placeable = True
     cost = (250.0, 50.0)
 
-    level_costs = [(300.0, 50.0), (400.0, 100.0)]  # todo Баланс
+    level_costs = [(300.0, 50.0, 0), (400.0, 100.0, 0)]  # todo Баланс
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/building/fortress/{team_id[i]}.png'))
@@ -758,7 +758,7 @@ class Forge(Unit):  # Кузня,несколько уровней.При пос
     placeable = True
     cost = (200.0, 50.0)
 
-    level_costs = [(300.0, 75.0), (400.0, 125.0), (500.0, 150.0)]  # todo Баланс
+    level_costs = [(300.0, 75.0, 0), (400.0, 125.0, 0), (500.0, 150.0, 0)]  # todo Баланс
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/building/forge/{team_id[i]}.png'))
@@ -905,7 +905,7 @@ class MagicBall(TwistUnit):  # Магический шар,снаряд, вып�
                 self.time -= 1
                 if self.time <= 0:
                     game.kill(self)
-                for spr in game.get_intersect(self):
+                for spr in game.get_intersect(self):  # todo переработать(бесконечный урон)
                     if spr.player_id not in [-1, self.player_id] and spr.unit_type != TYPE_PROJECTILE:
                         spr.take_damage(self.damage, game)
                         return
@@ -925,7 +925,7 @@ class ArcherTower(Fighter):  # Башня лучников,имеет три у�
     cost = (200.0, 20.0)
     placeable = True
     name = 'Башня'
-    level_costs = [(30.0, 30.0), (40.0, 40.0), (70.0, 50.0)]  # todo Баланс
+    level_costs = [(30.0, 30.0, 0), (40.0, 40.0, 0), (70.0, 50.0, 0)]  # todo Баланс
     images = [[pygame.image.load(f'sprite-games/building/turret/{team_id[i]}.png') for i in range(10)],
               [pygame.image.load(f'sprite-games/building/turret/2/{team_id[i]}.png') for i in range(10)],
               [pygame.image.load(f'sprite-games/building/turret/3/{team_id[i]}.png') for i in range(10)]]
