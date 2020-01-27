@@ -441,7 +441,7 @@ class Fighter(TwistUnit):  # надкласс юнитов способных н
 
 
 class Archer(Fighter):  # Лучник, атакующий юнит дальнего и среднего боя
-    cost = (150.0, 3.0)  # стоимость создания.Первый аргумент-золото,второй-дерево
+    cost = (100.0, 3.0)  # стоимость создания.Первый аргумент-золото,второй-дерево
     placeable = False  # лучника нельзя поставить,можно создать только в казарме
     name = 'Лучник'
     power_cost = 2  # todo Баланс
@@ -1292,24 +1292,24 @@ UNIT_TYPES = {
 }
 # 'Статы' всех юнитов - максимальное здоровье и урон
 UNIT_STATS = {  # (max_health, base_dmg)
-    Worker: (100, 5),  # Worker,
-    Soldier: (300, 50),  # Soldier,
-    Archer: (150, 0),  # Archer,
-    Ballista: (800, 0),  # Ballista,
-    Dragon: (1000, 0),  # Dragon,
+    Worker: (500, 5),  # Worker,
+    Soldier: (150, 50),  # Soldier,
+    Archer: (100, 0),  # Archer,
+    Ballista: (400, 0),  # Ballista,
+    Dragon: (600, 0),  # Dragon,
     Mine: (10000, 0),  # Mine,
     Arrow: (1, 60),  # Arrow,
-    Casern: (800, 0),  # Casern,
+    Casern: (400, 0),  # Casern,
     Fortress: (2000, 0),  # Fortress,
-    ArcherTower: (600, 0),  # ArcherTower,
+    ArcherTower: (500, 0),  # ArcherTower,
     Tree: (30, 0),  # Tree,
     FireProjectile: (1, 50),  # FireProjectile,
     UncompletedBuilding: (200, 0),  # UncompletedBuilding,
-    BallistaArrow: (1, 700),  # BallistaArrow,
-    DragonLore: (1500, 0),  # DragonLore,
+    BallistaArrow: (1, 300),  # BallistaArrow,
+    DragonLore: (1000, 0),  # DragonLore,
     Workshop: (1200, 0),  # Workshop,
-    Forge: (800, 0),  # Forge
-    Farm: (500, 0),  # Farm
+    Forge: (500, 0),  # Forge
+    Farm: (250, 0),  # Farm
     MagicBall: (1, 120)  # Magic Ball
 }
 
