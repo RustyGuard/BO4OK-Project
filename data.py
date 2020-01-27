@@ -444,8 +444,12 @@ def gameover(screen, game_result):
     swords = pygame.image.load('sprite-games/over/swords.png')
     if game_result[0]:
         win = pygame.image.load('sprite-games/over/win.png')
+        sound = pygame.mixer.Sound("music/win.ogg")
     else:
         win = pygame.image.load('sprite-games/over/loose.png')
+        sound = pygame.mixer.Sound("music/loose.ogg")
+    sound.set_volume(float(read_settings()["VOLUME"]))
+    sound.play(-1)
 
     animation_of_whirling = False
     coords_sword = [[-2000, 0], [-2000, 2000], [0, 2000],
@@ -461,6 +465,7 @@ def gameover(screen, game_result):
                 exit()
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_ESCAPE:
+                    sound.stop()
                     return "menu"
 
         screen.fill((0, 255, 100))
@@ -470,22 +475,23 @@ def gameover(screen, game_result):
             angle_of_inclination += 1 * coefficient_acceleration // 1
             screen.blit(flip, rot_rect)
             screen.blit(win, win.get_rect(center=(960, 540)))
-            coefficient_acceleration += 0.2
+            coefficient_acceleration += 0.05
             timer += 1
-            if timer == 210:
-                pygame.mixer.music.stop()
+            if timer == 300:
+                sound.stop()
                 return "menu"
         else:  # сближение мечей к центру
             for number, coords in enumerate(coords_sword):
                 new_coords = []
                 for j in coords:
                     if j < -100:
-                        new_coords.append(j + 25)
+                        new_coords.append(j + 15)
                     elif j > 100:
-                        new_coords.append(j - 25)
+                        new_coords.append(j - 15)
                     else:
                         new_coords.append(j)
-                if new_coords[0] == -100 and new_coords[1] == 100:
+                print(new_coords[0], new_coords[1])
+                if new_coords[0] == -95 and new_coords[1] == 95:
                     animation_of_whirling = True
                 coords_sword[number] = new_coords
             for n, i in enumerate(coords_sword):
