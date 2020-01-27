@@ -169,7 +169,7 @@ def headpiece(screen):
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                return
+                exit()
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_ESCAPE:
                     return "menu"
@@ -370,7 +370,7 @@ def titers(screen):
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                return
+                exit()
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_ESCAPE:
                     return "menu"

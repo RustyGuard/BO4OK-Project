@@ -28,8 +28,8 @@ while window:  # P.s Это сдаелано для оптимизации,да�
     elif window == "creators":
         window = titers(screen)
     elif window == "host":
-        main(screen)
-        window = "play"
+        window = main(screen)
+        print(window)
     elif window == "connect":
         window, ip_host = ip(screen)
     elif window == "OK":

@@ -646,7 +646,7 @@ class ClientWait:
         while running and not game.started:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    running = False
+                    exit()
                 elif event.type == pygame.KEYUP:
                     if event.key == pygame.K_ESCAPE:
                         running = False

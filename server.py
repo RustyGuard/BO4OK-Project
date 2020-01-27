@@ -438,7 +438,6 @@ def place_fortresses(game: ServerGame):
 
 
 def main(screen):
-    pygame.mouse.set_visible(0)
     connect_info = [0, 0]
 
     def pre_read(cmd, args, client):
@@ -527,11 +526,11 @@ def main(screen):
     while not server.is_ready():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                return
+                exit()
             for button in cancel_buttons:
                 if button.get_event(event):
                     server.disconnect()
-                    return
+                    return "play"
             for button in all_buttons:
                 button.get_event(event)
         screen.blit(background, (0, 0))
@@ -571,7 +570,7 @@ def main(screen):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 server.disconnect()
-                return
+                exit()
             elif event.type in [SERVER_EVENT_UPDATE, SERVER_EVENT_SEC]:
                 game.update(event, game)
                 if event.type == SERVER_EVENT_SEC:
@@ -586,13 +585,14 @@ def main(screen):
             elif event.type == pygame.KEYUP:
                 if event.key == pygame.K_ESCAPE:
                     server.disconnect()
-                    return
+                    return "host"
         screen.blit(background, (0, 0))
         screen.blit(font.render(f'FPS: {current_fps}', 1, (200, 200, 200)), (0, 0))
         pygame.display.flip()
         current_fps = 1000 // clock.tick(60)
         clock.tick(60)
     server.disconnect()
+    return "host"
 
 
 if __name__ == '__main__':
