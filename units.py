@@ -27,8 +27,7 @@ TARGET_NONE = 2
 TYPE_BUILDING = 0
 TYPE_PROJECTILE = 1
 TYPE_FIGHTER = 2
-TYPE_DECOR = 3
-TYPE_RESOURCE = 4
+TYPE_RESOURCE = 3
 
 team_id = [
     'black', 'aqua', 'blue', 'green', 'light_green', 'orange', 'pink', 'purple', 'red', 'yellow',
@@ -771,7 +770,7 @@ class Forge(Unit):  # Кузня,несколько уровней.При пос
     def get_mult(unit):  # получает множитель остальных кузней
         if Unit.game is None:
             return 1.0, 1.0
-        if unit.unit_type in [TYPE_RESOURCE, TYPE_DECOR]:
+        if unit.unit_type in [TYPE_RESOURCE]:
             return 1.0, 1.0
         if unit.player_id not in Unit.game.players:
             return 1.0, 1.0
