@@ -655,7 +655,7 @@ class Worker(Fighter):  # Рабочий,добывает золото и дер
         elif self.state == STATE_CHOP:
             return isinstance(enemy, Tree)
         elif self.state == STATE_BUILD:
-            return isinstance(enemy, UncompletedBuilding)
+            return isinstance(enemy, UncompletedBuilding) and enemy.player_id == self.player_id
         elif self.state == STATE_FIGHT:
             return super().is_valid_enemy(enemy) and not isinstance(enemy, Dragon)
 
