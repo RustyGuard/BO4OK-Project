@@ -186,6 +186,7 @@ class Player:
         self.max_forge_level = 0
         self.id = -2
         self.power = 0
+        self.nick = 'None'
 
 
 class ServerGame:
@@ -250,7 +251,7 @@ class ServerGame:
         if len(self.players) == 1:
             for i in self.players.values():
                 i.client.send('11')
-                i.client.disconnect('You win')
+                i.client.disconnect(f'You win, {i.nick}')
         self.lock.release()
 
     def add_player(self, client: ClientConnection, id: int):
@@ -399,8 +400,21 @@ def place_fortresses(game: ServerGame):
     print('Placing started.')
     players_count = len(game.players.values())
     angle = 0
-    game.place(Mine, 0, 0, -1,
-               ignore_money=True, ignore_fort_level=True, ignore_space=True)
+    game.place(Mine, -100, -100, -1, ignore_money=True, ignore_fort_level=True, ignore_space=True)
+    game.place(Mine, -100, 100, -1, ignore_money=True, ignore_fort_level=True, ignore_space=True)
+    game.place(Mine, 100, -100, -1, ignore_money=True, ignore_fort_level=True, ignore_space=True)
+    game.place(Mine, 100, 100, -1, ignore_money=True, ignore_fort_level=True, ignore_space=True)
+
+    for _ in range(FORESTS_COUNT):
+        trees_left = TREES_PER_FOREST
+        forest_x, forest_y = randint(- WORLD_SIZE / 2, WORLD_SIZE / 2), randint(- WORLD_SIZE / 2, WORLD_SIZE / 2)
+        tree_x, tree_y = [randint(forest_x - TREES_RANGE, forest_x + TREES_RANGE),
+                          randint(forest_y - TREES_RANGE, forest_y + TREES_RANGE)]
+        while trees_left > 0:
+            if game.place(Tree, tree_x, tree_y, -1, ignore_money=True, ignore_fort_level=True) is not None:
+                trees_left -= 1
+            tree_x, tree_y = [randint(forest_x - TREES_RANGE, forest_x + TREES_RANGE),
+                              randint(forest_y - TREES_RANGE, forest_y + TREES_RANGE)]
 
     for player_id, player in game.players.items():
         x, y = cos(radians(angle)), sin(radians(angle))
@@ -410,11 +424,7 @@ def place_fortresses(game: ServerGame):
                    ignore_money=True, ignore_fort_level=True, ignore_space=True)
         player.client.send(f'6_{-x + SCREEN_WIDTH // 2}_{-y + SCREEN_HEIGHT // 2}')
 
-        x, y = int(x * 1.25), int(y * 1.25)
-        game.place(Mine, x, y, -1,
-                   ignore_money=True, ignore_fort_level=True, ignore_space=True)
-
-        x, y = int(x * 0.05), int(y * 0.05)
+        x, y = int(x * 0.8), int(y * 0.8)
         game.place(Mine, x, y, -1,
                    ignore_money=True, ignore_fort_level=True, ignore_space=True)
 

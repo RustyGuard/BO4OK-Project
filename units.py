@@ -40,6 +40,7 @@ class Unit(Sprite):  # родительский класс любого воин
     free_id = None
     power_cost = 0  # количество места которое занимает юнит(далее "мясо",подробнее в классе Фермы)
     unit_type = TYPE_BUILDING  # стандартное значение
+    required_level = 0
 
     def __init__(self, x, y, id, player_id):
         self.id = id
@@ -448,7 +449,6 @@ class Archer(Fighter):  # Лучник, атакующий юнит дальне
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/warrior/archer/{team_id[i]}.png'))
     image = images[0]
-    required_level = 1  # todo Will be removed
     unit_type = TYPE_FIGHTER
 
     def __init__(self, x, y, id, player_id):
@@ -560,7 +560,6 @@ class Worker(Fighter):  # Рабочий,добывает золото и дер
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/warrior/working/{team_id[i]}.png'))
     image = images[0]
-    required_level = 1  # todo Will be removed
     unit_type = TYPE_FIGHTER
 
     def __init__(self, x, y, id, player_id):
@@ -1087,7 +1086,6 @@ class Dragon(Fighter):  # Дракон,уникальный воин,может 
         )
         images.append(anim)
     image = images[0][0]
-    required_level = 1  # todo Will be removed
     unit_type = TYPE_FIGHTER
 
     def __init__(self, x, y, id, player_id):
@@ -1190,7 +1188,6 @@ class Ballista(Fighter):  # Баллиста,уникальный класс в�
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/warrior/ballista/{team_id[i]}.png'))
     image = images[0]
-    required_level = 1  # todo Will be removed
     unit_type = TYPE_FIGHTER
 
     def __init__(self, x, y, id, player_id):

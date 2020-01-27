@@ -631,6 +631,9 @@ class ClientWait:
             if n == 0:
                 data.Button(all_buttons, i, image[i], 3)
 
+        ready_btn = data.Button(all_buttons, 'ready', (1311, 700))
+        ready_btn.enabled = True
+
         back_buttons = pygame.sprite.Group()
         data.Button(back_buttons, "menu", image["menu"])
 
@@ -640,31 +643,22 @@ class ClientWait:
         running = True
         font = pygame.font.Font(None, 75)
 
-        manager = UIManager(screen.get_size(), 'sprite-games/themes/theme.json')
-        ready_button = UIButton(
-            pygame.Rect(1311, 700, 270, 113),
-            '', manager, object_id='ready')
-
         while running and not game.started:
             for event in pygame.event.get():
-                manager.process_events(event)
                 if event.type == pygame.QUIT:
                     running = False
                 elif event.type == pygame.KEYUP:
                     if event.key == pygame.K_ESCAPE:
                         running = False
-                elif event.type == pygame.USEREVENT:
-                    if event.ui_element == ready_button:
-                        client.send(f'10_{game.info.nick}')
-                        ready_button.disable()
                 for button in back_buttons:
                     if button.get_event(event):
                         return False
-            manager.update(1 / 60)
+                if ready_btn.enabled and ready_btn.get_event(event):
+                    client.send(f'10_{game.info.nick}')
+                    ready_btn.enabled = False
             screen.blit(background, (0, 0))
             all_buttons.draw(screen)
             back_buttons.draw(screen)
-            manager.draw_ui(screen)
             text = font.render(f'{players_info[0]}/{players_info[1]} игроков.', 1, (255, 255, 255))
             screen.blit(text, (700, 400))
             screen.blit(font.render(nickname, 1, (255, 255, 255)), (810, 740))
