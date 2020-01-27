@@ -655,7 +655,7 @@ class Worker(Fighter):  # Рабочий,добывает золото и дер
         elif self.state == STATE_CHOP:
             return isinstance(enemy, Tree)
         elif self.state == STATE_BUILD:
-            return isinstance(enemy, UncompletedBuilding)
+            return isinstance(enemy, UncompletedBuilding) and enemy.player_id == self.player_id
         elif self.state == STATE_FIGHT:
             return super().is_valid_enemy(enemy) and not isinstance(enemy, Dragon)
 
@@ -698,7 +698,7 @@ class Fortress(ProductingBuild):  # Крепость, задает уровен�
     placeable = True
     cost = (250.0, 50.0)
 
-    level_costs = [(300.0, 50.0), (400.0, 100.0)]  # todo Баланс
+    level_costs = [(300.0, 50.0, 0), (400.0, 100.0, 0)]  # todo Баланс
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/building/fortress/{team_id[i]}.png'))
@@ -758,7 +758,7 @@ class Forge(Unit):  # Кузня,несколько уровней.При пос
     placeable = True
     cost = (200.0, 50.0)
 
-    level_costs = [(300.0, 75.0), (400.0, 125.0), (500.0, 150.0)]  # todo Баланс
+    level_costs = [(300.0, 75.0, 0), (400.0, 125.0, 0), (500.0, 150.0, 0)]  # todo Баланс
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/building/forge/{team_id[i]}.png'))
@@ -892,6 +892,8 @@ class MagicBall(TwistUnit):  # Магический шар,снаряд, вып�
         super().__init__(x, y, id, player_id, MagicBall.image)
         self.set_angle(int(angle))
         self.time = 300
+        self.interact_timer = 15
+        self.interacted = False
         self.damage = UNIT_STATS[MagicBall][1] * Forge.get_mult(self)[1]
 
     def update(self, event, game):
@@ -905,9 +907,20 @@ class MagicBall(TwistUnit):  # Магический шар,снаряд, вып�
                 self.time -= 1
                 if self.time <= 0:
                     game.kill(self)
-                for spr in game.get_intersect(self):
-                    if spr.player_id not in [-1, self.player_id] and spr.unit_type != TYPE_PROJECTILE:
-                        spr.take_damage(self.damage, game)
+
+                if not self.interacted:
+                    for spr in game.get_intersect(self):
+                        if spr.player_id not in [-1, self.player_id] and spr.unit_type != TYPE_PROJECTILE:
+                            self.interacted = True
+                            return
+
+                if self.interacted:
+                    self.interact_timer -= 1
+                    if self.interact_timer <= 0:
+                        for spr in game.get_intersect(self):
+                            if spr.player_id not in [-1, self.player_id] and spr.unit_type != TYPE_PROJECTILE:
+                                spr.take_damage(UNIT_STATS[type(self)][1], game)
+                        game.kill(self)
                         return
 
     def get_args(self):
@@ -925,7 +938,7 @@ class ArcherTower(Fighter):  # Башня лучников,имеет три у�
     cost = (200.0, 20.0)
     placeable = True
     name = 'Башня'
-    level_costs = [(30.0, 30.0), (40.0, 40.0), (70.0, 50.0)]  # todo Баланс
+    level_costs = [(30.0, 30.0, 0), (40.0, 40.0, 0), (70.0, 50.0, 0)]  # todo Баланс
     images = [[pygame.image.load(f'sprite-games/building/turret/{team_id[i]}.png') for i in range(10)],
               [pygame.image.load(f'sprite-games/building/turret/2/{team_id[i]}.png') for i in range(10)],
               [pygame.image.load(f'sprite-games/building/turret/3/{team_id[i]}.png') for i in range(10)]]

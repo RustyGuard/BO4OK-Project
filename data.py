@@ -460,6 +460,7 @@ def gameover(screen, game_result):
     angle_of_inclination = 0  # переменная угла поворота мечей
     coefficient_acceleration = 1  # коэффициент ускорения кручения мечей анимации
     timer = 0
+
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -470,6 +471,7 @@ def gameover(screen, game_result):
                     return "menu"
 
         screen.fill((0, 255, 100))
+        game_result[2].draw(screen)
         screen.blit(blackout, (0, 0))
 
         if animation_of_whirling:  # кручение мечей

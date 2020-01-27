@@ -49,11 +49,8 @@ class Minimap:
 
     def get_click(self, pos):
         if self.rect.collidepoint(pos[0], pos[1]):
-            print((pos[0] - self.rect.x) / self.rect.width, (pos[1] - self.rect.y) / self.rect.height)
             return (pos[0] - self.rect.x) / self.rect.width * WORLD_SIZE - WORLD_SIZE * 0.5, \
                    (pos[1] - self.rect.y) / self.rect.height * WORLD_SIZE - WORLD_SIZE * 0.5
-            # return (pos[0] - self.rect.x) / self.rect.width * WORLD_SIZE * 0.5 + WORLD_SIZE * 0.5, \
-            #        (pos[1] - self.rect.y) / self.rect.height * WORLD_SIZE * 0.5 + WORLD_SIZE * 0.5
         return None
 
     def draw(self, camera, game, screen):
@@ -721,16 +718,14 @@ class ClientWait:
                         en.set_target(TARGET_NONE, None)
                     else:
                         print('No object with id:', id)
-                return
+
             elif cmd == '3':  # Update Player Info
                 if args[0] == '1':  # Money
                     game.info.money = float(args[1])
                     game.info.wood = float(args[2])
-                    return
                 elif args[0] == '2':  # Power
                     game.info.power = int(args[1])
                     game.info.max_power = int(args[2])
-                    return
                 elif args[0] == '3':  # Money mined
                     stats['money_mined'] += float(args[1])
                 elif args[0] == '4':  # Wood chopped
@@ -750,7 +745,7 @@ class ClientWait:
                 en = game.find_with_id(int(args[0]))
                 en.health = float(args[1])
                 en.max_health = float(args[2])
-                return
+
             elif cmd == '6':
                 camera.set_pos(int(args[0]), int(args[1]))
                 print(camera.off_x, camera.off_y)
@@ -799,7 +794,7 @@ class ClientWait:
                 en.set_update_args(args, game)
                 en.update_rect()
                 game.lock.release()
-                return
+
             elif cmd == '11':
                 win[0] = True
             elif cmd == '12':
@@ -837,7 +832,7 @@ class ClientWait:
 
         while running and client.connected:
             if win[0] is not None:
-                return win[0], stats
+                return win[0], stats, game.sprites
             for event in pygame.event.get():
                 if select_area.process_events(event):
                     continue
@@ -869,13 +864,13 @@ class ClientWait:
 
                 if event.type == pygame.QUIT:
                     client.disconnect('Application closed.')
-                    return False, stats
+                    return False, stats, game.sprites
                 if event.type == pygame.KEYUP:
                     if event.key == pygame.K_ESCAPE:
                         current_manager[0] = 'main'
                     elif event.key == pygame.K_F12:
                         client.disconnect('Application closed.')
-                        return False, stats
+                        return False, stats, game.sprites
 
                 if event.type == CLIENT_EVENT_UPDATE:
                     camera.update()
@@ -947,7 +942,7 @@ class ClientWait:
             fps_count = 1000 // clock.tick(60)
 
         client.disconnect('Application closed.')
-        return win[0], stats
+        return win[0], stats, game.sprites
 
 
 def main():
