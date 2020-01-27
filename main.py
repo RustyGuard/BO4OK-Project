@@ -28,8 +28,9 @@ while window:  # P.s Это сдаелано для оптимизации,да�
     elif window == "creators":
         window = titers(screen)
     elif window == "host":
+        pygame.mixer.music.pause()
         window = main(screen)
-        print(window)
+        pygame.mixer.music.unpause()
     elif window == "connect":
         window, ip_host = ip(screen)
     elif window == "OK":

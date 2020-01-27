@@ -470,7 +470,7 @@ def gameover(screen, game_result):
                     sound.stop()
                     return "menu"
 
-        screen.fill((0, 255, 100))
+
         game_result[2].draw(screen)
         screen.blit(blackout, (0, 0))
 
