@@ -892,6 +892,8 @@ class MagicBall(TwistUnit):  # Магический шар,снаряд, вып�
         super().__init__(x, y, id, player_id, MagicBall.image)
         self.set_angle(int(angle))
         self.time = 300
+        self.interact_timer = 15
+        self.interacted = False
         self.damage = UNIT_STATS[MagicBall][1] * Forge.get_mult(self)[1]
 
     def update(self, event, game):
@@ -905,9 +907,20 @@ class MagicBall(TwistUnit):  # Магический шар,снаряд, вып�
                 self.time -= 1
                 if self.time <= 0:
                     game.kill(self)
-                for spr in game.get_intersect(self):  # todo переработать(бесконечный урон)
-                    if spr.player_id not in [-1, self.player_id] and spr.unit_type != TYPE_PROJECTILE:
-                        spr.take_damage(self.damage, game)
+
+                if not self.interacted:
+                    for spr in game.get_intersect(self):
+                        if spr.player_id not in [-1, self.player_id] and spr.unit_type != TYPE_PROJECTILE:
+                            self.interacted = True
+                            return
+
+                if self.interacted:
+                    self.interact_timer -= 1
+                    if self.interact_timer <= 0:
+                        for spr in game.get_intersect(self):
+                            if spr.player_id not in [-1, self.player_id] and spr.unit_type != TYPE_PROJECTILE:
+                                spr.take_damage(UNIT_STATS[type(self)][1], game)
+                        game.kill(self)
                         return
 
     def get_args(self):
