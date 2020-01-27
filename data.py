@@ -448,6 +448,7 @@ def gameover(screen, game_result):
     else:
         win = pygame.image.load('sprite-games/over/loose.png')
         sound = pygame.mixer.Sound("music/loose.ogg")
+    blackout = pygame.image.load('sprite-games/data/blackout.png')
     sound.set_volume(float(read_settings()["VOLUME"]))
     sound.play(-1)
 
@@ -456,8 +457,8 @@ def gameover(screen, game_result):
                     [2000, 2000], [2000, 0], [2000, -2000],
                     [0, -2000], [-2000, -2000]]
 
-    angle_of_inclination = 0
-    coefficient_acceleration = 1
+    angle_of_inclination = 0  # переменная угла поворота мечей
+    coefficient_acceleration = 1  # коэффициент ускорения кручения мечей анимации
     timer = 0
     while True:
         for event in pygame.event.get():
@@ -469,17 +470,19 @@ def gameover(screen, game_result):
                     return "menu"
 
         screen.fill((0, 255, 100))
+        screen.blit(blackout, (0, 0))
+
         if animation_of_whirling:  # кручение мечей
-            flip = pygame.transform.rotate(swords, angle_of_inclination)
-            rot_rect = flip.get_rect(center=(960, 540))
             angle_of_inclination += 1 * coefficient_acceleration // 1
-            screen.blit(flip, rot_rect)
+            flip = pygame.transform.rotate(swords, angle_of_inclination)
+            screen.blit(flip, flip.get_rect(center=(960, 540)))
             screen.blit(win, win.get_rect(center=(960, 540)))
             coefficient_acceleration += 0.05
             timer += 1
             if timer == 300:
                 sound.stop()
                 return "menu"
+
         else:  # сближение мечей к центру
             for number, coords in enumerate(coords_sword):
                 new_coords = []
@@ -490,13 +493,11 @@ def gameover(screen, game_result):
                         new_coords.append(j - 15)
                     else:
                         new_coords.append(j)
-                print(new_coords[0], new_coords[1])
-                if new_coords[0] == -95 and new_coords[1] == 95:
+                if new_coords[0] == -95 and new_coords[1] == 95:  # проверка на максимальное сближение
                     animation_of_whirling = True
                 coords_sword[number] = new_coords
             for n, i in enumerate(coords_sword):
                 flip = pygame.transform.rotate(sword, (n + 1 // 2) * 45)
-                rot_rect = flip.get_rect(center=(960 + i[0], 540 + i[1]))
-                screen.blit(flip, rot_rect)
+                screen.blit(flip, flip.get_rect(center=(960 + i[0], 540 + i[1])))
         pygame.display.flip()
         clock.tick(30)
