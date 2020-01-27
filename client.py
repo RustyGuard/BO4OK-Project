@@ -2,6 +2,9 @@ import socket
 import threading
 from random import choice
 from threading import Lock
+
+from pygame.mixer import Sound, SoundType
+
 import data
 import pygame_gui
 from pygame import Color
@@ -17,6 +20,22 @@ pygame.mixer.init()
 music = data.Music("game", ["game", "game1"])
 
 settings = {}
+sounds = {
+    'build_completed': Sound('music/construction_completed.ogg'),
+    'no_money': Sound('music/need_gold.ogg'),
+    'no_wood': Sound('music/not_enough_wood.ogg'),
+    'no_level': Sound('music/construction_completed.ogg'),  # todo Создать файл
+    'no_meat': Sound('music/build_a_farm.ogg'),
+    'no_place': Sound('music/construction_completed.ogg')  # todo Создать файл
+}
+current_channel = None
+
+
+def play_sound(sound: SoundType):
+    global current_channel
+    if current_channel is not None:
+        current_channel.stop()
+    current_channel = sound.play()
 
 
 def update_settings():
@@ -732,8 +751,7 @@ class ClientWait:
                     stats['wood_chopped'] += float(args[1])
                 elif args[0] == '5':  # Unit created
                     stats['build_created'] += 1
-                    sound1 = pygame.mixer.Sound('music/construction_completed.ogg')
-                    sound1.play()
+                    play_sound(sounds['build_completed'])
                 elif args[0] == '6':  # Building completed
                     stats['units_created'] += 1
 
@@ -756,24 +774,19 @@ class ClientWait:
             elif cmd == '8':
                 if args[0] == '0':
                     if args[1] == '0':
-                        sound1 = pygame.mixer.Sound('music/need_gold.ogg')
-                        sound1.play()
+                        play_sound(sounds['no_money'])
                         print('No money')
                     elif args[1] == '1':
-                        sound1 = pygame.mixer.Sound('music/not_enough_wood.ogg')
-                        sound1.play()
+                        play_sound(sounds['no_wood'])
                         print('No wood')
                     elif args[1] == '2':
-                        sound1 = pygame.mixer.Sound('music/build_a_farm.ogg')
-                        sound1.play()
+                        play_sound(sounds['no_meat'])
                         print('No meat')
                 elif args[0] == '1':
-                    # sound1 = pygame.mixer.Sound('music/need_gold.ogg')
-                    # sound1.play()
+                    # play_sound(sounds['no_place'])
                     print('No place')
                 elif args[0] == '2':
-                    # sound1 = pygame.mixer.Sound('music/need_gold.ogg')
-                    # sound1.play()
+                    # play_sound(sounds['no_level'])
                     print('No fort level')
             elif cmd == '9':
                 game.lock.acquire()
