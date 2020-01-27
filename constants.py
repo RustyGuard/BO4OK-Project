@@ -46,4 +46,4 @@ MINIMAP_ICON_SIZE = 12
 # todo Поменять количествогенерируемых деревьев
 FORESTS_COUNT = 10
 TREES_PER_FOREST = 30
-TREES_RANGE = 150
+TREES_RANGE = 300
