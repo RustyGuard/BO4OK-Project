@@ -115,7 +115,7 @@ class Unit(Sprite):  # родительский класс любого воин
     def get_args(self):
         return ''
 
-    def __getitem__(self, item):  # todo чо это?
+    def __getitem__(self, item):
         if item == 0:
             return self.x
         if item == 1:
@@ -444,7 +444,7 @@ class Archer(Fighter):  # Лучник, атакующий юнит дальне
     cost = (150.0, 3.0)  # стоимость создания.Первый аргумент-золото,второй-дерево
     placeable = False  # лучника нельзя поставить,можно создать только в казарме
     name = 'Лучник'
-    power_cost = 2  # todo Поменять
+    power_cost = 2  # todo Баланс
     images = []  # список с лучниками всех цветов,в инициализации выбирается цвет игрока
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/warrior/archer/{team_id[i]}.png'))
@@ -495,10 +495,10 @@ class Archer(Fighter):  # Лучник, атакующий юнит дальне
 
 
 class Soldier(Fighter):  # Воин,атакующий юнит ближнего боя
-    cost = (20.0, 0.0)
+    cost = (100.0, 0.0)
     name = 'Воин'
     placeable = False
-    power_cost = 3  # todo Поменять
+    power_cost = 1  # todo Баланс
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/warrior/soldier/{team_id[i]}.png'))
@@ -555,7 +555,7 @@ class Worker(Fighter):  # Рабочий,добывает золото и дер
     cost = (25.0, 0.0)
     name = 'Рабочий'
     placeable = False
-    power_cost = 1  # todo Поменять
+    power_cost = 1  # todo Баланс
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/warrior/working/{team_id[i]}.png'))
@@ -699,7 +699,7 @@ class Fortress(ProductingBuild):  # Крепость, задает уровен�
     placeable = True
     cost = (250.0, 50.0)
 
-    level_costs = [(300.0, 50.0), (400.0, 100.0)]  # todo Поменять
+    level_costs = [(300.0, 50.0), (400.0, 100.0)]  # todo Баланс
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/building/fortress/{team_id[i]}.png'))
@@ -757,9 +757,9 @@ class Fortress(ProductingBuild):  # Крепость, задает уровен�
 class Forge(Unit):  # Кузня,несколько уровней.При постройке,умножает "статы" юнитов на соответсвующий коэффициент
     name = 'Кузня'
     placeable = True
-    cost = (300.0, 100.0)
+    cost = (200.0, 50.0)
 
-    level_costs = [(350.0, 100.0), (500.0, 170.0), (700.0, 200.0)]  # todo Поменять
+    level_costs = [(300.0, 75.0), (400.0, 125.0), (500.0, 150.0)]  # todo Баланс
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/building/forge/{team_id[i]}.png'))
@@ -926,13 +926,13 @@ class ArcherTower(Fighter):  # Башня лучников,имеет три у�
     cost = (200.0, 20.0)
     placeable = True
     name = 'Башня'
-    level_costs = [(30.0, 30.0), (40.0, 40.0), (70.0, 50.0)]  # todo Поменять
+    level_costs = [(30.0, 30.0), (40.0, 40.0), (70.0, 50.0)]  # todo Баланс
     images = [[pygame.image.load(f'sprite-games/building/turret/{team_id[i]}.png') for i in range(10)],
               [pygame.image.load(f'sprite-games/building/turret/2/{team_id[i]}.png') for i in range(10)],
               [pygame.image.load(f'sprite-games/building/turret/3/{team_id[i]}.png') for i in range(10)]]
     # разные спрайты для разных уровней
     image = images[0][0]
-    required_level = 1  # todo Поменять этот пример
+    required_level = 1
     unit_type = TYPE_BUILDING
 
     def __init__(self, x, y, id, player_id):
@@ -1075,7 +1075,7 @@ class FireProjectile(TwistUnit):  # Снаряд выпускаемый драк
 
 class Dragon(Fighter):  # Дракон,уникальный воин,может быть ранен только снарядами
     cost = (300.0, 0.0)
-    power_cost = 8  # todo Поменять
+    power_cost = 5  # todo Баланс
     name = 'Дракон'
     placeable = False
     images = []
@@ -1180,9 +1180,9 @@ class UncompletedBuilding(Unit):  # класс,не построенного,н�
 
 
 class Ballista(Fighter):  # Баллиста,уникальный класс воина,имеет преимущество против драконов
-    cost = (300.0, 100.0)
+    cost = (300.0, 50.0)
     placeable = False
-    power_cost = 6  # todo Поменять
+    power_cost = 5  # todo Баланс
     name = 'Баллиста'
     images = []
     for i in range(10):
@@ -1305,7 +1305,7 @@ UNIT_STATS = {  # (max_health, base_dmg)
     Tree: (30, 0),  # Tree,
     FireProjectile: (1, 50),  # FireProjectile,
     UncompletedBuilding: (200, 0),  # UncompletedBuilding,
-    BallistaArrow: (1, 1000),  # BallistaArrow,
+    BallistaArrow: (1, 700),  # BallistaArrow,
     DragonLore: (1500, 0),  # DragonLore,
     Workshop: (1200, 0),  # Workshop,
     Forge: (800, 0),  # Forge
