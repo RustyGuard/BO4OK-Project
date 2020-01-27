@@ -1,0 +1,24 @@
+{
+  "ready": {
+    "misc": {
+      "shape": "rounded_rectangle",
+      "text_horiz_alignment": "left",
+      "text_vert_alignment": "top",
+      "shape_corner_radius": "40"
+    },
+    "images": {
+      "normal_image": {
+        "path": "sprite-games/buttons/ready.png"
+      },
+      "hovered_image": {
+        "path": "sprite-games/buttons/anim/ready.png"
+      },
+      "selected_image": {
+        "path": "sprite-games/buttons/anim/ready.png"
+      },
+      "disabled_image": {
+        "path": "sprite-games/buttons/anim/ready.png"
+      }
+    }
+  }
+}
