@@ -11,16 +11,19 @@ from constants import *
 
 # States
 
+# типы действий рабочих
 STATE_DIG = 0
 STATE_FIGHT = 1
 STATE_BUILD = 2
 STATE_CHOP = 3
 STATE_ANY_WORK = 4
 
+# типы действий
 TARGET_MOVE = 0
 TARGET_ATTACK = 1
 TARGET_NONE = 2
 
+# типы любых спрайтов в игре - строение,снаряд,воин,декорайция,строение предоставляющее ресурсы
 TYPE_BUILDING = 0
 TYPE_PROJECTILE = 1
 TYPE_FIGHTER = 2
@@ -35,8 +38,8 @@ team_id = [
 class Unit(Sprite):  # родительский класс любого воина,существа или строения
     game = None
     free_id = None
-    power_cost = 0
-    unit_type = TYPE_BUILDING  # Default value
+    power_cost = 0  # количество места которое занимает юнит(далее "мясо",подробнее в классе Фермы)
+    unit_type = TYPE_BUILDING  # стандартное значение
 
     def __init__(self, x, y, id, player_id):
         self.id = id
@@ -111,7 +114,7 @@ class Unit(Sprite):  # родительский класс любого воин
     def get_args(self):
         return ''
 
-    def __getitem__(self, item):  # чо это?
+    def __getitem__(self, item):  # todo чо это?
         if item == 0:
             return self.x
         if item == 1:
@@ -201,7 +204,7 @@ class TwistUnit(Unit):  # подкласс Unit имеющий угол вращ
         self.set_angle(int(arr.pop(0)))
 
 
-class Mine(Unit):
+class Mine(Unit):  # Шахта,здание располагющее золотом,которое могут добыть рабочие
     placeable = False  # шахту нельзя поставить вручную, они появляются в начале игры
     name = 'Шахта'
     mine = pygame.image.load('sprite-games/building/mine/mine.png')
@@ -246,7 +249,7 @@ class Arrow(TwistUnit):  # Стрела
                 if self.time <= 0:  # убивает спрайт стрелы если кончилось время
                     game.kill(self)
                 for spr in game.get_intersect(self):
-                    # проверяет то что атакуемый объект - не юнит игрока и не снаряд
+                    # проверяет то что атакуемый объект - не дружественный юнит и не снаряд
                     if spr.player_id not in [-1, self.player_id] and spr.unit_type != TYPE_PROJECTILE:
                         spr.take_damage(self.damage, game)
                         game.kill(self)
@@ -274,7 +277,7 @@ class BallistaArrow(TwistUnit):  # Болт баллисты
         self.set_angle(int(angle))
         self.time = 1200
         self.live_time = 5  # "прочность" болта,может задеть только 5 юнитов,после чего спрайт исчезает
-        self.striken = []  # список задетых снарядом юнитов,снаряд не ударит дважды по тому же обьъекту
+        self.striken = []  # список задетых снарядом юнитов,болт не ударит дважды по тому же обьъекту
         self.damage = UNIT_STATS[BallistaArrow][1] * Forge.get_mult(self)[1]
 
     def update(self, event, game):
@@ -436,16 +439,16 @@ class Fighter(TwistUnit):  # надкласс юнитов способных н
         super().kill()
 
 
-class Archer(Fighter):
+class Archer(Fighter):  # Лучник, атакующий юнит дальнего и среднего боя
     cost = (150.0, 3.0)  # стоимость создания.Первый аргумент-золото,второй-дерево
     placeable = False  # лучника нельзя поставить,можно создать только в казарме
     name = 'Лучник'
-    power_cost = 2  # Поменять
+    power_cost = 2  # todo Поменять
     images = []  # список с лучниками всех цветов,в инициализации выбирается цвет игрока
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/warrior/archer/{team_id[i]}.png'))
     image = images[0]
-    required_level = 1  # Will be removed
+    required_level = 1  # todo Will be removed
     unit_type = TYPE_FIGHTER
 
     def __init__(self, x, y, id, player_id):
@@ -491,11 +494,11 @@ class Archer(Fighter):
             pass
 
 
-class Soldier(Fighter):
+class Soldier(Fighter):  # Воин,атакующий юнит ближнего боя
     cost = (20.0, 0.0)
     name = 'Воин'
     placeable = False
-    power_cost = 3  # Поменять
+    power_cost = 3  # todo Поменять
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/warrior/soldier/{team_id[i]}.png'))
@@ -548,16 +551,16 @@ class Soldier(Fighter):
         return super().is_valid_enemy(enemy) and type(enemy) != Dragon
 
 
-class Worker(Fighter):
+class Worker(Fighter):  # Рабочий,добывает золото и дерево,строит здания,носит ресурсы к крепости
     cost = (25.0, 0.0)
     name = 'Рабочий'
     placeable = False
-    power_cost = 1  # Поменять
+    power_cost = 1  # todo Поменять
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/warrior/working/{team_id[i]}.png'))
     image = images[0]
-    required_level = 1  # Will be removed
+    required_level = 1  # todo Will be removed
     unit_type = TYPE_FIGHTER
 
     def __init__(self, x, y, id, player_id):
@@ -612,12 +615,14 @@ class Worker(Fighter):
                                     self.find_new_target(game, 3000)
                                     return
                         elif isinstance(self.target[1], UncompletedBuilding):
+                            # если рабочий рядом с неготовым зданием,то он строит его
                             if (self.single_attack(game, -5)) and \
                                     (self.target[1].health >= self.target[1].max_health) and \
                                     (not self.find_new_target(game, 3000)):
                                 self.set_target(TARGET_NONE, None)
                                 return
                         elif isinstance(self.target[1], Fortress) and self.player_id == self.target[1].player_id:
+                            # если рабочий рядом с крепостью,то он отдает ей ресурсы
                             game.give_resources(self.player_id, (self.money, self.wood))
                             self.wood = self.money = 0
                             self.find_new_target(game, 3000)
@@ -642,6 +647,7 @@ class Worker(Fighter):
         return self.money + self.wood >= self.capacity
 
     def is_valid_enemy(self, enemy):
+        # выбирает цель рабочему,взависимости от заданной деятельности
         if self.is_full():
             return isinstance(enemy, Fortress) and enemy.player_id == self.player_id
         if self.state == STATE_ANY_WORK:
@@ -656,20 +662,20 @@ class Worker(Fighter):
             return super().is_valid_enemy(enemy) and not isinstance(enemy, Dragon)
 
 
-class ProductingBuild(Unit):
+class ProductingBuild(Unit):  # Надкласс зданий производящих юнитов(например, казарма)
     def __init__(self, x, y, id, player_id, delay, valid_types):
         self.time = delay
         self.delay = delay
-        self.units_tray = []
-        self.valid_types = valid_types
+        self.units_tray = []  # очередь производимых юнитов
+        self.valid_types = valid_types  # возможные к производству типы юнитов
         super().__init__(x, y, id, player_id)
 
-    def add_to_queque(self, clazz, game):
+    def add_to_queque(self, clazz, game):  # добавление юнита в очередь
         if clazz in self.valid_types:
             if game.claim_unit_cost(self.player_id, clazz):
                 self.units_tray.append(clazz)
 
-    def create_unit(self, game, clazz):
+    def create_unit(self, game, clazz):  # расположение юнита
         if clazz is not None:
             if game.place(clazz,
                           int(self.x) - randint(self.rect.width // 2 + 25, self.rect.width + self.rect.width // 2),
@@ -684,17 +690,17 @@ class ProductingBuild(Unit):
                 return
         if event.type == SERVER_EVENT_SEC and self.time > 0 and self.units_tray:
             self.time -= 1
-        elif self.time == 0:
+        elif self.time == 0:  # с определенной задержкой создает юнита, имитирую тренировку
             self.time = self.delay
             self.create_unit(game, self.units_tray.pop(0))
 
 
-class Fortress(ProductingBuild):
+class Fortress(ProductingBuild):  # Крепость, задает уровень игрока,делает рабочих - ключевое здание в игре
     name = 'Крепость'
     placeable = True
     cost = (250.0, 50.0)
 
-    level_costs = [(300.0, 50.0), (400.0, 100.0)]  # Поменять
+    level_costs = [(300.0, 50.0), (400.0, 100.0)]  # todo Поменять
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/building/fortress/{team_id[i]}.png'))
@@ -706,6 +712,7 @@ class Fortress(ProductingBuild):
 
     @staticmethod
     def get_player_level(player_id):
+        # получает уровень игрока,это необходимо,т.к. наиболее улучешнная крепость влияет на остальные
         max_level = 0
         to_remove = []
         for inst in Fortress.instances:
@@ -748,21 +755,21 @@ class Fortress(ProductingBuild):
         return 3 > self.level >= 0
 
 
-class Forge(Unit):
+class Forge(Unit):  # Кузня,несколько уровней.При постройке,умножает "статы" юнитов на соответсвующий коэффициент
     name = 'Кузня'
     placeable = True
     cost = (300.0, 100.0)
 
-    level_costs = [(350.0, 100.0), (500.0, 170.0), (700.0, 200.0)]  # Поменять
+    level_costs = [(350.0, 100.0), (500.0, 170.0), (700.0, 200.0)]  # todo Поменять
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/building/forge/{team_id[i]}.png'))
     image = images[0]
-    required_level = 2
+    required_level = 2  # Можно построить только со второго уровня крепости
     unit_type = TYPE_BUILDING
 
     @staticmethod
-    def get_mult(unit):
+    def get_mult(unit):  # получает множитель остальных кузней
         if Unit.game is None:
             return 1.0, 1.0
         if unit.unit_type in [TYPE_RESOURCE, TYPE_DECOR]:
@@ -829,7 +836,7 @@ class Forge(Unit):
         return 4 > self.level >= 0
 
 
-class Casern(ProductingBuild):
+class Casern(ProductingBuild):  # подкласс ProductingBuild, производящий лучников,солдат
     placeable = True
     name = 'Казарма'
     cost = (100.0, 25.0)
@@ -845,7 +852,7 @@ class Casern(ProductingBuild):
         super().__init__(x, y, id, player_id, 5, [Archer, Soldier])
 
 
-class DragonLore(ProductingBuild):
+class DragonLore(ProductingBuild):  # подкласс ProductingBuild, производящий только Драконов
     placeable = True
     name = 'Драконье логово'
     cost = (500.0, 0.0)
@@ -861,7 +868,7 @@ class DragonLore(ProductingBuild):
         super().__init__(x, y, id, player_id, 5, [Dragon])
 
 
-class Workshop(ProductingBuild):
+class Workshop(ProductingBuild):  # подкласс ProductingBuild, производящий только баллисты
     placeable = True
     name = 'Мастерская'
     cost = (350.0, 100.0)
@@ -877,7 +884,7 @@ class Workshop(ProductingBuild):
         super().__init__(x, y, id, player_id, 5, [Ballista])
 
 
-class MagicBall(TwistUnit):
+class MagicBall(TwistUnit):  # Магический шар,снаряд, выпускаемый третьим уровнем башни лучников
     image = pygame.image.load(f'sprite-games/building/turret/3/magic_ball.png')
     name = 'Magic Ball'
     placeable = False
@@ -916,16 +923,17 @@ class MagicBall(TwistUnit):
         self.update_rect()
 
 
-class ArcherTower(Fighter):
+class ArcherTower(Fighter):  # Башня лучников,имеет три уровня,оборонительное сооружение
     cost = (200.0, 20.0)
     placeable = True
     name = 'Башня'
-    level_costs = [(30.0, 30.0), (40.0, 40.0), (70.0, 50.0)]  # Поменять
+    level_costs = [(30.0, 30.0), (40.0, 40.0), (70.0, 50.0)]  # todo Поменять
     images = [[pygame.image.load(f'sprite-games/building/turret/{team_id[i]}.png') for i in range(10)],
               [pygame.image.load(f'sprite-games/building/turret/2/{team_id[i]}.png') for i in range(10)],
               [pygame.image.load(f'sprite-games/building/turret/3/{team_id[i]}.png') for i in range(10)]]
+    # разные спрайты для разных уровней
     image = images[0][0]
-    required_level = 1  # Поменять этот пример
+    required_level = 1  # todo Поменять этот пример
     unit_type = TYPE_BUILDING
 
     def __init__(self, x, y, id, player_id):
@@ -939,6 +947,7 @@ class ArcherTower(Fighter):
     def update_image(self):
         self.image = Surface(ArcherTower.images[self.level - 1][self.player_id].get_rect().size, pygame.SRCALPHA)
         self.image.blit(ArcherTower.images[self.level - 1][self.player_id], (0, 0))
+        # не отрисовывает лучника поверх башни, если она не первого уровня
         if self.level == 1:
             self.image.blit(pygame.transform.rotate(self.archer_image, -self.angle), (10, 10))
 
@@ -950,6 +959,7 @@ class ArcherTower(Fighter):
         self.levels_update()
 
     def levels_update(self):
+        # башня второго уровня стреляет быстрее,а третьего медленнее,но магическими снарядами
         if self.level == 2:
             self.delay_time = 20
         elif self.level == 3:
@@ -989,6 +999,7 @@ class ArcherTower(Fighter):
                     self.update_delay()
                 if self.turn_around(3):
                     if event.type == SERVER_EVENT_UPDATE:
+                        # тип снаряда
                         if self.level != 3:
                             self.throw_projectile(game, Arrow)
                         else:
@@ -999,7 +1010,7 @@ class ArcherTower(Fighter):
                     self.find_new_target(game)
 
 
-class Tree(Unit):
+class Tree(Unit):  # Дерево, из него рабочие добывают древесину
     placeable = False
     name = 'Дерево'
     tree = pygame.image.load('sprite-games/icon/tree.png')
@@ -1019,7 +1030,7 @@ class Tree(Unit):
                 game.kill(self)
 
 
-class FireProjectile(TwistUnit):
+class FireProjectile(TwistUnit):  # Снаряд выпускаемый драконом
     images = []
     for i in range(1, 7):
         images.append(pygame.image.load(f'sprite-games/warrior/dragon/Flame/{i}.png'))
@@ -1063,9 +1074,9 @@ class FireProjectile(TwistUnit):
         self.image = rotated_image
 
 
-class Dragon(Fighter):
+class Dragon(Fighter):  # Дракон,уникальный воин,может быть ранен только снарядами
     cost = (300.0, 0.0)
-    power_cost = 8  # Поменять
+    power_cost = 8  # todo Поменять
     name = 'Дракон'
     placeable = False
     images = []
@@ -1076,11 +1087,12 @@ class Dragon(Fighter):
         )
         images.append(anim)
     image = images[0][0]
-    required_level = 1  # Will be removed
+    required_level = 1  # todo Will be removed
     unit_type = TYPE_FIGHTER
 
     def __init__(self, x, y, id, player_id):
         self.time = 0
+        # параметры смены анимации полета дракона
         self.anim_switch = 0
         self.anim_tuple = Dragon.images[player_id]
 
@@ -1133,7 +1145,7 @@ class Dragon(Fighter):
         self.image = rotated_image
 
 
-class UncompletedBuilding(Unit):
+class UncompletedBuilding(Unit):  # класс,не построенного,но уже размещенного здания
     placeable = False
     unit_type = TYPE_BUILDING
 
@@ -1146,6 +1158,7 @@ class UncompletedBuilding(Unit):
         self.completed = False
 
     def update(self, event, game):
+        # если здание закончено,то спрайт UncompletedBuilding исчезает, а на его месте появлется его построенный аналог
         if event.type == SERVER_EVENT_UPDATE:
             if not self.is_alive():
                 game.kill(self)
@@ -1168,16 +1181,16 @@ class UncompletedBuilding(Unit):
         return super().is_alive() and not self.completed
 
 
-class Ballista(Fighter):
+class Ballista(Fighter):  # Баллиста,уникальный класс воина,имеет преимущество против драконов
     cost = (300.0, 100.0)
     placeable = False
-    power_cost = 6  # Поменять
+    power_cost = 6  # todo Поменять
     name = 'Баллиста'
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite-games/warrior/ballista/{team_id[i]}.png'))
     image = images[0]
-    required_level = 1  # Will be removed
+    required_level = 1  # todo Will be removed
     unit_type = TYPE_FIGHTER
 
     def __init__(self, x, y, id, player_id):
@@ -1206,6 +1219,7 @@ class Ballista(Fighter):
                 if self.turn_around(3):
                     if near:
                         if event.type == SERVER_EVENT_UPDATE:
+                            # стреляет вышеупомянутыми болтами, а не стрелами
                             self.throw_projectile(game, BallistaArrow)
                     else:
                         self.move_to_angle(1, game)
@@ -1217,7 +1231,7 @@ class Ballista(Fighter):
                     self.find_new_target(game)
 
 
-class Farm(Unit):
+class Farm(Unit):  # Ферма, чем их больше,тем больше уровень "мяса" и больше юнитов может позволить себе игрок
     name = 'Ферма'
     placeable = True
     cost = (50.0, 10.0)
@@ -1232,7 +1246,7 @@ class Farm(Unit):
     instances = []
 
     @staticmethod
-    def get_player_meat(player_id):
+    def get_player_meat(player_id):  # получение уровня "мяса" игрока.Отвечает за возможное число юнитов
         meat = 10
         to_remove = []
         for inst in Farm.instances:
@@ -1257,6 +1271,7 @@ class Farm(Unit):
                 return
 
 
+# Словарь типов возможных юнитов
 UNIT_TYPES = {
     0: Soldier,
     1: Mine,
@@ -1278,7 +1293,7 @@ UNIT_TYPES = {
     17: Farm,
     18: MagicBall
 }
-
+# 'Статы' всех юнитов - максимальное здоровье и урон
 UNIT_STATS = {  # (max_health, base_dmg)
     Worker: (100, 5),  # Worker,
     Soldier: (300, 50),  # Soldier,
