@@ -77,7 +77,7 @@ class Minimap:
             elif issubclass(type(i), ProductingBuild):
                 color = Color('red')
             else:
-                color = 'blue'
+                color = Color('blue')
             pygame.draw.rect(screen, color, rect, 1)
 
         rect = (MINIMAP_OFFSETX + (-camera.off_x + WORLD_SIZE / 2) / WORLD_SIZE * MINIMAP_SIZEX,
@@ -371,7 +371,7 @@ class SelectArea:
     def draw_ui(self, screen):
         if self.width != 0 and self.height != 0:
             pygame.draw.rect(screen, COLOR_LIST[self.game.info.id], (self.x, self.y, self.width, self.height), 2)
-        if self.active:
+        if self.selected:
             self.hided_manager.draw_ui(screen)
         for spr in self.selected:
             if spr is not None:
@@ -390,7 +390,7 @@ class SelectArea:
 
     def process_events(self, event):
 
-        if self.active:
+        if self.selected:
             self.hided_manager.process_events(event)
 
         if event.type == pygame.KEYUP:
@@ -413,6 +413,15 @@ class SelectArea:
                         self.clear()
                         self.selected = self.saved[index].copy()
                         self.active = True
+
+        if event.type == pygame.USEREVENT:
+            if event.user_type == pygame_gui.UI_BUTTON_PRESSED:
+                if event.ui_object_id == 'retarget':
+                    if self.active:
+                        for spr in self.selected:
+                            if isinstance(spr, Worker) and spr.player_id == self.game.info.id:
+                                self.client.send(f'4_{spr.id}_{event.ui_element.type}')
+                    self.clear()
 
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
@@ -450,7 +459,7 @@ class SelectArea:
         return False
 
     def update(self, *args):
-        if self.active:
+        if self.selected:
             self.hided_manager.update(*args)
 
 
@@ -652,6 +661,7 @@ class ClientWait:
                         running = False
                 for button in back_buttons:
                     if button.get_event(event):
+                        client.disconnect('exit')
                         return False
                 if ready_btn.enabled and ready_btn.get_event(event):
                     client.send(f'10_{game.info.nick}')
@@ -925,16 +935,15 @@ class ClientWait:
 
             managers[current_manager[0]].update(1 / 60)
             managers[current_manager[0]].draw_ui(screen)
+            select_area.draw_ui(screen)
             screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
             text = small_font.render(f'FPS: {fps_count}', 1, pygame.Color('red' if fps_count < 40 else 'green'))
             screen.blit(text, (0, 0))
 
-            select_area.draw_ui(screen)
-
+            game.lock.release()
             pygame.display.flip()
             # */
 
-            game.lock.release()
             fps_count = 1000 // clock.tick(60)
 
         client.disconnect('Application closed.')
