@@ -439,7 +439,7 @@ def place_fortresses(game: ServerGame):
         print('Placing stopped.')
 
 
-def main(screen):
+def main(screen, nickname):
     connect_info = [0, 0]
 
     def pre_read(cmd, args, client):
@@ -528,6 +528,8 @@ def main(screen):
                 data.Button(all_buttons, i, image[i], 3)
     cancel_buttons = pygame.sprite.Group()
     data.Button(cancel_buttons, "cancel", image["cancel"])
+    font1 = pygame.font.Font(None, 80)
+
     while not server.is_ready():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -549,6 +551,7 @@ def main(screen):
         screen.blit(text, (650, 455))
         all_buttons.draw(screen)
         cancel_buttons.draw(screen)
+        screen.blit(font1.render(nickname, 1, (255, 255, 255)), (810, 740))
         screen.blit(data.cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
         pygame.display.flip()
 
