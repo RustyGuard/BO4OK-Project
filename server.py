@@ -606,5 +606,5 @@ def main(screen, nickname):
 
 if __name__ == '__main__':
     pygame.init()
-    main(pygame.display.set_mode((1000, 1000)))
+    main(pygame.display.set_mode((1000, 1000)), 'randomguy')
     print('\n\tServer closed.\n')

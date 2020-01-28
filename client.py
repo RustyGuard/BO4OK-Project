@@ -34,7 +34,10 @@ current_channel = None
 
 def play_sound(sound: SoundType):
     global current_channel
+    print(current_channel)
     if current_channel is not None:
+        if current_channel.get_busy():
+            return
         current_channel.stop()
     current_channel = sound.play()
 
