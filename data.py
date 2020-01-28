@@ -3,8 +3,8 @@
 # инициализация глобальный перемен функций
 cursor = pygame.image.load('sprite-games/icon/cursor.png')
 clock = pygame.time.Clock()
-nickname = ""
-ip_conect = "192.168.0."
+nickname = ""  # никнейм игрока(если поле пустое - выберает рандомное имя)
+ip_conect = "192.168.0."   # айпи подключения к желаемому хосту
 
 
 class Button(pygame.sprite.Sprite):
@@ -12,21 +12,21 @@ class Button(pygame.sprite.Sprite):
 
     def __init__(self, group, name, image, button_type=None):
         super().__init__(group)
-        if not button_type:
+        if not button_type:  # стандартная кнопка
             self.stok_image = pygame.image.load(f'sprite-games/buttons/{name}.png')
             self.anim = pygame.image.load(f'sprite-games/buttons/anim/{name}.png')
-        elif button_type == 1:
+        elif button_type == 1:  # нопка с постаянно включенной анимацией
             self.stok_image = self.anim = pygame.image.load(f'sprite-games/buttons/anim/{name}.png')
-        elif button_type == 2:
+        elif button_type == 2:  # булевое окно(вкл, выкл)
             self.stok_image = pygame.image.load(f'sprite-games/buttons/field.png')
             self.anim = pygame.image.load(f'sprite-games/buttons/tick_field.png')
-        elif button_type == 3:
+        elif button_type == 3:  # нопка с постаянно выключенной анимацией
             self.stok_image = self.anim = pygame.image.load(f'sprite-games/buttons/{name}.png')
-        self.name = name
-        self.image = self.stok_image
+        self.name = name  # имя кнопки
+        self.image = self.stok_image  # стандартное изображение
         self.rect = self.image.get_rect()
         self.rect.topleft = image
-        self.button_type = button_type
+        self.button_type = button_type  # тип кнопки
 
     def get_event(self, event):
         """ Функция обработки анимации и нажатия кнопки """
@@ -39,7 +39,7 @@ class Button(pygame.sprite.Sprite):
                         self.image = self.stok_image
         if event.type == pygame.MOUSEBUTTONDOWN:  # функция нажатия на кнопку
             if event.button == 1:
-                if self.rect.collidepoint(event.pos):
+                if self.rect.collidepoint(event.pos):  # если произошло нажатие - возвращает имякнопки
                     return self.name
 
 
@@ -462,7 +462,6 @@ def gameover(screen, game_result):
     timer = 0
 
     game_result[2].draw(screen)
-    screen.blit(blackout, (0, 0))
     screen.blit(blackout, (0, 0))
 
     while True:

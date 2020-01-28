@@ -35,11 +35,12 @@ while window:  # P.s Это сдаелано для оптимизации,да�
         window, ip_host = ip(screen)
     elif window == "OK":
         game = ClientWait().play(screen, ip_host if ip_host != '' else 'localhost', nick=nickname)
-        if game[0] is not None:
-            gameover(screen, game)
+        if game[0] is not None:  # проверка, на наличие результатов игры
+            gameover(screen, game)  # запуск окна окончания игры, и записи резельтато в статитсику
         window = "connect"
     elif window == "menu":
         window = menu(screen)
-    elif window == "exit":
-        break
+    else:
+        print(f"Неверный аргумент 'window'({window})")
+        exit()
 pygame.quit()
