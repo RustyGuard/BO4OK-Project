@@ -55,6 +55,7 @@ class Unit(Sprite):  # родительский класс любого воин
         self.level = -1
         self.max_health = UNIT_STATS[type(self)][0] * Forge.get_mult(self)[0]
         self.health = self.max_health
+        self.alive = True
         super().__init__()
 
     def __str__(self):
@@ -159,6 +160,7 @@ class Unit(Sprite):  # родительский класс любого воин
         return False
 
     def kill(self):
+        self.alive = False
         if Unit.free_id is not None:
             Unit.free_id.append(self.id)
             print('id', self.id, 'free now')
