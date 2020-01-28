@@ -41,8 +41,8 @@ class Unit(Sprite):  # родительский класс любого воин
     unit_type = TYPE_BUILDING  # стандартное значение
     required_level = 0
 
-    def __init__(self, x, y, id, player_id):
-        self.id = id
+    def __init__(self, x, y, unit_id, player_id):
+        self.unit_id = unit_id
         self.player_id = player_id
         self.rect = self.image.get_rect()
         self.rect.centerx = x
@@ -126,7 +126,7 @@ class Unit(Sprite):  # родительский класс любого воин
         arr.append(str(get_class_id(type(self))))
         arr.append(str(int(self.x)))
         arr.append(str(int(self.y)))
-        arr.append(str(self.id))
+        arr.append(str(self.unit_id))
         arr.append(str(self.player_id))
         arr.append(str(self.health))
         arr.append(str(self.max_health))
@@ -137,7 +137,7 @@ class Unit(Sprite):  # родительский класс любого воин
         arr.pop(0)
         self.x = float(arr.pop(0))
         self.y = float(arr.pop(0))
-        self.id = int(arr.pop(0))
+        self.unit_id = int(arr.pop(0))
         self.player_id = int(arr.pop(0))
         self.health = float(arr.pop(0))
         self.max_health = float(arr.pop(0))
@@ -148,7 +148,7 @@ class Unit(Sprite):  # родительский класс любого воин
 
     def take_damage(self, dmg, game):  # получение урона
         self.health -= dmg
-        game.server.send_all(f'5_{self.id}_{self.health}_{self.max_health}')
+        game.server.send_all(f'5_{self.unit_id}_{self.health}_{self.max_health}')
 
     def next_level(self, game):
         raise Exception('Not supported')
@@ -162,16 +162,16 @@ class Unit(Sprite):  # родительский класс любого воин
     def kill(self):
         self.alive = False
         if Unit.free_id is not None:
-            Unit.free_id.append(self.id)
-            print('id', self.id, 'free now')
+            Unit.free_id.append(self.unit_id)
+            print('id', self.unit_id, 'free now')
         super().kill()
 
 
 class TwistUnit(Unit):  # подкласс Unit имеющий угол вращения
-    def __init__(self, x, y, id, player_id, default_image):
+    def __init__(self, x, y, unit_id, player_id, default_image):
         self.angle = 0
         self.default_image = default_image
-        super().__init__(x, y, id, player_id)
+        super().__init__(x, y, unit_id, player_id)
 
     def set_angle(self, angle):
         self.angle = angle
@@ -214,9 +214,9 @@ class Mine(Unit):  # Шахта,здание располагющее золот
     required_level = 1
     unit_type = TYPE_RESOURCE  # тип юнитов хранящих ресурсы для добычи
 
-    def __init__(self, x, y, id, player_id):
+    def __init__(self, x, y, unit_id, player_id):
         self.image = Mine.mine
-        super().__init__(x, y, id, player_id)
+        super().__init__(x, y, unit_id, player_id)
         self.max_health = UNIT_STATS[type(self)][0]
         self.health = self.max_health
 
@@ -232,8 +232,8 @@ class Arrow(TwistUnit):  # Стрела
     placeable = False  # объект нельзя поставить вручную,лишь может быть создан другим юнитом
     unit_type = TYPE_PROJECTILE  # Projectile - тип снаряда в игре
 
-    def __init__(self, x, y, id, player_id, angle):
-        super().__init__(x, y, id, player_id, Arrow.image)
+    def __init__(self, x, y, unit_id, player_id, angle):
+        super().__init__(x, y, unit_id, player_id, Arrow.image)
         self.set_angle(int(angle))
         self.time = 300  # максимальное время "жизни" объекта, по истечении которого он пропадает
         self.damage = UNIT_STATS[Arrow][1] * Forge.get_mult(self)[1]
@@ -274,8 +274,8 @@ class BallistaArrow(TwistUnit):  # Болт баллисты
     placeable = False
     unit_type = TYPE_PROJECTILE
 
-    def __init__(self, x, y, id, player_id, angle):
-        super().__init__(x, y, id, player_id, BallistaArrow.image)
+    def __init__(self, x, y, unit_id, player_id, angle):
+        super().__init__(x, y, unit_id, player_id, BallistaArrow.image)
         self.set_angle(int(angle))
         self.time = 1200
         self.live_time = 5  # "прочность" болта,может задеть только 5 юнитов,после чего спрайт исчезает
@@ -317,8 +317,8 @@ class BallistaArrow(TwistUnit):  # Болт баллисты
 class Fighter(TwistUnit):  # надкласс юнитов способных наносить урон и стрелять/добывать ресурсы
     power_cost = 0
 
-    def __init__(self, x, y, id, player_id, default_image):
-        super().__init__(x, y, id, player_id, default_image)
+    def __init__(self, x, y, unit_id, player_id, default_image):
+        super().__init__(x, y, unit_id, player_id, default_image)
         self.target_angle = 0
         self.target = (TARGET_NONE, None)
         self.delay = 0
@@ -343,11 +343,11 @@ class Fighter(TwistUnit):  # надкласс юнитов способных н
         if game is None:
             return
         if target_type == TARGET_ATTACK:
-            game.server.send_all(f'2_{TARGET_ATTACK}_{self.id}_{self.target[1].id}')
+            game.server.send_all(f'2_{TARGET_ATTACK}_{self.unit_id}_{self.target[1].unit_id}')
         elif target_type == TARGET_NONE:
-            game.server.send_all(f'2_{TARGET_NONE}_{self.id}')
+            game.server.send_all(f'2_{TARGET_NONE}_{self.unit_id}')
         elif target_type == TARGET_MOVE:
-            game.server.send_all(f'2_{TARGET_MOVE}_{self.id}_{coord[0]}_{coord[1]}')
+            game.server.send_all(f'2_{TARGET_MOVE}_{self.unit_id}_{coord[0]}_{coord[1]}')
 
     def find_target_angle(self):  # находит угол между целью и объектом для поворота
         self.target_angle = int(
@@ -421,7 +421,7 @@ class Fighter(TwistUnit):  # надкласс юнитов способных н
             arr.append(str(self.target[1][0]))
             arr.append(str(self.target[1][1]))
         elif self.target[0] == TARGET_ATTACK:
-            arr.append(str(self.target[1].id))
+            arr.append(str(self.target[1].unit_id))
         return arr
 
     def set_update_args(self, arr, game):
@@ -452,10 +452,10 @@ class Archer(Fighter):  # Лучник, атакующий юнит дальне
     image = images[0]
     unit_type = TYPE_FIGHTER
 
-    def __init__(self, x, y, id, player_id):
+    def __init__(self, x, y, unit_id, player_id):
         self.image = Archer.images[player_id]  # выбор цвета
 
-        super().__init__(x, y, id, player_id, Archer.images[player_id])
+        super().__init__(x, y, unit_id, player_id, Archer.images[player_id])
         self.delay_time = 60
 
     def update(self, event, game):
@@ -507,10 +507,10 @@ class Soldier(Fighter):  # Воин,атакующий юнит ближнего
     required_level = 0
     unit_type = TYPE_FIGHTER
 
-    def __init__(self, x, y, id, player_id):
+    def __init__(self, x, y, unit_id, player_id):
         self.image = Soldier.images[player_id]
 
-        super().__init__(x, y, id, player_id, Soldier.images[player_id])
+        super().__init__(x, y, unit_id, player_id, Soldier.images[player_id])
 
     def update(self, event, game):
         if event.type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
@@ -563,10 +563,10 @@ class Worker(Fighter):  # Рабочий,добывает золото и дер
     image = images[0]
     unit_type = TYPE_FIGHTER
 
-    def __init__(self, x, y, id, player_id):
+    def __init__(self, x, y, unit_id, player_id):
         self.image = Worker.images[player_id]
 
-        super().__init__(x, y, id, player_id, Worker.images[player_id])
+        super().__init__(x, y, unit_id, player_id, Worker.images[player_id])
         self.money = 0  # число золота у рабочего с собой
         self.wood = 0  # число дерева у рабочего с собой
         self.capacity = 25  # вместимость рабочего(не понесет больше 25 ресурсов)
@@ -663,12 +663,12 @@ class Worker(Fighter):  # Рабочий,добывает золото и дер
 
 
 class ProductingBuild(Unit):  # Надкласс зданий производящих юнитов(например, казарма)
-    def __init__(self, x, y, id, player_id, delay, valid_types):
+    def __init__(self, x, y, unit_id, player_id, delay, valid_types):
         self.time = delay
         self.delay = delay
         self.units_tray = []  # очередь производимых юнитов
         self.valid_types = valid_types  # возможные к производству типы юнитов
-        super().__init__(x, y, id, player_id)
+        super().__init__(x, y, unit_id, player_id)
 
     def add_to_queque(self, clazz, game):  # добавление юнита в очередь
         if clazz in self.valid_types:
@@ -725,9 +725,9 @@ class Fortress(ProductingBuild):  # Крепость, задает уровен�
             Fortress.instances.remove(i)
         return max_level
 
-    def __init__(self, x, y, id, player_id):
+    def __init__(self, x, y, unit_id, player_id):
         self.image = Fortress.images[player_id]
-        super().__init__(x, y, id, player_id, 2, [Worker])
+        super().__init__(x, y, unit_id, player_id, 2, [Worker])
         self.level = 0
         self.can_upgraded = True
         Fortress.instances.append(self)
@@ -796,9 +796,9 @@ class Forge(Unit):  # Кузня,несколько уровней.При пос
                     health_mult *= K_BUILDHP_UP2
         return health_mult, damage_mult
 
-    def __init__(self, x, y, id, player_id):
+    def __init__(self, x, y, unit_id, player_id):
         self.image = Forge.images[player_id]
-        super().__init__(x, y, id, player_id)
+        super().__init__(x, y, unit_id, player_id)
         self.level = 0
         self.can_upgraded = True
 
@@ -822,7 +822,7 @@ class Forge(Unit):  # Кузня,несколько уровней.При пос
                 if h_mult != 1.0:
                     obj.health *= h_mult
                     obj.max_health *= h_mult
-                    game.server.send_all(f'5_{obj.id}_{obj.health}_{obj.max_health}')
+                    game.server.send_all(f'5_{obj.unit_id}_{obj.health}_{obj.max_health}')
                 if d_mult != 1.0:
                     obj.damage *= d_mult
 
@@ -847,9 +847,9 @@ class Casern(ProductingBuild):  # подкласс ProductingBuild, произв
     required_level = 1
     unit_type = TYPE_BUILDING
 
-    def __init__(self, x, y, id, player_id):
+    def __init__(self, x, y, unit_id, player_id):
         self.image = Casern.images[player_id]
-        super().__init__(x, y, id, player_id, 5, [Archer, Soldier])
+        super().__init__(x, y, unit_id, player_id, 5, [Archer, Soldier])
 
 
 class DragonLore(ProductingBuild):  # подкласс ProductingBuild, производящий только Драконов
@@ -863,9 +863,9 @@ class DragonLore(ProductingBuild):  # подкласс ProductingBuild, прои
     required_level = 3
     unit_type = TYPE_BUILDING
 
-    def __init__(self, x, y, id, player_id):
+    def __init__(self, x, y, unit_id, player_id):
         self.image = DragonLore.images[player_id]
-        super().__init__(x, y, id, player_id, 5, [Dragon])
+        super().__init__(x, y, unit_id, player_id, 5, [Dragon])
 
 
 class Workshop(ProductingBuild):  # подкласс ProductingBuild, производящий только баллисты
@@ -879,9 +879,9 @@ class Workshop(ProductingBuild):  # подкласс ProductingBuild, произ
     required_level = 2
     unit_type = TYPE_BUILDING
 
-    def __init__(self, x, y, id, player_id):
+    def __init__(self, x, y, unit_id, player_id):
         self.image = Workshop.images[player_id]
-        super().__init__(x, y, id, player_id, 5, [Ballista])
+        super().__init__(x, y, unit_id, player_id, 5, [Ballista])
 
 
 class MagicBall(TwistUnit):  # Магический шар,снаряд, выпускаемый третьим уровнем башни лучников
@@ -890,8 +890,8 @@ class MagicBall(TwistUnit):  # Магический шар,снаряд, вып�
     placeable = False
     unit_type = TYPE_PROJECTILE
 
-    def __init__(self, x, y, id, player_id, angle):
-        super().__init__(x, y, id, player_id, MagicBall.image)
+    def __init__(self, x, y, unit_id, player_id, angle):
+        super().__init__(x, y, unit_id, player_id, MagicBall.image)
         self.set_angle(int(angle))
         self.time = 300
         self.interact_timer = 15
@@ -949,10 +949,10 @@ class ArcherTower(Fighter):  # Башня лучников,имеет три у�
     required_level = 1
     unit_type = TYPE_BUILDING
 
-    def __init__(self, x, y, id, player_id):
+    def __init__(self, x, y, unit_id, player_id):
         self.archer_image = Archer.images[player_id]
         self.player_id = player_id
-        super().__init__(x, y, id, player_id, ArcherTower.images[1][player_id])
+        super().__init__(x, y, unit_id, player_id, ArcherTower.images[1][player_id])
         self.level = 0
         self.can_upgraded = True
         self.update_image()
@@ -1031,9 +1031,9 @@ class Tree(Unit):  # Дерево, из него рабочие добывают
     required_level = 1
     unit_type = TYPE_RESOURCE
 
-    def __init__(self, x, y, id, player_id):
+    def __init__(self, x, y, unit_id, player_id):
         self.image = Tree.tree
-        super().__init__(x, y, id, player_id)
+        super().__init__(x, y, unit_id, player_id)
         self.max_health = UNIT_STATS[type(self)][0]
         self.health = self.max_health
 
@@ -1051,11 +1051,11 @@ class FireProjectile(TwistUnit):  # Снаряд выпускаемый драк
     placeable = False
     unit_type = TYPE_PROJECTILE
 
-    def __init__(self, x, y, id, player_id, angle):
+    def __init__(self, x, y, unit_id, player_id, angle):
         self.time = 0
         self.current_state = 0
         self.set_angle(int(angle))
-        super().__init__(x, y, id, player_id, None)
+        super().__init__(x, y, unit_id, player_id, None)
         self.angle = int(angle)
         self.damage = UNIT_STATS[type(self)][1] * Forge.get_mult(self)[1]
 
@@ -1102,13 +1102,13 @@ class Dragon(Fighter):  # Дракон,уникальный воин,может 
     image = images[0][0]
     unit_type = TYPE_FIGHTER
 
-    def __init__(self, x, y, id, player_id):
+    def __init__(self, x, y, unit_id, player_id):
         self.time = 0
         # параметры смены анимации полета дракона
         self.anim_switch = 0
         self.anim_tuple = Dragon.images[player_id]
 
-        super().__init__(x, y, id, player_id, Soldier.images[player_id])
+        super().__init__(x, y, unit_id, player_id, Soldier.images[player_id])
         self.update_image()
         self.delay = 45 * 10
 
@@ -1161,10 +1161,10 @@ class UncompletedBuilding(Unit):  # класс,не построенного,н�
     placeable = False
     unit_type = TYPE_BUILDING
 
-    def __init__(self, x, y, id, player_id, clazz_id):
+    def __init__(self, x, y, unit_id, player_id, clazz_id):
         self.clazz = UNIT_TYPES[int(clazz_id)]
         self.image = UNIT_TYPES[int(clazz_id)].image
-        super().__init__(x, y, id, player_id)
+        super().__init__(x, y, unit_id, player_id)
         self.health = 1
         self.max_health = 100
         self.completed = False
@@ -1204,9 +1204,9 @@ class Ballista(Fighter):  # Баллиста,уникальный класс в�
     image = images[0]
     unit_type = TYPE_FIGHTER
 
-    def __init__(self, x, y, id, player_id):
+    def __init__(self, x, y, unit_id, player_id):
         self.image = Ballista.images[player_id]
-        super().__init__(x, y, id, player_id, Ballista.images[player_id])
+        super().__init__(x, y, unit_id, player_id, Ballista.images[player_id])
         self.delay_time = 400
 
     def update(self, event, game):
@@ -1270,9 +1270,9 @@ class Farm(Unit):  # Ферма, чем их больше,тем больше у
             Farm.instances.remove(i)
         return meat
 
-    def __init__(self, x, y, id, player_id):
+    def __init__(self, x, y, unit_id, player_id):
         self.image = Farm.images[player_id]
-        super().__init__(x, y, id, player_id)
+        super().__init__(x, y, unit_id, player_id)
         Farm.instances.append(self)
 
     def update(self, event, game):

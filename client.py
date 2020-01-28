@@ -34,7 +34,6 @@ current_channel = None
 
 def play_sound(sound: SoundType):
     global current_channel
-    print(current_channel)
     if current_channel is not None:
         if current_channel.get_busy():
             return
@@ -73,12 +72,15 @@ class Minimap:
 
     def worldpos_to_minimap(self, pos):
         return MINIMAP_OFFSETX + (pos[0] + WORLD_SIZE / 2) / WORLD_SIZE * MINIMAP_SIZEX - MINIMAP_ICON_SIZE / 2, \
-            MINIMAP_OFFSETY + (pos[1] + WORLD_SIZE / 2) / WORLD_SIZE * MINIMAP_SIZEY - MINIMAP_ICON_SIZE / 2
+               MINIMAP_OFFSETY + (pos[1] + WORLD_SIZE / 2) / WORLD_SIZE * MINIMAP_SIZEY - MINIMAP_ICON_SIZE / 2
+
+    def minimap_to_worldpos(self, pos):
+        return pos[0] / self.rect.width * WORLD_SIZE - WORLD_SIZE * 0.5, \
+               pos[1] / self.rect.height * WORLD_SIZE - WORLD_SIZE * 0.5
 
     def get_click(self, pos):
         if self.rect.collidepoint(pos[0], pos[1]):
-            return (pos[0] - self.rect.x) / self.rect.width * WORLD_SIZE - WORLD_SIZE * 0.5, \
-                   (pos[1] - self.rect.y) / self.rect.height * WORLD_SIZE - WORLD_SIZE * 0.5
+            return self.minimap_to_worldpos((pos[0] - self.rect.x, pos[1] - self.rect.y))
         return None
 
     def draw(self, camera, game, screen):
@@ -180,9 +182,9 @@ class Client:
         except Exception as e:
             self.disconnect(e)
 
-    def send(self, data):
+    def send(self, msg):
         try:
-            self.conn.send((data + ';').encode())
+            self.conn.send((msg + ';').encode())
         except socket.error as e:
             self.disconnect(e)
 
@@ -326,13 +328,13 @@ class Game:
     def drawSprites(self, surface):
         self.sprites.draw(surface)
 
-    def addEntity(self, type, x, y, id, player_id, camera, args):
+    def addEntity(self, unit_type, x, y, unit_id, player_id, camera, args):
         self.lock.acquire()
-        en = self.find_with_id(id)
+        en = self.find_with_id(unit_id)
         if en:
             print('Fantom', en)
             en.kill()
-        en = UNIT_TYPES[type](x, y, id, player_id, *args)
+        en = UNIT_TYPES[unit_type](x, y, unit_id, player_id, *args)
         en.offsetx = camera.off_x
         en.offsety = camera.off_y
         en.update_rect()
@@ -351,20 +353,20 @@ class Game:
     def update(self, *args):
         self.sprites.update(*args)
 
-    def retarget(self, id, x, y):
+    def retarget(self, unit_id, x, y):
         self.lock.acquire()
         for i in self.sprites:
-            if i.id == id:
+            if i.unit_id == unit_id:
                 if issubclass(type(i), Fighter):
                     i.set_target(TARGET_MOVE, (x, y))
                 self.lock.release()
                 return
-        print(f'No objects with this id {id}!!!')
+        print(f'No objects with this id {unit_id}!!!')
         self.lock.release()
 
-    def find_with_id(self, id):
+    def find_with_id(self, unit_id):
         for spr in self.sprites:
-            if spr.id == id:
+            if spr.unit_id == unit_id:
                 return spr
 
 
@@ -452,7 +454,7 @@ class SelectArea:
                     if self.active:
                         for spr in self.selected:
                             if spr.alive and isinstance(spr, Worker) and spr.player_id == self.game.info.id:
-                                self.client.send(f'4_{spr.id}_{event.ui_element.type}')
+                                self.client.send(f'4_{spr.unit_id}_{event.ui_element.type}')
                     self.clear()
 
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -469,7 +471,7 @@ class SelectArea:
                             continue
                         if spr.alive and spr.unit_type == TYPE_FIGHTER and spr.player_id == self.game.info.id:
                             self.client.send(
-                                f'2_{spr.id}_{event.pos[0] - int(self.camera.off_x)}_{event.pos[1] - int(self.camera.off_y)}')
+                                f'2_{spr.unit_id}_{event.pos[0] - int(self.camera.off_x)}_{event.pos[1] - int(self.camera.off_y)}')
                     self.clear()
             elif event.button == 1:
                 if self.dragged:
@@ -598,7 +600,7 @@ class ProductManager:
                 r2.centery = r1.centery
                 r2.right = r1.left
                 UILabel(r2, clazz.name, self.manager)
-                b.build_id = spr.id
+                b.build_id = spr.unit_id
                 b.class_id = get_class_id(clazz)
                 max_i = i
         if spr.can_upgraded:
@@ -609,7 +611,7 @@ class ProductManager:
             r2.centery = r1.centery
             r2.right = r1.left
             UILabel(r2, 'Улучшить', self.manager)
-            b.build_id = spr.id
+            b.build_id = spr.unit_id
 
     def process_events(self, event):
         self.manager.process_events(event)
@@ -733,29 +735,30 @@ class ClientWait:
                 print(cmd, args)
 
             if cmd == '1':  # Add entity of [type] at [x, y] with [id]
-                unit_type, x, y, id, id_player = int(args[0]), int(args[1]), int(args[2]), int(args[3]), int(args[4])
-                game.addEntity(unit_type, x, y, id, id_player, camera, args[5::])
+                unit_type, x, y, unit_id, id_player = int(args[0]), int(args[1]), int(args[2]), int(args[3]), int(
+                    args[4])
+                game.addEntity(unit_type, x, y, unit_id, id_player, camera, args[5::])
             elif cmd == '2':  # Retarget entity of [type] at [x, y] with [id]
                 if args[0] == str(TARGET_MOVE):
-                    id, x, y = int(args[1]), int(args[2]), int(args[3])
-                    game.retarget(id, x, y)
+                    unit_id, x, y = int(args[1]), int(args[2]), int(args[3])
+                    game.retarget(unit_id, x, y)
                 elif args[0] == str(TARGET_ATTACK):
                     game.lock.acquire()
-                    id, other_id = int(args[1]), int(args[2])
-                    en = game.find_with_id(id)
+                    unit_id, other_id = int(args[1]), int(args[2])
+                    en = game.find_with_id(unit_id)
                     if en:
                         if issubclass(type(en), Fighter):
                             en.set_target(TARGET_ATTACK, game.find_with_id(other_id))
                     else:
-                        print('No object with id:', id)
+                        print('No object with id:', unit_id)
                     game.lock.release()
                 elif args[0] == str(TARGET_NONE):
-                    id = int(args[1])
-                    en = game.find_with_id(id)
+                    unit_id = int(args[1])
+                    en = game.find_with_id(unit_id)
                     if en:
                         en.set_target(TARGET_NONE, None)
                     else:
-                        print('No object with id:', id)
+                        print('No object with id:', unit_id)
 
             elif cmd == '3':  # Update Player Info
                 if args[0] == '1':  # Money
@@ -910,7 +913,6 @@ class ClientWait:
                         settings['DEBUG'] = not settings['DEBUG']
                     elif event.key == pygame.K_F9:
                         data.settings(screen)
-
 
                 if event.type == CLIENT_EVENT_UPDATE:
                     camera.update()

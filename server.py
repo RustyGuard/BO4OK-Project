@@ -254,13 +254,13 @@ class ServerGame:
                 i.client.disconnect(f'You win, {i.nick}')
         self.lock.release()
 
-    def add_player(self, client: ClientConnection, id: int):
+    def add_player(self, client: ClientConnection, player_id: int):
         self.lock.acquire()
         p = Player(client)
-        p.id = id
-        p.client.id = id
+        p.id = player_id
+        p.client.id = player_id
         p.nick = client.nick
-        self.players[id] = p
+        self.players[player_id] = p
         self.lock.release()
 
     def give_resources(self, player_id: int, costs: Tuple[float, float]):
@@ -286,13 +286,13 @@ class ServerGame:
             if ignore_space or (not sprite.spritecollideany(building, self.sprites)):
                 if ignore_money or self.claim_money(player_id, build_class.cost):
                     self.server.send_all(
-                        f'1_{get_class_id(build_class)}_{x}_{y}_{building.id}_{player_id}{building.get_args()}')
+                        f'1_{get_class_id(build_class)}_{x}_{y}_{building.unit_id}_{player_id}{building.get_args()}')
                     self.sprites.add(building)
                     if building.unit_type == TYPE_BUILDING:
                         self.buildings.add(building)
                     if building.can_upgraded:
                         building.next_level(self)
-                        self.server.send_all(f'7_{building.id}_{building.level}')
+                        self.server.send_all(f'7_{building.unit_id}_{building.level}')
             else:
                 self.safe_send(player_id, '8_1')
                 building.kill()
@@ -316,7 +316,7 @@ class ServerGame:
             if not sprite.spritecollideany(building, self.sprites):
                 if self.claim_money(player_id, build_class.cost):
                     self.server.send_all(
-                        f'1_{get_class_id(UncompletedBuilding)}_{x}_{y}_{building.id}_{player_id}{building.get_args()}')
+                        f'1_{get_class_id(UncompletedBuilding)}_{x}_{y}_{building.unit_id}_{player_id}{building.get_args()}')
                     self.sprites.add(building)
                     if building.unit_type == TYPE_BUILDING:
                         self.buildings.add(building)
@@ -336,9 +336,9 @@ class ServerGame:
     def get_building_intersect(self, spr):
         return pygame.sprite.spritecollide(spr, self.buildings, False)
 
-    def retarget(self, id, x, y, client):
+    def retarget(self, unit_id, x, y, client):
         for i in self.sprites:
-            if i.id == id:
+            if i.unit_id == unit_id:
                 if i.unit_type == TYPE_FIGHTER:
                     self.lock.acquire()
                     if i.player_id == client.id:
@@ -347,13 +347,13 @@ class ServerGame:
                     return True
         return False
 
-    def find_with_id(self, id):
+    def find_with_id(self, unit_id):
         for spr in self.sprites:
-            if spr.id == id:
+            if spr.unit_id == unit_id:
                 return spr
 
     def kill(self, spr):
-        self.server.send_all(f'4_{spr.id}')
+        self.server.send_all(f'4_{spr.unit_id}')
         spr.kill()
 
     def remove_player(self, client: ClientConnection):
@@ -456,9 +456,9 @@ def main(screen, nickname):
         if cmd == '1':
             game.place_building(UNIT_TYPES[int(args[0])], int(args[1]), int(args[2]), client.id)
         elif cmd == '2':
-            id, x, y = list(map(int, args))
-            game.retarget(id, x, y, client)
-            print('Retarget:', id, x, y)
+            unit_id, x, y = list(map(int, args))
+            game.retarget(unit_id, x, y, client)
+            print('Retarget:', unit_id, x, y)
         elif cmd == '3':
             en = game.find_with_id(int(args[0]))
             if en is not None:
