@@ -343,12 +343,14 @@ class Game:
         self.sprites.update(*args)
 
     def retarget(self, id, x, y):
+        self.lock.acquire()
         for i in self.sprites:
             if i.id == id:
                 if issubclass(type(i), Fighter):
                     i.set_target(TARGET_MOVE, (x, y))
                 return
         print(f'No objects with this id {id}!!!')
+        self.lock.release()
 
     def find_with_id(self, id):
         for spr in self.sprites:
@@ -728,6 +730,7 @@ class ClientWait:
                     id, x, y = int(args[1]), int(args[2]), int(args[3])
                     game.retarget(id, x, y)
                 elif args[0] == str(TARGET_ATTACK):
+                    game.lock.acquire()
                     id, other_id = int(args[1]), int(args[2])
                     en = game.find_with_id(id)
                     if en:
@@ -735,6 +738,7 @@ class ClientWait:
                             en.set_target(TARGET_ATTACK, game.find_with_id(other_id))
                     else:
                         print('No object with id:', id)
+                    game.lock.release()
                 elif args[0] == str(TARGET_NONE):
                     id = int(args[1])
                     en = game.find_with_id(id)
