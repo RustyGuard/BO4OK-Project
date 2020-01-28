@@ -348,6 +348,7 @@ class Game:
             if i.id == id:
                 if issubclass(type(i), Fighter):
                     i.set_target(TARGET_MOVE, (x, y))
+                self.lock.release()
                 return
         print(f'No objects with this id {id}!!!')
         self.lock.release()
