@@ -901,10 +901,13 @@ class ClientWait:
                     elif event.key == pygame.K_F12:
                         client.disconnect('Application closed.')
                         return False, stats, game.sprites
-
-                if event.type == pygame.KEYUP:
-                    if event.key == pygame.K_F3:
+                    elif event.key == pygame.K_F3:
                         settings['FPS'] = not settings['FPS']
+                    elif event.key == pygame.K_F4:
+                        settings['DEBUG'] = not settings['DEBUG']
+                    elif event.key == pygame.K_F9:
+                        data.settings(screen)
+
 
                 if event.type == CLIENT_EVENT_UPDATE:
                     camera.update()
