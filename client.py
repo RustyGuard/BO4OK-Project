@@ -343,12 +343,15 @@ class Game:
         self.sprites.update(*args)
 
     def retarget(self, id, x, y):
+        self.lock.acquire()
         for i in self.sprites:
             if i.id == id:
                 if issubclass(type(i), Fighter):
                     i.set_target(TARGET_MOVE, (x, y))
+                self.lock.release()
                 return
         print(f'No objects with this id {id}!!!')
+        self.lock.release()
 
     def find_with_id(self, id):
         for spr in self.sprites:
@@ -728,6 +731,7 @@ class ClientWait:
                     id, x, y = int(args[1]), int(args[2]), int(args[3])
                     game.retarget(id, x, y)
                 elif args[0] == str(TARGET_ATTACK):
+                    game.lock.acquire()
                     id, other_id = int(args[1]), int(args[2])
                     en = game.find_with_id(id)
                     if en:
@@ -735,6 +739,7 @@ class ClientWait:
                             en.set_target(TARGET_ATTACK, game.find_with_id(other_id))
                     else:
                         print('No object with id:', id)
+                    game.lock.release()
                 elif args[0] == str(TARGET_NONE):
                     id = int(args[1])
                     en = game.find_with_id(id)
@@ -889,6 +894,10 @@ class ClientWait:
                         client.disconnect('Application closed.')
                         return False, stats, game.sprites
 
+                if event.type == pygame.KEYUP:
+                    if event.key == pygame.K_F3:
+                        settings['FPS'] = not settings['FPS']
+
                 if event.type == CLIENT_EVENT_UPDATE:
                     camera.update()
 
@@ -949,8 +958,9 @@ class ClientWait:
             managers[current_manager[0]].draw_ui(screen)
             select_area.draw_ui(screen)
             screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
-            text = small_font.render(f'FPS: {fps_count}', 1, pygame.Color('red' if fps_count < 40 else 'green'))
-            screen.blit(text, (0, 0))
+            if settings['FPS']:
+                text = small_font.render(f'FPS: {fps_count}', 1, pygame.Color('red' if fps_count < 40 else 'green'))
+                screen.blit(text, (0, 0))
 
             game.lock.release()
             pygame.display.flip()
