@@ -885,6 +885,10 @@ class ClientWait:
                         client.disconnect('Application closed.')
                         return False, stats, game.sprites
 
+                if event.type == pygame.KEYUP:
+                    if event.key == pygame.K_F3:
+                        settings['FPS'] = not settings['FPS']
+
                 if event.type == CLIENT_EVENT_UPDATE:
                     camera.update()
 
@@ -945,8 +949,9 @@ class ClientWait:
             managers[current_manager[0]].draw_ui(screen)
             select_area.draw_ui(screen)
             screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
-            text = small_font.render(f'FPS: {fps_count}', 1, pygame.Color('red' if fps_count < 40 else 'green'))
-            screen.blit(text, (0, 0))
+            if settings['FPS']:
+                text = small_font.render(f'FPS: {fps_count}', 1, pygame.Color('red' if fps_count < 40 else 'green'))
+                screen.blit(text, (0, 0))
 
             game.lock.release()
             pygame.display.flip()
