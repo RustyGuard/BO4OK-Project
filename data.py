@@ -461,6 +461,10 @@ def gameover(screen, game_result):
     coefficient_acceleration = 1  # коэффициент ускорения кручения мечей анимации
     timer = 0
 
+    game_result[2].draw(screen)
+    screen.blit(blackout, (0, 0))
+    screen.blit(blackout, (0, 0))
+
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -469,10 +473,6 @@ def gameover(screen, game_result):
                 if event.key == pygame.K_ESCAPE:
                     sound.stop()
                     return "menu"
-
-
-        game_result[2].draw(screen)
-        screen.blit(blackout, (0, 0))
 
         if animation_of_whirling:  # кручение мечей
             angle_of_inclination += 1 * coefficient_acceleration // 1
@@ -489,17 +489,17 @@ def gameover(screen, game_result):
             for number, coords in enumerate(coords_sword):
                 new_coords = []
                 for j in coords:
-                    if j < -100:
+                    if j < -110:
                         new_coords.append(j + 15)
-                    elif j > 100:
+                    elif j > 110:
                         new_coords.append(j - 15)
                     else:
                         new_coords.append(j)
-                if new_coords[0] == -95 and new_coords[1] == 95:  # проверка на максимальное сближение
+                if new_coords[0] == -110 and new_coords[1] == 110:  # проверка на максимальное сближение
                     animation_of_whirling = True
                 coords_sword[number] = new_coords
             for n, i in enumerate(coords_sword):
                 flip = pygame.transform.rotate(sword, (n + 1 // 2) * 45)
                 screen.blit(flip, flip.get_rect(center=(960 + i[0], 540 + i[1])))
         pygame.display.flip()
-        clock.tick(30)
+        clock.tick(60)

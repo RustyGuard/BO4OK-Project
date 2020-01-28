@@ -66,6 +66,9 @@ class Minimap:
         self.font = pygame.font.Font(None, 25)
         self.minimap = pygame.image.load('sprite-games/minimap.png')
 
+    def worldpos_to_minimap(self, pos):
+        pass
+
     def get_click(self, pos):
         if self.rect.collidepoint(pos[0], pos[1]):
             return (pos[0] - self.rect.x) / self.rect.width * WORLD_SIZE - WORLD_SIZE * 0.5, \
@@ -342,7 +345,8 @@ class Game:
     def retarget(self, id, x, y):
         for i in self.sprites:
             if i.id == id:
-                i.set_target(TARGET_MOVE, (x, y))
+                if issubclass(type(i), Fighter):
+                    i.set_target(TARGET_MOVE, (x, y))
                 return
         print(f'No objects with this id {id}!!!')
 
@@ -435,7 +439,7 @@ class SelectArea:
                 if event.ui_object_id == 'retarget':
                     if self.active:
                         for spr in self.selected:
-                            if isinstance(spr, Worker) and spr.player_id == self.game.info.id:
+                            if spr.alive and isinstance(spr, Worker) and spr.player_id == self.game.info.id:
                                 self.client.send(f'4_{spr.id}_{event.ui_element.type}')
                     self.clear()
 
@@ -451,7 +455,7 @@ class SelectArea:
                     for spr in self.selected:
                         if spr is None:
                             continue
-                        if spr.unit_type == TYPE_FIGHTER and spr.player_id == self.game.info.id:
+                        if spr.alive and spr.unit_type == TYPE_FIGHTER and spr.player_id == self.game.info.id:
                             self.client.send(
                                 f'2_{spr.id}_{event.pos[0] - int(self.camera.off_x)}_{event.pos[1] - int(self.camera.off_y)}')
                     self.clear()
@@ -717,8 +721,8 @@ class ClientWait:
                 print(cmd, args)
 
             if cmd == '1':  # Add entity of [type] at [x, y] with [id]
-                type, x, y, id, id_player = int(args[0]), int(args[1]), int(args[2]), int(args[3]), int(args[4])
-                game.addEntity(type, x, y, id, id_player, camera, args[5::])
+                unit_type, x, y, id, id_player = int(args[0]), int(args[1]), int(args[2]), int(args[3]), int(args[4])
+                game.addEntity(unit_type, x, y, id, id_player, camera, args[5::])
             elif cmd == '2':  # Retarget entity of [type] at [x, y] with [id]
                 if args[0] == str(TARGET_MOVE):
                     id, x, y = int(args[1]), int(args[2]), int(args[3])
@@ -727,7 +731,8 @@ class ClientWait:
                     id, other_id = int(args[1]), int(args[2])
                     en = game.find_with_id(id)
                     if en:
-                        en.set_target(TARGET_ATTACK, game.find_with_id(other_id))
+                        if issubclass(type(en), Fighter):
+                            en.set_target(TARGET_ATTACK, game.find_with_id(other_id))
                     else:
                         print('No object with id:', id)
                 elif args[0] == str(TARGET_NONE):
@@ -856,7 +861,6 @@ class ClientWait:
                 if event.type == pygame.MOUSEBUTTONUP:
                     click = minimap.get_click(event.pos)
                     if click is not None:
-                        print(click)
                         camera.set_pos(-click[0] + settings['WIDTH'] * 0.5, -click[1] + settings['HEIGHT'] * 0.5)
                         continue
 

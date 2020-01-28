@@ -55,6 +55,7 @@ class Unit(Sprite):  # родительский класс любого воин
         self.level = -1
         self.max_health = UNIT_STATS[type(self)][0] * Forge.get_mult(self)[0]
         self.health = self.max_health
+        self.alive = True
         super().__init__()
 
     def __str__(self):
@@ -159,6 +160,7 @@ class Unit(Sprite):  # родительский класс любого воин
         return False
 
     def kill(self):
+        self.alive = False
         if Unit.free_id is not None:
             Unit.free_id.append(self.id)
             print('id', self.id, 'free now')
@@ -938,7 +940,7 @@ class ArcherTower(Fighter):  # Башня лучников,имеет три у�
     cost = (200.0, 20.0)
     placeable = True
     name = 'Башня'
-    level_costs = [(30.0, 30.0, 0), (40.0, 40.0, 0), (70.0, 50.0, 0)]  # todo Баланс
+    level_costs = [(300.0, 30.0, 0), (400.0, 40.0, 0)]  # todo Баланс
     images = [[pygame.image.load(f'sprite-games/building/turret/{team_id[i]}.png') for i in range(10)],
               [pygame.image.load(f'sprite-games/building/turret/2/{team_id[i]}.png') for i in range(10)],
               [pygame.image.load(f'sprite-games/building/turret/3/{team_id[i]}.png') for i in range(10)]]
@@ -972,7 +974,7 @@ class ArcherTower(Fighter):  # Башня лучников,имеет три у�
     def levels_update(self):
         # башня второго уровня стреляет быстрее,а третьего медленнее,но магическими снарядами
         if self.level == 2:
-            self.delay_time = 20
+            self.delay_time = 50
         elif self.level == 3:
             self.delay_time = 100
 
@@ -1192,7 +1194,7 @@ class UncompletedBuilding(Unit):  # класс,не построенного,н�
 
 
 class Ballista(Fighter):  # Баллиста,уникальный класс воина,имеет преимущество против драконов
-    cost = (300.0, 50.0)
+    cost = (300.0, 100.0)
     placeable = False
     power_cost = 5  # todo Баланс
     name = 'Баллиста'
