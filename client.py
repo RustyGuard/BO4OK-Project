@@ -2,7 +2,7 @@ import socket
 import threading
 from random import choice
 from threading import Lock
-from typing import List
+from typing import List, Tuple
 
 from pygame.mixer import Sound, SoundType
 
@@ -753,13 +753,15 @@ class ClientWait:
                         print('No object with id:', unit_id)
                     game.lock.release()
                 elif args[0] == str(TARGET_NONE):
+                    game.lock.acquire()
                     unit_id = int(args[1])
                     en = game.find_with_id(unit_id)
                     if en:
-                        en.set_target(TARGET_NONE, None)
+                        if issubclass(type(en), Fighter):
+                            en.set_target(TARGET_NONE, None)
                     else:
                         print('No object with id:', unit_id)
-
+                    game.lock.release()
             elif cmd == '3':  # Update Player Info
                 if args[0] == '1':  # Money
                     game.info.money = float(args[1])
@@ -778,21 +780,26 @@ class ClientWait:
                     stats['units_created'] += 1
 
             elif cmd == '4':
+                game.lock.acquire()
                 en = game.find_with_id(int(args[0]))
                 if en is not None:
                     en.kill()
+                game.lock.release()
             elif cmd == '5':
+                game.lock.acquire()
                 en = game.find_with_id(int(args[0]))
                 en.health = float(args[1])
                 en.max_health = float(args[2])
-
+                game.lock.release()
             elif cmd == '6':
                 camera.set_pos(int(args[0]), int(args[1]))
                 print(camera.off_x, camera.off_y)
             elif cmd == '7':
+                game.lock.acquire()
                 en = game.find_with_id(int(args[0]))
                 en.level = int(args[1])
                 en.update_image()
+                game.lock.release()
             elif cmd == '8':
                 if args[0] == '0':
                     if args[1] == '0':
@@ -839,6 +846,7 @@ class ClientWait:
             else:
                 print('Taken message:', cmd, args)
 
+        Unit.free_id = None
         win = [None]
         minimap = Minimap()
         background = pygame.image.load('sprite-games/small_map.png').convert()

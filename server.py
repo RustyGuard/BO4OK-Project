@@ -84,7 +84,8 @@ class Server:
     def __init__(self, ip='localhost'):
         self.ip = ip
         self.clients = []
-        self.connected = 0
+        self.connected = True
+        self.players = 0
         self.waiting = True
         self.callback = None
         self.connected_callback = None
@@ -122,19 +123,24 @@ class Server:
         except socket.error as e:
             print(str(e))
 
-        self.s.listen(1)
+        try:
+            self.s.listen(1)
+        except Exception as e:
+            self.connected = False
+            print('Failed to listen:', e)
+            return
         print("Waiting for a connection, Server Started")
 
-        while self.connected < MAX_PLAYERS:
+        while self.players < MAX_PLAYERS:
             try:
                 print("[CONNECT] Finding connection!")
                 conn, addr = self.s.accept()
                 if self.is_ready():
                     break
-                self.connected += 1
-                print(f"[CONNECT] Connected [{self.connected}/{MAX_PLAYERS}]!")
+                self.players += 1
+                print(f"[CONNECT] Connected [{self.players}/{MAX_PLAYERS}]!")
                 self.authentication(conn, addr)
-                self.send_all(f'10_{self.connected}_{MAX_PLAYERS}')
+                self.send_all(f'10_{self.players}_{MAX_PLAYERS}')
             except Exception as ex:
                 print(ex)
                 return
@@ -172,9 +178,9 @@ class Server:
                 print('[PLAYER THREAD ERROR] from client:', client.id, ex)
                 self.clients.remove(client)
                 self.disconnected_callback(client)
-                self.connected -= 1
-                print(f"[CONNECT] Disconnected [{self.connected}/{MAX_PLAYERS}]!")
-                self.send_all(f'10_{self.connected}_{MAX_PLAYERS}')
+                self.players -= 1
+                print(f"[CONNECT] Disconnected [{self.players}/{MAX_PLAYERS}]!")
+                self.send_all(f'10_{self.players}_{MAX_PLAYERS}')
                 return
 
 
@@ -475,7 +481,7 @@ def main(screen, nickname):
                 if fort_need <= Fortress.get_player_level(client.id):
                     if game.claim_money(client.id, cost):
                         en.next_level(game)
-                        server.send_all(f'7_{en.id}_{en.level}')
+                        server.send_all(f'7_{en.unit_id}_{en.level}')
                 else:
                     game.safe_send(client.id, '8_2')
         else:
@@ -531,7 +537,7 @@ def main(screen, nickname):
     data.Button(cancel_buttons, "cancel", image["cancel"])
     font1 = pygame.font.Font(None, 80)
 
-    while not server.is_ready():
+    while server.connected and not server.is_ready():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 exit()
@@ -555,6 +561,9 @@ def main(screen, nickname):
         screen.blit(font1.render(nickname, 1, (255, 255, 255)), (810, 740))
         screen.blit(data.cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
         pygame.display.flip()
+
+    if not server.connected:
+        return "play"
 
     nicknames = []
     for i, c in enumerate(server.clients):

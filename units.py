@@ -1,6 +1,5 @@
 import math
 from random import randint
-from typing import Dict, Tuple
 
 import pygame
 from pygame.rect import Rect
