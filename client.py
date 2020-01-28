@@ -721,8 +721,8 @@ class ClientWait:
                 print(cmd, args)
 
             if cmd == '1':  # Add entity of [type] at [x, y] with [id]
-                type, x, y, id, id_player = int(args[0]), int(args[1]), int(args[2]), int(args[3]), int(args[4])
-                game.addEntity(type, x, y, id, id_player, camera, args[5::])
+                unit_type, x, y, id, id_player = int(args[0]), int(args[1]), int(args[2]), int(args[3]), int(args[4])
+                game.addEntity(unit_type, x, y, id, id_player, camera, args[5::])
             elif cmd == '2':  # Retarget entity of [type] at [x, y] with [id]
                 if args[0] == str(TARGET_MOVE):
                     id, x, y = int(args[1]), int(args[2]), int(args[3])
