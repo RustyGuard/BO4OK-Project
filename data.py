@@ -463,7 +463,6 @@ def gameover(screen, game_result):
 
     game_result[2].draw(screen)
     screen.blit(blackout, (0, 0))
-    screen.blit(blackout, (0, 0))
 
     while True:
         for event in pygame.event.get():

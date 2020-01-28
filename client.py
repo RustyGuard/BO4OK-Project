@@ -2,6 +2,7 @@ import socket
 import threading
 from random import choice
 from threading import Lock
+from typing import List
 
 from pygame.mixer import Sound, SoundType
 
@@ -65,9 +66,11 @@ class Minimap:
         self.rect = Rect(MINIMAP_OFFSETX, MINIMAP_OFFSETY, MINIMAP_SIZEX, MINIMAP_SIZEY)
         self.font = pygame.font.Font(None, 25)
         self.minimap = pygame.image.load('sprite-games/minimap.png')
+        self.marks: List[Tuple[int, int, Color]] = []
 
     def worldpos_to_minimap(self, pos):
-        pass
+        return MINIMAP_OFFSETX + (pos[0] + WORLD_SIZE / 2) / WORLD_SIZE * MINIMAP_SIZEX - MINIMAP_ICON_SIZE / 2, \
+            MINIMAP_OFFSETY + (pos[1] + WORLD_SIZE / 2) / WORLD_SIZE * MINIMAP_SIZEY - MINIMAP_ICON_SIZE / 2
 
     def get_click(self, pos):
         if self.rect.collidepoint(pos[0], pos[1]):
@@ -84,11 +87,10 @@ class Minimap:
         text = self.font.render(f'{game.info.power}/{game.info.max_power}', 1, Color('palevioletred3'))
         screen.blit(text, (260, 805))
 
+        icon = Rect(0, 0, MINIMAP_ICON_SIZE, MINIMAP_ICON_SIZE)
         for i in game.buildings:
-            rect = (MINIMAP_OFFSETX + (i.x + WORLD_SIZE / 2) / WORLD_SIZE * MINIMAP_SIZEX - MINIMAP_ICON_SIZE / 2,
-                    MINIMAP_OFFSETY + (i.y + WORLD_SIZE / 2) / WORLD_SIZE * MINIMAP_SIZEY - MINIMAP_ICON_SIZE / 2,
-                    MINIMAP_ICON_SIZE, MINIMAP_ICON_SIZE)
-            pygame.draw.rect(screen, COLOR_LIST[i.player_id], rect)
+            icon.center = self.worldpos_to_minimap((i.x, i.y))
+            pygame.draw.rect(screen, COLOR_LIST[i.player_id], icon)
             if isinstance(i, Fortress):
                 color = Color('white')
             elif isinstance(i, UncompletedBuilding):
@@ -97,7 +99,11 @@ class Minimap:
                 color = Color('red')
             else:
                 color = Color('blue')
-            pygame.draw.rect(screen, color, rect, 1)
+            pygame.draw.rect(screen, color, icon, 1)
+
+        for i, j, k in self.marks:
+            icon.center = self.worldpos_to_minimap((i, j))
+            pygame.draw.ellipse(screen, k, icon)
 
         rect = (MINIMAP_OFFSETX + (-camera.off_x + WORLD_SIZE / 2) / WORLD_SIZE * MINIMAP_SIZEX,
                 MINIMAP_OFFSETY + (-camera.off_y + WORLD_SIZE / 2) / WORLD_SIZE * MINIMAP_SIZEY,
@@ -822,10 +828,13 @@ class ClientWait:
                 win[0] = True
             elif cmd == '12':
                 win[0] = False
+            elif cmd == '13':
+                minimap.marks.append((int(args[0]), int(args[1]), Color('green')))
             else:
                 print('Taken message:', cmd, args)
 
         win = [None]
+        minimap = Minimap()
         background = pygame.image.load('sprite-games/small_map.png').convert()
         update_settings()
         particles = Group()
@@ -851,7 +860,6 @@ class ClientWait:
         camera_area.rect = Rect(0, 0, 1920, 1080)
 
         select_area = SelectArea(game, camera, client)
-        minimap = Minimap()
 
         while running and client.connected:
             if win[0] is not None:

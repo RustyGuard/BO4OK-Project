@@ -409,7 +409,8 @@ def place_fortresses(game: ServerGame):
 
     for _ in range(FORESTS_COUNT):
         trees_left = TREES_PER_FOREST
-        forest_x, forest_y = randint(- WORLD_SIZE / 2, WORLD_SIZE / 2), randint(- WORLD_SIZE / 2, WORLD_SIZE / 2)
+        forest_x, forest_y = randint(- WORLD_SIZE // 3, WORLD_SIZE // 3), randint(- WORLD_SIZE // 3, WORLD_SIZE // 3)
+        game.server.send_all(f'13_{forest_x}_{forest_y}')
         tree_x, tree_y = [randint(forest_x - TREES_RANGE, forest_x + TREES_RANGE),
                           randint(forest_y - TREES_RANGE, forest_y + TREES_RANGE)]
         while trees_left > 0:
