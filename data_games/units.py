@@ -676,9 +676,7 @@ class ProductingBuild(Unit):  # Надкласс зданий производя
 
     def create_unit(self, game, clazz):  # расположение юнита
         if clazz is not None:
-            if game.place(clazz,
-                          int(self.x) - randint(self.rect.width // 2 + 25, self.rect.width + self.rect.width // 2),
-                          int(self.y) - randint(-50, 50),
+            if game.place(clazz, int(self.x * 0.95) - randint(-75, 75), int(self.y * 0.95) - randint(-75, 75),
                           self.player_id, ignore_space=True, ignore_money=True, ignore_fort_level=True) is not None:
                 game.safe_send(self.player_id, '3_6')
 
