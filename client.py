@@ -94,6 +94,8 @@ class Minimap:
 
         icon = Rect(0, 0, MINIMAP_ICON_SIZE, MINIMAP_ICON_SIZE)
         for i in game.buildings:
+            if isinstance(i, Stone):
+                continue
             icon.center = self.worldpos_to_minimap((i.x, i.y))
             pygame.draw.rect(screen, COLOR_LIST[i.player_id], icon)
             if isinstance(i, Fortress):
@@ -103,7 +105,7 @@ class Minimap:
             elif issubclass(type(i), ProductingBuild):
                 color = Color('red')
             else:
-                color = Color('blue')
+                color = Color('black')
             pygame.draw.rect(screen, color, icon, 1)
 
         for i, j, k in self.marks:
@@ -217,7 +219,10 @@ class Client:
     def invoke(self, cmd, args):
         while self.callback is None:
             pass
-        self.callback(cmd, args, *self.call_args)
+        try:
+            self.callback(cmd, args, *self.call_args)
+        except Exception as ex:
+            print('[WARNING]', ex)
 
 
 class PlayerInfo:

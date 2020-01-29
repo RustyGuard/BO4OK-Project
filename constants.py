@@ -9,12 +9,13 @@ COLOR_LIST = [
     (69, 220, 220),  # 'aqua'
     (0, 0, 255),  # 'blue'
     (0, 255, 0),  # 'green'
-    (195, 195, 195),  # 'light_green'
+    (102, 255, 102),  # 'light_green'
     (255, 125, 0),  # 'orange'
     (255, 192, 203),  # 'pink'
     (160, 32, 240),  # 'purple'
     (255, 0, 0),  # 'red'
     (255, 255, 0),  # 'yellow'
+    (195, 195, 195)  # server
 ]
 
 CAMERA_MAX_SPEED = 30.0
@@ -43,7 +44,7 @@ MINIMAP_SIZEX = 250
 MINIMAP_SIZEY = 245
 MINIMAP_ICON_SIZE = 12
 
-# todo Поменять количествогенерируемых деревьев
+# Количество генерируемых деревьев
 FORESTS_COUNT = 10
 TREES_PER_FOREST = 30
 TREES_RANGE = 300

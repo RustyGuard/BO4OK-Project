@@ -282,7 +282,7 @@ class ServerGame:
     def update(self, *args):
         self.sprites.update(*args)
 
-    def place(self, build_class, x, y, player_id, *args,
+    def place(self, build_class, x: int, y: int, player_id: int, *args,
               ignore_space=False, ignore_money=False, ignore_fort_level=False):
         self.lock.acquire()
 
@@ -427,7 +427,7 @@ def place_fortresses(game: ServerGame):
 
     for player_id, player in game.players.items():
         x, y = cos(radians(angle)), sin(radians(angle))
-        angle += 360 / players_count
+        angle += 360 / players_count / 2
         x, y = int(x * 3500), int(y * 3500)
         game.place(Fortress, x, y, player_id,
                    ignore_money=True, ignore_fort_level=True, ignore_space=True)
@@ -436,6 +436,15 @@ def place_fortresses(game: ServerGame):
         x, y = int(x * 0.8), int(y * 0.8)
         game.place(Mine, x, y, -1,
                    ignore_money=True, ignore_fort_level=True, ignore_space=True)
+
+        stone_x, stone_y = cos(radians(angle)), sin(radians(angle))
+        current_x, current_y = stone_x * 250, stone_y * 250
+        while abs(current_x) < WORLD_SIZE / 2 + 50 and abs(current_y) < WORLD_SIZE / 2 + 50:
+            game.place(Stone, int(current_x), int(current_y), -1,
+                       ignore_space=True, ignore_money=True, ignore_fort_level=True)
+            current_x, current_y = current_x + stone_x * 100, current_y + stone_y * 100
+
+        angle += 360 / players_count / 2
 
         trees_left = 15
         tree_x, tree_y = randint(x - 500, x + 500), randint(y - 500, y + 500)

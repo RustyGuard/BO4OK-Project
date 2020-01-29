@@ -1281,6 +1281,18 @@ class Farm(Unit):  # Ферма, чем их больше,тем больше у
                 return
 
 
+class Stone(Unit):
+    unit_type = TYPE_BUILDING
+    image = pygame.image.load('sprite-games/building/stone.png')
+    name = 'Булыжник'
+    placeable = False
+    cost = (0.0, 0.0)
+
+    def __init__(self, x, y, unit_id, player_id):
+        self.image = Stone.image
+        super().__init__(x, y, unit_id, player_id)
+
+
 # Словарь типов возможных юнитов
 UNIT_TYPES = {
     0: Soldier,
@@ -1301,7 +1313,8 @@ UNIT_TYPES = {
     15: Workshop,
     16: Forge,
     17: Farm,
-    18: MagicBall
+    18: MagicBall,
+    19: Stone
 }
 # 'Статы' всех юнитов - максимальное здоровье и урон
 UNIT_STATS = {  # (max_health, base_dmg)
@@ -1323,7 +1336,8 @@ UNIT_STATS = {  # (max_health, base_dmg)
     Workshop: (1200, 0),  # Workshop,
     Forge: (500, 0),  # Forge
     Farm: (250, 0),  # Farm
-    MagicBall: (1, 120)  # Magic Ball
+    MagicBall: (1, 120),  # Magic Ball
+    Stone: (1, 0)
 }
 
 
