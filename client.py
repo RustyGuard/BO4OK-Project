@@ -25,9 +25,9 @@ sounds = {
     'build_completed': Sound('music/construction_completed.ogg'),
     'no_money': Sound('music/need_gold.ogg'),
     'no_wood': Sound('music/not_enough_wood.ogg'),
-    'no_level': Sound('music/construction_completed.ogg'),  # todo Создать файл
+    'no_level': Sound('music/no_level.ogg'),
     'no_meat': Sound('music/build_a_farm.ogg'),
-    'no_place': Sound('music/construction_completed.ogg')  # todo Создать файл
+    'no_place': Sound('music/no_place.ogg')
 }
 current_channel = None
 

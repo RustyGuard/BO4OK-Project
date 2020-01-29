@@ -1,4 +1,5 @@
-﻿import pygame, sqlite3, datetime
+﻿import pygame
+import sqlite3, datetime
 
 # инициализация глобальный перемен функций
 cursor = pygame.image.load('sprite-games/icon/cursor.png')

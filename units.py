@@ -1283,7 +1283,7 @@ class Farm(Unit):  # Ферма, чем их больше,тем больше у
 
 class Stone(Unit):
     unit_type = TYPE_BUILDING
-    image = pygame.image.load('sprite-games/building/stone.png')
+    image = pygame.image.load('sprite-games/icon/stone.png')
     name = 'Булыжник'
     placeable = False
     cost = (0.0, 0.0)
