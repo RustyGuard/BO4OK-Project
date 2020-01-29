@@ -5,7 +5,7 @@
     },
     "images": {
       "normal_image": {
-        "path": "sprite-games/icon/casern.png"
+        "path": "sprite/icon/casern.png"
       }
     }
   },
@@ -15,7 +15,7 @@
     },
     "images": {
       "normal_image": {
-        "path": "sprite-games/icon//fortress.png"
+        "path": "sprite/icon//fortress.png"
       }
     }
   },
@@ -25,7 +25,7 @@
     },
     "images": {
       "normal_image": {
-        "path": "sprite-games/icon/dragonlair.png"
+        "path": "sprite/icon/dragonlair.png"
       }
     }
   },
@@ -35,7 +35,7 @@
     },
     "images": {
       "normal_image": {
-        "path": "sprite-games/icon/workshop.png"
+        "path": "sprite/icon/workshop.png"
       }
     }
   },
@@ -45,7 +45,7 @@
     },
     "images": {
       "normal_image": {
-        "path": "sprite-games/icon/turret.png"
+        "path": "sprite/icon/turret.png"
       }
     }
   },
@@ -55,7 +55,7 @@
     },
     "images": {
       "normal_image": {
-        "path": "sprite-games/icon/forge.png"
+        "path": "sprite/icon/forge.png"
       }
     }
   },
@@ -65,7 +65,7 @@
     },
     "images": {
       "normal_image": {
-        "path": "sprite-games/icon/farm.png"
+        "path": "sprite/icon/farm.png"
       }
     }
   },
@@ -75,7 +75,7 @@
     },
     "images": {
       "normal_image": {
-        "path": "sprite-games/warrior/soldier/black.png"
+        "path": "sprite/warrior/soldier/black.png"
       }
     }
   },
@@ -85,7 +85,7 @@
     },
     "images": {
       "normal_image": {
-        "path": "sprite-games/warrior/archer/black.png"
+        "path": "sprite/warrior/archer/black.png"
       }
     }
   },
@@ -95,7 +95,7 @@
     },
     "images": {
       "normal_image": {
-        "path": "sprite-games/warrior/working/black.png"
+        "path": "sprite/warrior/working/black.png"
       }
     }
   },
@@ -105,7 +105,7 @@
     },
     "images": {
       "normal_image": {
-        "path": "sprite-games/warrior/ballista/icon.png"
+        "path": "sprite/warrior/ballista/icon.png"
       }
     }
   },
@@ -115,7 +115,7 @@
     },
     "images": {
       "normal_image": {
-        "path": "sprite-games/warrior/dragon/icon.png"
+        "path": "sprite/warrior/dragon/icon.png"
       }
     }
   },
@@ -125,7 +125,7 @@
     },
     "images": {
       "normal_image": {
-        "path": "sprite-games/icon/upgrade.png"
+        "path": "sprite/icon/upgrade.png"
       }
     }
   }

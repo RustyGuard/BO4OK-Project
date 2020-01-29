@@ -5,17 +5,16 @@ from threading import Lock
 from typing import List, Tuple
 
 from pygame.mixer import Sound, SoundType
-
-import data
+from . import data
 import pygame_gui
 from pygame import Color
 from pygame.sprite import Group
 from pygame_gui import UIManager
 from pygame_gui.elements import UIButton, UILabel
 
-from units import *
+from .units import *
 
-cursor = pygame.image.load('sprite-games/icon/cursor.png')
+cursor = pygame.image.load('sprite/icon/cursor.png')
 clock = pygame.time.Clock()
 pygame.mixer.init()
 music = data.Music("game", ["game", "game1"])
@@ -42,8 +41,8 @@ def play_sound(sound: SoundType):
 
 
 def random_nick():
-    adj = open('sprite-games/random_adj.txt').readlines()
-    noun = open('sprite-games/random_noun.txt').readlines()
+    adj = open('nickname_base/random_adj.txt').readlines()
+    noun = open('nickname_base/random_noun.txt').readlines()
     return (choice(adj).replace('\n', '') + ' ' + choice(noun).replace('\n', '')).capitalize()
 
 
@@ -51,7 +50,7 @@ class Minimap:
     def __init__(self):
         self.rect = Rect(MINIMAP_OFFSETX, MINIMAP_OFFSETY, MINIMAP_SIZEX, MINIMAP_SIZEY)
         self.font = pygame.font.Font(None, 25)
-        self.minimap = pygame.image.load('sprite-games/minimap.png')
+        self.minimap = pygame.image.load('sprite/minimap.png')
         self.marks: List[Tuple[int, int, Color]] = []
 
     def worldpos_to_minimap(self, pos):
@@ -112,9 +111,9 @@ class Particle(Sprite):
         self.cur_frame = 0
         self.x = x
         self.y = y
-        self.frames = [pygame.image.load(f'sprite-games/building/{type_building}/smoke/{1}.png'),
-                       pygame.image.load(f'sprite-games/building/{type_building}/smoke/{2}.png'),
-                       pygame.image.load(f'sprite-games/building/{type_building}/smoke/{3}.png')]
+        self.frames = [pygame.image.load(f'sprite/building/{type_building}/smoke/{1}.png'),
+                       pygame.image.load(f'sprite/building/{type_building}/smoke/{2}.png'),
+                       pygame.image.load(f'sprite/building/{type_building}/smoke/{3}.png')]
         self.image = self.frames[self.cur_frame]
         self.rect = self.image.get_rect()
         self.rect.centerx = self.x + camera.off_x
@@ -374,7 +373,7 @@ class SelectArea:
         self.game = game
         self.camera = camera
         self.client = client
-        self.hided_manager = UIManager(pygame.display.get_surface().get_size(), 'sprite-games/themes/game_theme.json')
+        self.hided_manager = UIManager(pygame.display.get_surface().get_size(), 'data_games/game_theme.json')
         UIButton(Rect(5, 5, 50, 50), 'DIG', self.hided_manager, object_id='retarget').type = STATE_DIG
         UIButton(Rect(55, 5, 50, 50), 'FIGHT', self.hided_manager, object_id='retarget').type = STATE_FIGHT
         UIButton(Rect(110, 5, 50, 50), 'CHOP', self.hided_manager, object_id='retarget').type = STATE_CHOP
@@ -495,7 +494,7 @@ class MainManager:
         self.client = client
         self.current_manager = current_manager
         self.managers = managers
-        self.manager = UIManager(pygame.display.get_surface().get_size(), 'sprite-games/themes/game_theme.json')
+        self.manager = UIManager(pygame.display.get_surface().get_size(), 'data_games/game_theme.json')
         build_i = 0
         for build_id, clazz in UNIT_TYPES.items():
             if clazz.placeable:
@@ -575,7 +574,7 @@ class PlaceManager:
 
 class ProductManager:
     def __init__(self, screen):
-        self.manager = UIManager(screen.get_size(), 'sprite-games/themes/game_theme.json')
+        self.manager = UIManager(screen.get_size(), 'data_games/game_theme.json')
         self.spr = None
 
     def set_building(self, spr):
@@ -663,7 +662,7 @@ class ClientWait:
                 print(players_info)
 
         client.setEventCallback(read)
-        background = pygame.image.load('sprite-games/data/play.png').convert()
+        background = pygame.image.load('sprite/data/play.png').convert()
         image = {"host": (330, 250),
                  "connect": (330, 455),
                  "menu": (340, 700),
@@ -682,7 +681,7 @@ class ClientWait:
         back_buttons = pygame.sprite.Group()
         data.Button(back_buttons, "menu", image["menu"])
 
-        list_expectation = [pygame.image.load(f'sprite-games/data/expectation/{i}.png') for i in range(1, 5)]
+        list_expectation = [pygame.image.load(f'sprite/data/expectation/{i}.png') for i in range(1, 5)]
         anim_expectation_number = 0
 
         running = True
@@ -854,7 +853,7 @@ class ClientWait:
         Unit.free_id = None
         win = [None]
         minimap = Minimap()
-        background = pygame.image.load('sprite-games/small_map.png').convert()
+        background = pygame.image.load('sprite/small_map.png').convert()
         settings = data.read_settings()
         particles = Group()
         small_font = pygame.font.Font(None, 25)

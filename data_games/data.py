@@ -2,7 +2,7 @@
 import sqlite3, datetime
 
 # инициализация глобальный перемен функций
-cursor = pygame.image.load('sprite-games/icon/cursor.png')
+cursor = pygame.image.load('sprite/icon/cursor.png')
 clock = pygame.time.Clock()
 nickname = ""  # никнейм игрока(если поле пустое - выберает рандомное имя)
 ip_conect = "192.168.0."   # айпи подключения к желаемому хосту
@@ -14,15 +14,15 @@ class Button(pygame.sprite.Sprite):
     def __init__(self, group, name, image, button_type=None):
         super().__init__(group)
         if not button_type:  # стандартная кнопка
-            self.stok_image = pygame.image.load(f'sprite-games/buttons/{name}.png')
-            self.anim = pygame.image.load(f'sprite-games/buttons/anim/{name}.png')
+            self.stok_image = pygame.image.load(f'sprite/buttons/{name}.png')
+            self.anim = pygame.image.load(f'sprite/buttons/anim/{name}.png')
         elif button_type == 1:  # нопка с постаянно включенной анимацией
-            self.stok_image = self.anim = pygame.image.load(f'sprite-games/buttons/anim/{name}.png')
+            self.stok_image = self.anim = pygame.image.load(f'sprite/buttons/anim/{name}.png')
         elif button_type == 2:  # булевое окно(вкл, выкл)
-            self.stok_image = pygame.image.load(f'sprite-games/buttons/field.png')
-            self.anim = pygame.image.load(f'sprite-games/buttons/tick_field.png')
+            self.stok_image = pygame.image.load(f'sprite/buttons/field.png')
+            self.anim = pygame.image.load(f'sprite/buttons/tick_field.png')
         elif button_type == 3:  # нопка с постаянно выключенной анимацией
-            self.stok_image = self.anim = pygame.image.load(f'sprite-games/buttons/{name}.png')
+            self.stok_image = self.anim = pygame.image.load(f'sprite/buttons/{name}.png')
         self.name = name  # имя кнопки
         self.image = self.stok_image  # стандартное изображение
         self.rect = self.image.get_rect()
@@ -92,7 +92,7 @@ class Music:
 def read_settings():
     """ Функция чтения файла с настройками """
     settings = {}
-    for i in open('settings.txt', 'r').read().split("\n"):
+    for i in open('settings/settings.txt', 'r').read().split("\n"):
         a = i.split()
         if a[1] == "TRUE":
             settings[a[0]] = True
@@ -109,7 +109,7 @@ def read_settings():
 def write_settings(settings):
     """ Функция записи измененений настронек """
     new_settings = []
-    file_settings = open('settings.txt', 'w+')
+    file_settings = open('settings/settings.txt', 'w+')
     for i in settings:
         if settings[i] is True:
             new_settings.append(i + " TRUE")
@@ -125,7 +125,7 @@ def write_settings(settings):
 def menu(screen):
     """ Функция окна гланого меню """
     global cursor, clock
-    background = pygame.image.load('sprite-games/data/menu.png').convert()
+    background = pygame.image.load('sprite/data/menu.png').convert()
     screen.blit(background, (0, 0))
 
     image = {"play": (28, 950),
@@ -157,12 +157,12 @@ def headpiece(screen):
     global clock
 
     # инициализация изображений
-    bo4ok = pygame.image.load('sprite-games/headpiece/Bo4ok.png')
-    games = pygame.image.load('sprite-games/headpiece/Games.png')
-    potick = pygame.image.load('sprite-games/headpiece/Potick1.png')
-    potick2 = pygame.image.load('sprite-games/headpiece/Potick2.png')
-    stone = pygame.image.load('sprite-games/headpiece/Stone.png')
-    water = pygame.image.load('sprite-games/headpiece/Water.png')
+    bo4ok = pygame.image.load('sprite/headpiece/Bo4ok.png')
+    games = pygame.image.load('sprite/headpiece/Games.png')
+    potick = pygame.image.load('sprite/headpiece/Potick1.png')
+    potick2 = pygame.image.load('sprite/headpiece/Potick2.png')
+    stone = pygame.image.load('sprite/headpiece/Stone.png')
+    water = pygame.image.load('sprite/headpiece/Water.png')
 
     bo4ok_rect = [-900, 500]
     potick_rect = [-400, 500]
@@ -206,7 +206,7 @@ def headpiece(screen):
 def ip(screen):
     """ Функция окна подключения к игре по айпи """
     global cursor, clock, ip_conect
-    background = pygame.image.load('sprite-games/data/ip.png').convert()
+    background = pygame.image.load('sprite/data/ip.png').convert()
     screen.blit(background, (0, 0))
 
     image = {"OK": (1085, 709),
@@ -248,7 +248,7 @@ def ip(screen):
 def play(screen):
     """ Функция мерню подключеия/создания сессии """
     global cursor, clock, nickname
-    background = pygame.image.load('sprite-games/data/play.png').convert()
+    background = pygame.image.load('sprite/data/play.png').convert()
     screen.blit(background, (0, 0))
 
     image = {"host": (330, 250),
@@ -289,7 +289,7 @@ def play(screen):
 def settings(screen, music):
     """ функция окна настроек """
     global cursor, clock
-    background = pygame.image.load('sprite-games/data/settings.png').convert()
+    background = pygame.image.load('sprite/data/settings.png').convert()
     screen.blit(background, (0, 0))
 
     tick_field_image = {"BACKGROUND": (15, 183),
@@ -365,8 +365,8 @@ def settings(screen, music):
 def titers(screen):
     """ Функция титров с создателями и проделанной работой """
     global clock
-    background = pygame.image.load('sprite-games/data/titers_fon.png').convert()
-    titers = pygame.image.load('sprite-games/data/titers.png')
+    background = pygame.image.load('sprite/data/titers_fon.png').convert()
+    titers = pygame.image.load('sprite/data/titers.png')
     titers_rect = [200, 1200]
     while True:
         for event in pygame.event.get():
@@ -398,7 +398,7 @@ def write_statistics(stats):
 def statistics(screen):
     """ Функция окна со стотистикой пользователя """
     global cursor, clock
-    background = pygame.image.load('sprite-games/data/statistics.png').convert()
+    background = pygame.image.load('sprite/data/statistics.png').convert()
     screen.blit(background, (0, 0))
 
     all_buttons = pygame.sprite.Group()
@@ -441,15 +441,15 @@ def gameover(screen, game_result):
     global clock
 
     # инициализация изображений
-    sword = pygame.image.load('sprite-games/over/sword.png')
-    swords = pygame.image.load('sprite-games/over/swords.png')
+    sword = pygame.image.load('sprite/over/sword.png')
+    swords = pygame.image.load('sprite/over/swords.png')
     if game_result[0]:
-        win = pygame.image.load('sprite-games/over/win.png')
+        win = pygame.image.load('sprite/over/win.png')
         sound = pygame.mixer.Sound("music/win.ogg")
     else:
-        win = pygame.image.load('sprite-games/over/loose.png')
+        win = pygame.image.load('sprite/over/loose.png')
         sound = pygame.mixer.Sound("music/loose.ogg")
-    blackout = pygame.image.load('sprite-games/data/blackout.png')
+    blackout = pygame.image.load('sprite/data/blackout.png')
     sound.set_volume(float(read_settings()["VOLUME"]))
     sound.play(-1)
 

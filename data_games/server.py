@@ -5,8 +5,8 @@ from threading import Lock
 from typing import Tuple, Dict
 from pygame import sprite
 from pygame.sprite import Group
-import data
-from units import *
+from . import data
+from .units import *
 
 NEED_PLAYERS = 1
 MAX_PLAYERS = 10
@@ -19,7 +19,7 @@ settings = {}
 
 
 def update_settings():
-    with open('server_setting.txt', 'r') as setts:  # Settings
+    with open('settings/server_setting.txt', 'r') as setts:  # Settings
         for i in setts.read().split("\n"):
             a = i.split()
             if a[1] == "TRUE":
@@ -529,7 +529,7 @@ def main(screen, nickname):
     thread = threading.Thread(target=server.thread_connection, daemon=True)
     thread.start()
     font = pygame.font.Font(None, 50)
-    background = pygame.image.load('sprite-games/data/play.png').convert()
+    background = pygame.image.load('sprite/data/play.png').convert()
     image = {"host": (330, 250),
              "connect": (330, 455),
              "menu": (340, 700),
@@ -591,7 +591,7 @@ def main(screen, nickname):
     pygame.time.set_timer(SERVER_EVENT_UPDATE, 1000 // 60)
     pygame.time.set_timer(SERVER_EVENT_SEC, 1000 // 1)
     pygame.time.set_timer(SERVER_EVENT_SYNC, 10000)
-    background = pygame.image.load('sprite-games/data/menu.png').convert()
+    background = pygame.image.load('sprite/data/menu.png').convert()
     current_fps = 60
     while running and len(game.players) > 0:
         for event in pygame.event.get():

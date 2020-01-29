@@ -6,7 +6,7 @@ from pygame.rect import Rect
 from pygame.sprite import Sprite
 from pygame.surface import Surface
 
-from constants import *
+from .constants import *
 
 # States
 
@@ -208,7 +208,7 @@ class TwistUnit(Unit):  # подкласс Unit имеющий угол вращ
 class Mine(Unit):  # Шахта,здание располагющее золотом,которое могут добыть рабочие
     placeable = False  # шахту нельзя поставить вручную, они появляются в начале игры
     name = 'Шахта'
-    mine = pygame.image.load('sprite-games/building/mine/mine.png')
+    mine = pygame.image.load('sprite/building/mine/mine.png')
     image = mine
     required_level = 1
     unit_type = TYPE_RESOURCE  # тип юнитов хранящих ресурсы для добычи
@@ -226,7 +226,7 @@ class Mine(Unit):  # Шахта,здание располагющее золот
 
 
 class Arrow(TwistUnit):  # Стрела
-    image = pygame.image.load(f'sprite-games/warrior/archer/arrow.png')
+    image = pygame.image.load(f'sprite/warrior/archer/arrow.png')
     name = 'Arrow'
     placeable = False  # объект нельзя поставить вручную,лишь может быть создан другим юнитом
     unit_type = TYPE_PROJECTILE  # Projectile - тип снаряда в игре
@@ -268,7 +268,7 @@ class Arrow(TwistUnit):  # Стрела
 
 
 class BallistaArrow(TwistUnit):  # Болт баллисты
-    image = pygame.image.load(f'sprite-games/warrior/ballista/anim/arrow.png')
+    image = pygame.image.load(f'sprite/warrior/ballista/anim/arrow.png')
     name = 'BallistaArrow'
     placeable = False
     unit_type = TYPE_PROJECTILE
@@ -447,7 +447,7 @@ class Archer(Fighter):  # Лучник, атакующий юнит дальне
     power_cost = 2  # todo Баланс
     images = []  # список с лучниками всех цветов,в инициализации выбирается цвет игрока
     for i in range(10):
-        images.append(pygame.image.load(f'sprite-games/warrior/archer/{team_id[i]}.png'))
+        images.append(pygame.image.load(f'sprite/warrior/archer/{team_id[i]}.png'))
     image = images[0]
     unit_type = TYPE_FIGHTER
 
@@ -501,7 +501,7 @@ class Soldier(Fighter):  # Воин,атакующий юнит ближнего
     power_cost = 1  # todo Баланс
     images = []
     for i in range(10):
-        images.append(pygame.image.load(f'sprite-games/warrior/soldier/{team_id[i]}.png'))
+        images.append(pygame.image.load(f'sprite/warrior/soldier/{team_id[i]}.png'))
     image = images[0]
     required_level = 0
     unit_type = TYPE_FIGHTER
@@ -558,7 +558,7 @@ class Worker(Fighter):  # Рабочий,добывает золото и дер
     power_cost = 1  # todo Баланс
     images = []
     for i in range(10):
-        images.append(pygame.image.load(f'sprite-games/warrior/working/{team_id[i]}.png'))
+        images.append(pygame.image.load(f'sprite/warrior/working/{team_id[i]}.png'))
     image = images[0]
     unit_type = TYPE_FIGHTER
 
@@ -702,7 +702,7 @@ class Fortress(ProductingBuild):  # Крепость, задает уровен�
     level_costs = [(300.0, 50.0, 0), (400.0, 100.0, 0)]  # todo Баланс
     images = []
     for i in range(10):
-        images.append(pygame.image.load(f'sprite-games/building/fortress/{team_id[i]}.png'))
+        images.append(pygame.image.load(f'sprite/building/fortress/{team_id[i]}.png'))
     image = images[0]
     required_level = 1
     unit_type = TYPE_BUILDING
@@ -762,7 +762,7 @@ class Forge(Unit):  # Кузня,несколько уровней.При пос
     level_costs = [(300.0, 75.0, 0), (400.0, 125.0, 0), (500.0, 150.0, 0)]  # todo Баланс
     images = []
     for i in range(10):
-        images.append(pygame.image.load(f'sprite-games/building/forge/{team_id[i]}.png'))
+        images.append(pygame.image.load(f'sprite/building/forge/{team_id[i]}.png'))
     image = images[0]
     required_level = 2  # Можно построить только со второго уровня крепости
     unit_type = TYPE_BUILDING
@@ -841,7 +841,7 @@ class Casern(ProductingBuild):  # подкласс ProductingBuild, произв
     cost = (100.0, 25.0)
     images = []
     for i in range(10):
-        images.append(pygame.image.load(f'sprite-games/building/casern/{team_id[i]}.png'))
+        images.append(pygame.image.load(f'sprite/building/casern/{team_id[i]}.png'))
     image = images[0]
     required_level = 1
     unit_type = TYPE_BUILDING
@@ -857,7 +857,7 @@ class DragonLore(ProductingBuild):  # подкласс ProductingBuild, прои
     cost = (500.0, 0.0)
     images = []
     for i in range(10):
-        images.append(pygame.image.load(f'sprite-games/building/dragonlair/{team_id[i]}.png'))
+        images.append(pygame.image.load(f'sprite/building/dragonlair/{team_id[i]}.png'))
     image = images[0]
     required_level = 3
     unit_type = TYPE_BUILDING
@@ -873,7 +873,7 @@ class Workshop(ProductingBuild):  # подкласс ProductingBuild, произ
     cost = (350.0, 100.0)
     images = []
     for i in range(10):
-        images.append(pygame.image.load(f'sprite-games/building/workshop/{team_id[i]}.png'))
+        images.append(pygame.image.load(f'sprite/building/workshop/{team_id[i]}.png'))
     image = images[0]
     required_level = 2
     unit_type = TYPE_BUILDING
@@ -884,7 +884,7 @@ class Workshop(ProductingBuild):  # подкласс ProductingBuild, произ
 
 
 class MagicBall(TwistUnit):  # Магический шар,снаряд, выпускаемый третьим уровнем башни лучников
-    image = pygame.image.load(f'sprite-games/building/turret/3/magic_ball.png')
+    image = pygame.image.load(f'sprite/building/turret/3/magic_ball.png')
     name = 'Magic Ball'
     placeable = False
     unit_type = TYPE_PROJECTILE
@@ -940,9 +940,9 @@ class ArcherTower(Fighter):  # Башня лучников,имеет три у�
     placeable = True
     name = 'Башня'
     level_costs = [(300.0, 30.0, 0), (400.0, 40.0, 0)]  # todo Баланс
-    images = [[pygame.image.load(f'sprite-games/building/turret/{team_id[i]}.png') for i in range(10)],
-              [pygame.image.load(f'sprite-games/building/turret/2/{team_id[i]}.png') for i in range(10)],
-              [pygame.image.load(f'sprite-games/building/turret/3/{team_id[i]}.png') for i in range(10)]]
+    images = [[pygame.image.load(f'sprite/building/turret/{team_id[i]}.png') for i in range(10)],
+              [pygame.image.load(f'sprite/building/turret/2/{team_id[i]}.png') for i in range(10)],
+              [pygame.image.load(f'sprite/building/turret/3/{team_id[i]}.png') for i in range(10)]]
     # разные спрайты для разных уровней
     image = images[0][0]
     required_level = 1
@@ -1025,7 +1025,7 @@ class ArcherTower(Fighter):  # Башня лучников,имеет три у�
 class Tree(Unit):  # Дерево, из него рабочие добывают древесину
     placeable = False
     name = 'Дерево'
-    tree = pygame.image.load('sprite-games/icon/tree.png')
+    tree = pygame.image.load('sprite/icon/tree.png')
     image = tree
     required_level = 1
     unit_type = TYPE_RESOURCE
@@ -1045,7 +1045,7 @@ class Tree(Unit):  # Дерево, из него рабочие добывают
 class FireProjectile(TwistUnit):  # Снаряд выпускаемый драконом
     images = []
     for i in range(1, 7):
-        images.append(pygame.image.load(f'sprite-games/warrior/dragon/Flame/{i}.png'))
+        images.append(pygame.image.load(f'sprite/warrior/dragon/Flame/{i}.png'))
     name = 'Пламень'
     placeable = False
     unit_type = TYPE_PROJECTILE
@@ -1094,8 +1094,8 @@ class Dragon(Fighter):  # Дракон,уникальный воин,может 
     images = []
     for i in range(10):
         anim = (
-            pygame.image.load(f'sprite-games/warrior/dragon/{team_id[i]}.png'),
-            pygame.image.load(f'sprite-games/warrior/dragon/anim/{team_id[i]}.png')
+            pygame.image.load(f'sprite/warrior/dragon/{team_id[i]}.png'),
+            pygame.image.load(f'sprite/warrior/dragon/anim/{team_id[i]}.png')
         )
         images.append(anim)
     image = images[0][0]
@@ -1199,7 +1199,7 @@ class Ballista(Fighter):  # Баллиста,уникальный класс в�
     name = 'Баллиста'
     images = []
     for i in range(10):
-        images.append(pygame.image.load(f'sprite-games/warrior/ballista/{team_id[i]}.png'))
+        images.append(pygame.image.load(f'sprite/warrior/ballista/{team_id[i]}.png'))
     image = images[0]
     unit_type = TYPE_FIGHTER
 
@@ -1248,7 +1248,7 @@ class Farm(Unit):  # Ферма, чем их больше,тем больше у
 
     images = []
     for i in range(10):
-        images.append(pygame.image.load(f'sprite-games/building/farm/{team_id[i]}.png'))
+        images.append(pygame.image.load(f'sprite/building/farm/{team_id[i]}.png'))
     image = images[0]
     required_level = 1
     unit_type = TYPE_BUILDING
@@ -1283,7 +1283,7 @@ class Farm(Unit):  # Ферма, чем их больше,тем больше у
 
 class Stone(Unit):
     unit_type = TYPE_BUILDING
-    image = pygame.image.load('sprite-games/icon/stone.png')
+    image = pygame.image.load('sprite/icon/stone.png')
     name = 'Булыжник'
     placeable = False
     cost = (0.0, 0.0)

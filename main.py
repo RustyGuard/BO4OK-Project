@@ -1,7 +1,7 @@
 ﻿import pygame
-from data import headpiece, Music, play, settings, statistics, titers, ip, gameover, menu
-from server import main
-from client import ClientWait
+from data_games.data import headpiece, Music, play, settings, statistics, titers, ip, gameover, menu
+from data_games.server import main
+from data_games.client import ClientWait
 
 pygame.init()
 pygame.mixer.init()
