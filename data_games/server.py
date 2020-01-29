@@ -20,21 +20,6 @@ ID_LOCK = Lock()
 settings = {}
 
 
-def update_settings():
-    with open('settings/server_setting.txt', 'r') as setts:  # Settings
-        for i in setts.read().split("\n"):
-            a = i.split()
-            if a[1] == "TRUE":
-                settings[a[0]] = True
-            elif a[1] == "FALSE":
-                settings[a[0]] = False
-            else:
-                try:
-                    settings[a[0]] = int(a[1])
-                except ValueError:
-                    settings[a[0]] = a[1]
-
-
 def get_curr_id():
     global CURRENT_ID
     ID_LOCK.acquire()
@@ -338,6 +323,17 @@ class ServerGame:
         self.lock.release()
         return building
 
+    def upgrade_building(self, unit_id: int, client: ClientConnection):
+        en = self.find_with_id(unit_id)
+        if en.can_upgraded and en.can_be_upgraded(self):
+            *cost, fort_need = en.level_cost(self)
+            if fort_need <= Fortress.get_player_level(client.id):
+                if self.claim_money(client.id, cost):
+                    en.next_level(self)
+                    self.server.send_all(f'7_{en.unit_id}_{en.level}')
+            else:
+                self.safe_send(client.id, '8_2')
+
     def get_intersect(self, spr):
         return pygame.sprite.spritecollide(spr, self.sprites, False)
 
@@ -449,28 +445,22 @@ def main(screen, nickname):
         if cmd == '1':
             game.place_building(UNIT_TYPES[int(args[0])], int(args[1]), int(args[2]), client.id)
         elif cmd == '2':
-            unit_id, x, y = list(map(int, args))
-            game.retarget(unit_id, x, y, client)
-            print('Retarget:', unit_id, x, y)
+            game.retarget(*list(map(int, args)), client)
         elif cmd == '3':
+            game.lock.acquire()
             en = game.find_with_id(int(args[0]))
             if en is not None:
                 en.add_to_queque(UNIT_TYPES[int(args[1])], game)
+            game.lock.release()
         elif cmd == '4':
+            game.lock.acquire()
             en = game.find_with_id(int(args[0]))
             if type(en) == Worker and en.player_id == client.id:
                 en.state = int(args[1])
                 en.find_new_target(game, 3000)
+            game.lock.release()
         elif cmd == '5':
-            en = game.find_with_id(int(args[0]))
-            if en.can_upgraded and en.can_be_upgraded(game):
-                *cost, fort_need = en.level_cost(game)
-                if fort_need <= Fortress.get_player_level(client.id):
-                    if game.claim_money(client.id, cost):
-                        en.next_level(game)
-                        server.send_all(f'7_{en.unit_id}_{en.level}')
-                else:
-                    game.safe_send(client.id, '8_2')
+            game.upgrade_building(int(args[0]), client)
         else:
             print('Invalid command')
 
@@ -492,7 +482,8 @@ def main(screen, nickname):
             pl.client.send(f'3_2_{pl.power}_{Farm.get_player_meat(pl.id)}')
         game.lock.release()
 
-    update_settings()
+    global settings
+    settings = data.read_settings('settings/server_setting.txt')
     server_ip = settings['IP']
     if server_ip == 'auto':
         server_ip = socket.gethostbyname(socket.gethostname())
@@ -604,3 +595,4 @@ if __name__ == '__main__':
     pygame.init()
     main(pygame.display.set_mode((1000, 1000)), 'randomguy')
     print('\n\tServer closed.\n')
+

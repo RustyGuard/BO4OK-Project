@@ -88,7 +88,7 @@ class Minimap:
             elif issubclass(type(i), ProductingBuild):
                 color = Color('red')
             else:
-                color = Color('black')
+                color = Color('blue')
             pygame.draw.rect(screen, color, icon, 1)
 
         for i, j, k in self.marks:
@@ -593,7 +593,7 @@ class ProductManager:
                 b.build_id = spr.unit_id
                 b.class_id = get_class_id(clazz)
                 max_i = i
-        if spr.can_upgraded:
+        if spr.can_upgraded and len(spr.level_costs) >= spr.level:
             r1 = Rect(settings['WIDTH'] - 65, 45 + 75 * (max_i + 1), 50, 50)
             b = UIButton(r1, '', self.manager,
                          object_id=f'upgrade')

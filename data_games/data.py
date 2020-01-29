@@ -89,10 +89,10 @@ class Music:
         self.set_musik_volume()
 
 
-def read_settings():
+def read_settings(filename='settings/settings.txt'):
     """ Функция чтения файла с настройками """
     settings = {}
-    for i in open('settings/settings.txt', 'r').read().split("\n"):
+    for i in open(filename, 'r').read().split("\n"):
         a = i.split()
         if a[1] == "TRUE":
             settings[a[0]] = True
@@ -503,3 +503,4 @@ def gameover(screen, game_result):
                 screen.blit(flip, flip.get_rect(center=(960 + i[0], 540 + i[1])))
         pygame.display.flip()
         clock.tick(60)
+
