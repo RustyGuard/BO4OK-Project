@@ -310,7 +310,6 @@ def settings(screen, music):
         Button(all_tick_field, i, tick_field_image[i], 2)
 
     flag_volume_cursor = False
-    mouse_x = 0  # позиция курсора мыши во время нажатия на ползунок
     volume_cursor_x = 0  # позиция ползунка громкости во время нажатия на ползунок
     while True:
         for event in pygame.event.get():
@@ -322,11 +321,11 @@ def settings(screen, music):
                     return "menu"
             if flag_volume_cursor:  # движение ползунка громкости
                 for volume_cursor in all_volume_cursor:
-                    if 98 <= volume_cursor_x - mouse_x + pygame.mouse.get_pos()[0] <= 762:
-                        volume_cursor.rect.x = volume_cursor_x - mouse_x + pygame.mouse.get_pos()[0]
-                    if 98 > volume_cursor_x - mouse_x + pygame.mouse.get_pos()[0]:
+                    if 98 <= volume_cursor_x + pygame.mouse.get_pos()[0] <= 762:
+                        volume_cursor.rect.x = volume_cursor_x + pygame.mouse.get_pos()[0]
+                    if 98 > volume_cursor_x + pygame.mouse.get_pos()[0]:
                         volume_cursor.rect.x = 98
-                    if 762 < volume_cursor_x - mouse_x + pygame.mouse.get_pos()[0]:
+                    if 762 < volume_cursor_x + pygame.mouse.get_pos()[0]:
                         volume_cursor.rect.x = 762
                     music.set_musik_volume((volume_cursor.rect.x - 98) / 664)
                     if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
@@ -340,8 +339,8 @@ def settings(screen, music):
                 for volume_cursor in all_volume_cursor:
                     if volume_cursor.get_event(event):
                         flag_volume_cursor = True
-                        mouse_x = pygame.mouse.get_pos()[0]
-                        volume_cursor_x = volume_cursor.rect.x
+                        # запоминаем позицию ползунка в моемент нажатия
+                        volume_cursor_x = volume_cursor.rect.x - pygame.mouse.get_pos()[0]
                 for tick_field in all_tick_field:
                     if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                         if tick_field.rect.collidepoint(event.pos):  # изменение состояния определённой настройки
