@@ -20,7 +20,7 @@ clock = pygame.time.Clock()
 pygame.mixer.init()
 music = data.Music("game", ["game", "game1"])
 
-settings = {}
+settings = data.read_settings()
 sounds = {
     'build_completed': Sound('music/construction_completed.ogg'),
     'no_money': Sound('music/need_gold.ogg'),
@@ -39,22 +39,6 @@ def play_sound(sound: SoundType):
             return
         current_channel.stop()
     current_channel = sound.play()
-
-
-def update_settings():
-    with open('settings.txt', 'r') as setts:  # Settings
-        for i in setts.read().split("\n"):
-            a = i.split()
-            if a[1] == "TRUE":
-                settings[a[0]] = True
-            elif a[1] == "FALSE":
-                settings[a[0]] = False
-            else:
-                try:
-                    settings[a[0]] = int(a[1])
-                except ValueError:
-                    settings[a[0]] = a[1]
-    print(settings)
 
 
 def random_nick():
@@ -738,6 +722,7 @@ class ClientWait:
         return True
 
     def game_screen(self, screen, client, game):
+        global settings
         stats = {
             'wood_chopped': 0.0,
             'money_mined': 0.0,
@@ -832,10 +817,10 @@ class ClientWait:
                         play_sound(sounds['no_meat'])
                         print('No meat')
                 elif args[0] == '1':
-                    # play_sound(sounds['no_place'])
+                    play_sound(sounds['no_place'])
                     print('No place')
                 elif args[0] == '2':
-                    # play_sound(sounds['no_level'])
+                    play_sound(sounds['no_level'])
                     print('No fort level')
             elif cmd == '9':
                 game.lock.acquire()
@@ -870,7 +855,7 @@ class ClientWait:
         win = [None]
         minimap = Minimap()
         background = pygame.image.load('sprite-games/small_map.png').convert()
-        update_settings()
+        settings = data.read_settings()
         particles = Group()
         small_font = pygame.font.Font(None, 25)
         running = True
@@ -937,10 +922,13 @@ class ClientWait:
                         return False, stats, game.sprites
                     elif event.key == pygame.K_F3:
                         settings['FPS'] = not settings['FPS']
+                        data.write_settings(settings)
                     elif event.key == pygame.K_F4:
                         settings['DEBUG'] = not settings['DEBUG']
+                        data.write_settings(settings)
                     elif event.key == pygame.K_F9:
-                        data.settings(screen)
+                        data.settings(screen, music)
+                        settings = data.read_settings()
 
                 if event.type == CLIENT_EVENT_UPDATE:
                     camera.update()

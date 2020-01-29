@@ -22,7 +22,7 @@ while window:  # P.s Это сдаелано для оптимизации,да�
     elif window == "play":
         window, nickname = play(screen)
     elif window == "settings":
-        window = settings(screen)
+        window = settings(screen, music)
     elif window == "statistics":
         window = statistics(screen)
     elif window == "creators":

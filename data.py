@@ -56,9 +56,10 @@ class Music:
             self.sounds[i] = pygame.mixer.Sound(f'music/{i}.ogg')
         self.set_musik_volume()
 
-    def set_musik_volume(self):
+    def set_musik_volume(self, volume=None):
         """ Функция обработки изменения громокость """
-        volume = float(read_settings()["VOLUME"])
+        if not volume:
+            volume = float(read_settings()["VOLUME"])
         if self.window == "menu":
             pygame.mixer.music.set_volume(volume)
         for i in self.sounds:
@@ -285,7 +286,7 @@ def play(screen):
         clock.tick(60)
 
 
-def settings(screen):
+def settings(screen, music):
     """ функция окна настроек """
     global cursor, clock
     background = pygame.image.load('sprite-games/data/settings.png').convert()
@@ -327,7 +328,7 @@ def settings(screen):
                         volume_cursor.rect.x = 98
                     if 762 < volume_cursor_x - mouse_x + pygame.mouse.get_pos()[0]:
                         volume_cursor.rect.x = 762
-                    pygame.mixer.music.set_volume((volume_cursor.rect.x - 98) / 664)
+                    music.set_musik_volume((volume_cursor.rect.x - 98) / 664)
                     if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                         flag_volume_cursor = False
                         settings["VOLUME"] = (volume_cursor.rect.x - 98) / 664
