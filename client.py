@@ -356,7 +356,9 @@ class Game:
         return pygame.sprite.spritecollide(spr, self.buildings, False)
 
     def update(self, *args):
+        self.lock.acquire()
         self.sprites.update(*args)
+        self.lock.release()
 
     def retarget(self, unit_id, x, y):
         self.lock.acquire()
@@ -618,6 +620,17 @@ class ProductManager:
             UILabel(r2, 'Улучшить', self.manager)
             b.build_id = spr.unit_id
 
+            txt = 'Требования:'
+            r2 = Rect(5, 25, len(txt) * 9, 25)
+            UILabel(r2, txt, self.manager)
+            costs = spr.level_costs[spr.level - 1]
+            txt = f'{costs[0]} Монет; {costs[1]} Дерева'
+            r2 = Rect(5, 55, len(txt) * 9, 25)
+            UILabel(r2, txt, self.manager)
+            txt = f'{costs[2]} Уровень крепости'
+            r2 = Rect(5, 85, len(txt) * 9, 25)
+            UILabel(r2, txt, self.manager)
+
     def process_events(self, event):
         self.manager.process_events(event)
 
@@ -804,6 +817,8 @@ class ClientWait:
                 en = game.find_with_id(int(args[0]))
                 en.level = int(args[1])
                 en.update_image()
+                if current_manager[0] == 'product' and managers[current_manager[0]].spr == en:
+                    managers[current_manager[0]].set_building(managers[current_manager[0]].spr)
                 game.lock.release()
             elif cmd == '8':
                 if args[0] == '0':
