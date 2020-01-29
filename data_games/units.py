@@ -435,7 +435,7 @@ class Fighter(TwistUnit):  # надкласс юнитов способных н
         self.target = (target, second)
 
     def kill(self):
-        if Unit.game is not None:
+        if Unit.game is not None and Unit.game.players[self.player_id] is not None:
             Unit.game.players[self.player_id].power -= self.power_cost
         super().kill()
 

@@ -3,8 +3,10 @@ import threading
 from math import radians, cos, sin
 from threading import Lock
 from typing import Tuple, Dict
+
 from pygame import sprite
 from pygame.sprite import Group
+
 from . import data
 from .units import *
 
@@ -371,37 +373,12 @@ class ServerGame:
                 break
         if p is None:
             print('No player with', client, client.id)
-        self.players.pop(p, None)
+        else:
+            for spr in self.sprites:
+                if spr.player_id == self.players[p].id:
+                    self.kill(spr)
+            self.players.pop(p, None)
         self.lock.release()
-
-
-def test_place_fortresses(game: ServerGame):
-    print('Placing started.')
-    players_count = len(game.players.values())
-    angle = 0
-    for player_id, player in game.players.items():
-        x, y = cos(radians(angle)), sin(radians(angle))
-        angle += 360 / players_count
-        x, y = int(x * 1000), int(y * 1000)
-        game.place(Fortress, x, y, player_id,
-                   ignore_money=True, ignore_fort_level=True, ignore_space=True)
-        player.client.send(f'6_{-x + SCREEN_WIDTH // 2}_{-y + SCREEN_HEIGHT // 2}')
-
-        x, y = int(x * 1.25), int(y * 1.25)
-        game.place(Mine, x, y, -1,
-                   ignore_money=True, ignore_fort_level=True, ignore_space=True)
-
-        x, y = int(x * 0.55), int(y * 0.55)
-        game.place(Farm, x, y, player_id,
-                   ignore_money=True, ignore_fort_level=True, ignore_space=True)
-
-        trees_left = 15
-        tree_x, tree_y = randint(x - 500, x + 500), randint(y - 500, y + 500)
-        while trees_left > 0:
-            if game.place(Tree, tree_x, tree_y, -1, ignore_money=True, ignore_fort_level=True) is not None:
-                trees_left -= 1
-            tree_x, tree_y = randint(x - 500, x + 500), randint(y - 500, y + 500)
-        print('Placing stopped.')
 
 
 def place_fortresses(game: ServerGame):
@@ -412,18 +389,6 @@ def place_fortresses(game: ServerGame):
     game.place(Mine, -100, 100, -1, ignore_money=True, ignore_fort_level=True, ignore_space=True)
     game.place(Mine, 100, -100, -1, ignore_money=True, ignore_fort_level=True, ignore_space=True)
     game.place(Mine, 100, 100, -1, ignore_money=True, ignore_fort_level=True, ignore_space=True)
-
-    for _ in range(FORESTS_COUNT):
-        trees_left = TREES_PER_FOREST
-        forest_x, forest_y = randint(- WORLD_SIZE // 3, WORLD_SIZE // 3), randint(- WORLD_SIZE // 3, WORLD_SIZE // 3)
-        game.server.send_all(f'13_{forest_x}_{forest_y}')
-        tree_x, tree_y = [randint(forest_x - TREES_RANGE, forest_x + TREES_RANGE),
-                          randint(forest_y - TREES_RANGE, forest_y + TREES_RANGE)]
-        while trees_left > 0:
-            if game.place(Tree, tree_x, tree_y, -1, ignore_money=True, ignore_fort_level=True) is not None:
-                trees_left -= 1
-            tree_x, tree_y = [randint(forest_x - TREES_RANGE, forest_x + TREES_RANGE),
-                              randint(forest_y - TREES_RANGE, forest_y + TREES_RANGE)]
 
     for player_id, player in game.players.items():
         x, y = cos(radians(angle)), sin(radians(angle))
@@ -438,7 +403,7 @@ def place_fortresses(game: ServerGame):
                    ignore_money=True, ignore_fort_level=True, ignore_space=True)
 
         stone_x, stone_y = cos(radians(angle)), sin(radians(angle))
-        current_x, current_y = stone_x * 250, stone_y * 250
+        current_x, current_y = stone_x * 350, stone_y * 350
         while abs(current_x) < WORLD_SIZE / 2 + 50 and abs(current_y) < WORLD_SIZE / 2 + 50:
             game.place(Stone, int(current_x), int(current_y), -1,
                        ignore_space=True, ignore_money=True, ignore_fort_level=True)
@@ -452,7 +417,20 @@ def place_fortresses(game: ServerGame):
             if game.place(Tree, tree_x, tree_y, -1, ignore_money=True, ignore_fort_level=True) is not None:
                 trees_left -= 1
             tree_x, tree_y = randint(x - 500, x + 500), randint(y - 500, y + 500)
-        print('Placing stopped.')
+
+    for _ in range(FORESTS_COUNT):
+        trees_left = TREES_PER_FOREST
+        forest_x, forest_y = randint(- WORLD_SIZE // 3, WORLD_SIZE // 3), randint(- WORLD_SIZE // 3, WORLD_SIZE // 3)
+        game.server.send_all(f'13_{forest_x}_{forest_y}')
+        tree_x, tree_y = [randint(forest_x - TREES_RANGE, forest_x + TREES_RANGE),
+                          randint(forest_y - TREES_RANGE, forest_y + TREES_RANGE)]
+        while trees_left > 0:
+            if game.place(Tree, tree_x, tree_y, -1, ignore_money=True, ignore_fort_level=True) is not None:
+                trees_left -= 1
+            tree_x, tree_y = [randint(forest_x - TREES_RANGE, forest_x + TREES_RANGE),
+                              randint(forest_y - TREES_RANGE, forest_y + TREES_RANGE)]
+
+    print('Placing stopped.')
 
 
 def main(screen, nickname):
