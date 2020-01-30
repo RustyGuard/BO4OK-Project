@@ -1316,7 +1316,7 @@ UNIT_TYPES = {
 }
 # 'Статы' всех юнитов - максимальное здоровье и урон
 UNIT_STATS = {  # (max_health, base_dmg)
-    Worker: (500, 5),  # Worker,
+    Worker: (50, 5),  # Worker,
     Soldier: (150, 50),  # Soldier,
     Archer: (100, 0),  # Archer,
     Ballista: (400, 0),  # Ballista,
