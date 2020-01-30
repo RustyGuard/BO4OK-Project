@@ -559,9 +559,10 @@ def main(screen, nickname):
     place_fortresses(game)
     pygame.time.set_timer(SERVER_EVENT_UPDATE, 1000 // 60)
     pygame.time.set_timer(SERVER_EVENT_SEC, 1000 // 1)
-    pygame.time.set_timer(SERVER_EVENT_SYNC, 10000)
+    pygame.time.set_timer(SERVER_EVENT_SYNC, 5000)
     background = pygame.image.load('sprite/data/menu.png').convert()
     current_fps = 60
+    sync_counter = 0
     while running and len(game.players) > 0:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -574,10 +575,14 @@ def main(screen, nickname):
             elif event.type == SERVER_EVENT_SYNC:
                 if not settings['ONE_PLAYER_MODE']:
                     game.find_losed_players()
-                game.lock.acquire()
-                for spr in game.sprites:
-                    spr.send_updated(game)
-                game.lock.release()
+                sync_counter += 1
+                if sync_counter >= len(game.players):
+                    print('Sync')
+                    sync_counter = 0
+                    game.lock.acquire()
+                    for spr in game.sprites:
+                        spr.send_updated(game)
+                    game.lock.release()
             elif event.type == pygame.KEYUP:
                 if event.key == pygame.K_ESCAPE:
                     server.disconnect()
