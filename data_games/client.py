@@ -202,10 +202,7 @@ class Client:
     def invoke(self, cmd, args):
         while self.callback is None:
             pass
-        try:
-            self.callback(cmd, args, *self.call_args)
-        except Exception as ex:
-            print('[WARNING]', ex)
+        self.callback(cmd, args, *self.call_args)
 
 
 class PlayerInfo:
@@ -306,6 +303,7 @@ class Game:
         self.started = False
         self.info = PlayerInfo(nick)
         self.other_nicks = []
+        self.side = CLIENT
 
     def get_player_nick(self, player_id):
         return self.other_nicks[player_id]
@@ -733,122 +731,127 @@ class ClientWait:
             client.send(f'1_{clazz}_{mouse_pos[0] - int(camera.off_x)}_{mouse_pos[1] - int(camera.off_y)}')
 
         def listen(cmd, args):
-            if settings['DEBUG']:
-                print(cmd, args)
+            try:
+                if settings['DEBUG']:
+                    print(cmd, args)
 
-            if cmd == '1':  # Add entity of [type] at [x, y] with [id]
-                unit_type, x, y, unit_id, id_player = int(args[0]), int(args[1]), int(args[2]), int(args[3]), int(
-                    args[4])
-                game.addEntity(unit_type, x, y, unit_id, id_player, camera, args[5::])
-            elif cmd == '2':  # Retarget entity of [type] at [x, y] with [id]
-                if args[0] == str(TARGET_MOVE):
-                    unit_id, x, y = int(args[1]), int(args[2]), int(args[3])
-                    game.retarget(unit_id, x, y)
-                elif args[0] == str(TARGET_ATTACK):
+                if cmd == '1':  # Add entity of [type] at [x, y] with [id]
+                    unit_type, x, y, unit_id, id_player = int(args[0]), int(args[1]), int(args[2]), int(args[3]), int(
+                        args[4])
+                    game.addEntity(unit_type, x, y, unit_id, id_player, camera, args[5::])
+                elif cmd == '2':  # Retarget entity of [type] at [x, y] with [id]
+                    if args[0] == str(TARGET_MOVE):
+                        unit_id, x, y = int(args[1]), int(args[2]), int(args[3])
+                        game.retarget(unit_id, x, y)
+                    elif args[0] == str(TARGET_ATTACK):
+                        game.lock.acquire()
+                        unit_id, other_id = int(args[1]), int(args[2])
+                        en = game.find_with_id(unit_id)
+                        if en:
+                            if issubclass(type(en), Fighter):
+                                en.set_target(TARGET_ATTACK, game.find_with_id(other_id))
+                        else:
+                            print('No object with id:', unit_id)
+                        game.lock.release()
+                    elif args[0] == str(TARGET_NONE):
+                        game.lock.acquire()
+                        unit_id = int(args[1])
+                        en = game.find_with_id(unit_id)
+                        if en:
+                            if issubclass(type(en), Fighter):
+                                en.set_target(TARGET_NONE, None)
+                        else:
+                            print('No object with id:', unit_id)
+                        game.lock.release()
+                elif cmd == '3':  # Update Player Info
+                    if args[0] == '1':  # Money
+                        game.info.money = float(args[1])
+                        game.info.wood = float(args[2])
+                    elif args[0] == '2':  # Power
+                        game.info.power = int(args[1])
+                        game.info.max_power = int(args[2])
+                    elif args[0] == '3':  # Money mined
+                        stats['money_mined'] += float(args[1])
+                    elif args[0] == '4':  # Wood chopped
+                        stats['wood_chopped'] += float(args[1])
+                    elif args[0] == '5':  # Unit created
+                        stats['build_created'] += 1
+                        play_sound(sounds['build_completed'])
+                    elif args[0] == '6':  # Building completed
+                        stats['units_created'] += 1
+
+                elif cmd == '4':
                     game.lock.acquire()
-                    unit_id, other_id = int(args[1]), int(args[2])
-                    en = game.find_with_id(unit_id)
-                    if en:
-                        if issubclass(type(en), Fighter):
-                            en.set_target(TARGET_ATTACK, game.find_with_id(other_id))
-                    else:
-                        print('No object with id:', unit_id)
+                    en = game.find_with_id(int(args[0]))
+                    if en is not None:
+                        en.kill()
                     game.lock.release()
-                elif args[0] == str(TARGET_NONE):
+                elif cmd == '5':
                     game.lock.acquire()
-                    unit_id = int(args[1])
-                    en = game.find_with_id(unit_id)
-                    if en:
-                        if issubclass(type(en), Fighter):
-                            en.set_target(TARGET_NONE, None)
-                    else:
-                        print('No object with id:', unit_id)
+                    en = game.find_with_id(int(args[0]))
+                    en.health = float(args[1])
+                    en.max_health = float(args[2])
                     game.lock.release()
-            elif cmd == '3':  # Update Player Info
-                if args[0] == '1':  # Money
-                    game.info.money = float(args[1])
-                    game.info.wood = float(args[2])
-                elif args[0] == '2':  # Power
-                    game.info.power = int(args[1])
-                    game.info.max_power = int(args[2])
-                elif args[0] == '3':  # Money mined
-                    stats['money_mined'] += float(args[1])
-                elif args[0] == '4':  # Wood chopped
-                    stats['wood_chopped'] += float(args[1])
-                elif args[0] == '5':  # Unit created
-                    stats['build_created'] += 1
-                    play_sound(sounds['build_completed'])
-                elif args[0] == '6':  # Building completed
-                    stats['units_created'] += 1
+                elif cmd == '6':
+                    camera.set_pos(int(args[0]), int(args[1]))
+                    print(camera.off_x, camera.off_y)
+                elif cmd == '7':
+                    game.lock.acquire()
+                    en = game.find_with_id(int(args[0]))
+                    en.level = int(args[1])
+                    en.update_image()
+                    if current_manager[0] == 'product' and managers[current_manager[0]].spr == en:
+                        managers[current_manager[0]].set_building(managers[current_manager[0]].spr)
+                    game.lock.release()
+                elif cmd == '8':
+                    if args[0] == '0':
+                        if args[1] == '0':
+                            play_sound(sounds['no_money'])
+                            print('No money')
+                        elif args[1] == '1':
+                            play_sound(sounds['no_wood'])
+                            print('No wood')
+                        elif args[1] == '2':
+                            play_sound(sounds['no_meat'])
+                            print('No meat')
+                    elif args[0] == '1':
+                        play_sound(sounds['no_place'])
+                        print('No place')
+                    elif args[0] == '2':
+                        play_sound(sounds['no_level'])
+                        print('No fort level')
+                elif cmd == '9':
+                    game.lock.acquire()
+                    en = game.find_with_id(int(args[3]))
+                    if en is None:
+                        print('Wasn"t', args)
+                        clazz_id = int(args[0])
+                        if UNIT_TYPES[clazz_id] == Arrow:
+                            en = UNIT_TYPES[int(args[0])](0, 0, 0, 0, 0)
+                        else:
+                            en = UNIT_TYPES[int(args[0])](0, 0, 0, 0)
+                        en.offsetx = camera.off_x
+                        en.offsety = camera.off_y
+                        game.sprites.add(en)
+                        if en.unit_type == TYPE_BUILDING:
+                            game.buildings.add(en)
 
-            elif cmd == '4':
-                game.lock.acquire()
-                en = game.find_with_id(int(args[0]))
-                if en is not None:
-                    en.kill()
-                game.lock.release()
-            elif cmd == '5':
-                game.lock.acquire()
-                en = game.find_with_id(int(args[0]))
-                en.health = float(args[1])
-                en.max_health = float(args[2])
-                game.lock.release()
-            elif cmd == '6':
-                camera.set_pos(int(args[0]), int(args[1]))
-                print(camera.off_x, camera.off_y)
-            elif cmd == '7':
-                game.lock.acquire()
-                en = game.find_with_id(int(args[0]))
-                en.level = int(args[1])
-                en.update_image()
-                if current_manager[0] == 'product' and managers[current_manager[0]].spr == en:
-                    managers[current_manager[0]].set_building(managers[current_manager[0]].spr)
-                game.lock.release()
-            elif cmd == '8':
-                if args[0] == '0':
-                    if args[1] == '0':
-                        play_sound(sounds['no_money'])
-                        print('No money')
-                    elif args[1] == '1':
-                        play_sound(sounds['no_wood'])
-                        print('No wood')
-                    elif args[1] == '2':
-                        play_sound(sounds['no_meat'])
-                        print('No meat')
-                elif args[0] == '1':
-                    play_sound(sounds['no_place'])
-                    print('No place')
-                elif args[0] == '2':
-                    play_sound(sounds['no_level'])
-                    print('No fort level')
-            elif cmd == '9':
-                game.lock.acquire()
-                en = game.find_with_id(int(args[3]))
-                if en is None:
-                    print('Wasn"t', args)
-                    clazz_id = int(args[0])
-                    if UNIT_TYPES[clazz_id] == Arrow:
-                        en = UNIT_TYPES[int(args[0])](0, 0, 0, 0, 0)
-                    else:
-                        en = UNIT_TYPES[int(args[0])](0, 0, 0, 0)
-                    en.offsetx = camera.off_x
-                    en.offsety = camera.off_y
-                    game.sprites.add(en)
-                    if en.unit_type == TYPE_BUILDING:
-                        game.buildings.add(en)
+                    en.set_update_args(args, game)
+                    en.update_rect()
+                    game.lock.release()
 
-                en.set_update_args(args, game)
-                en.update_rect()
+                elif cmd == '11':
+                    win[0] = True
+                elif cmd == '12':
+                    win[0] = False
+                elif cmd == '13':
+                    minimap.marks.append((int(args[0]), int(args[1]), Color('green')))
+                else:
+                    print('Taken message:', cmd, args)
+            except Exception as ex:
                 game.lock.release()
+                print('[WARNING]', ex)
 
-            elif cmd == '11':
-                win[0] = True
-            elif cmd == '12':
-                win[0] = False
-            elif cmd == '13':
-                minimap.marks.append((int(args[0]), int(args[1]), Color('green')))
-            else:
-                print('Taken message:', cmd, args)
 
         Unit.free_id = None
         win = [None]

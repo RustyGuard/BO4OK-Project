@@ -189,6 +189,7 @@ class ServerGame:
         self.buildings = Group()
         self.players: Dict[int, Player] = {}
         self.server: Server = server
+        self.side = SERVER
 
     def claim_money(self, player_id: int, costs: Tuple[float, float]):
         pl = self.players.get(player_id)
@@ -267,7 +268,9 @@ class ServerGame:
         pl.client.send(f'3_4_{costs[1]}')
 
     def update(self, *args):
+        # self.lock.acquire()
         self.sprites.update(*args)
+        # self.lock.release()
 
     def place(self, build_class, x: int, y: int, player_id: int, *args,
               ignore_space=False, ignore_money=False, ignore_fort_level=False):
@@ -324,6 +327,7 @@ class ServerGame:
         return building
 
     def upgrade_building(self, unit_id: int, client: ClientConnection):
+        self.lock.acquire()
         en = self.find_with_id(unit_id)
         if en.can_upgraded and en.can_be_upgraded(self):
             *cost, fort_need = en.level_cost(self)
@@ -333,6 +337,7 @@ class ServerGame:
                     self.server.send_all(f'7_{en.unit_id}_{en.level}')
             else:
                 self.safe_send(client.id, '8_2')
+        self.lock.release()
 
     def get_intersect(self, spr):
         return pygame.sprite.spritecollide(spr, self.sprites, False)

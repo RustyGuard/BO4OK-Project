@@ -63,6 +63,12 @@ class Unit(Sprite):  # родительский класс любого воин
     def is_alive(self):
         return self.health > 0
 
+    def update(self, event, game):
+        if game.side == SERVER and not self.is_alive():
+            game.kill(self)
+            return True
+        return False
+
     def move(self, x, y, game):
         if x != 0:
             self.x += x
@@ -219,11 +225,6 @@ class Mine(Unit):  # Шахта,здание располагющее золот
         self.max_health = UNIT_STATS[type(self)][0]
         self.health = self.max_health
 
-    def update(self, event, game):
-        if event.type == SERVER_EVENT_UPDATE:  # убивает спрайт,если объект разрушен или убит
-            if not self.is_alive():
-                game.kill(self)
-
 
 class Arrow(TwistUnit):  # Стрела
     image = pygame.image.load(f'sprite/warrior/archer/arrow.png')
@@ -240,7 +241,7 @@ class Arrow(TwistUnit):  # Стрела
     def update(self, event, game):
         if event.type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
             self.move_to_angle(3, game)
-            if event.type == SERVER_EVENT_UPDATE:
+            if game.side == SERVER:
                 # убивает спрайт стрелы при вылете за экран
                 if self.x < -WORLD_SIZE // 2 or self.x > WORLD_SIZE // 2 or self.y < -WORLD_SIZE // 2 or self.y > WORLD_SIZE // 2:
                     game.kill(self)
@@ -284,7 +285,7 @@ class BallistaArrow(TwistUnit):  # Болт баллисты
     def update(self, event, game):
         if event.type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
             self.move_to_angle(3, game)
-            if event.type == SERVER_EVENT_UPDATE:
+            if game.side == SERVER:
                 if self.x < -WORLD_SIZE // 2 or self.x > WORLD_SIZE // 2 or self.y < -WORLD_SIZE // 2 or self.y > WORLD_SIZE // 2:
                     game.kill(self)
                     return
@@ -315,6 +316,7 @@ class BallistaArrow(TwistUnit):  # Болт баллисты
 
 class Fighter(TwistUnit):  # надкласс юнитов способных наносить урон и стрелять/добывать ресурсы
     power_cost = 0
+    unit_type = TYPE_FIGHTER
 
     def __init__(self, x, y, unit_id, player_id, default_image):
         super().__init__(x, y, unit_id, player_id, default_image)
@@ -376,6 +378,15 @@ class Fighter(TwistUnit):  # надкласс юнитов способных н
 
     def is_valid_enemy(self, enemy):  # проверяет что цель не является снарядом или дружественным юнитом
         return enemy.player_id not in [-1, self.player_id] and enemy.unit_type != TYPE_PROJECTILE
+
+    def update(self, event, game):
+        if super().update(event, game):
+            self.target = (TARGET_NONE, None)
+            return True
+        if game.side == SERVER and self.target[0] == TARGET_ATTACK:
+            if (self.target[1] is None) or (not self.target[1].is_alive()):
+                self.set_target(TARGET_NONE, None)
+                return True
 
     def turn_around(self, speed=1):  # поворот объекта с определенной скоростью
         angle_diff = self.target_angle - self.angle
@@ -451,7 +462,6 @@ class Archer(Fighter):  # Лучник, атакующий юнит дальне
     for i in range(10):
         images.append(pygame.image.load(f'sprite/warrior/archer/{team_id[i]}.png'))
     image = images[0]
-    unit_type = TYPE_FIGHTER
 
     def __init__(self, x, y, unit_id, player_id):
         self.image = Archer.images[player_id]  # выбор цвета
@@ -460,22 +470,16 @@ class Archer(Fighter):  # Лучник, атакующий юнит дальне
         self.delay_time = 60
 
     def update(self, event, game):
-        if not self.is_alive():
-            if event.type == SERVER_EVENT_UPDATE:
-                game.kill(self)
-                return
+        if super().update(event, game):
+            return
+
         if event.type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
             if self.target[0] == TARGET_MOVE:
                 self.move_to_point(event, game, 1, 0.5, 3)
 
             elif self.target[0] == TARGET_ATTACK:
-                # если цель не жива,то цель обнуляется
-                if event.type == SERVER_EVENT_UPDATE and not self.target[1].is_alive():
-                    self.set_target(TARGET_NONE, None, game)
-                    return
-
                 self.find_target_angle()
-                if event.type == SERVER_EVENT_UPDATE:
+                if game.side == SERVER:
                     self.update_delay()
                 near = self.close_to_attack(1000)
                 if self.turn_around(3):
@@ -489,11 +493,8 @@ class Archer(Fighter):  # Лучник, атакующий юнит дальне
                     self.move_to_angle(0.5, game)
 
             elif self.target[0] == TARGET_NONE:  # если цели нет-находится новая
-                if event.type == SERVER_EVENT_UPDATE:
+                if game.side == SERVER:
                     self.find_new_target(game)
-
-        elif event.type in [CLIENT_EVENT_SEC, SERVER_EVENT_SEC]:
-            pass
 
 
 class Soldier(Fighter):  # Воин,атакующий юнит ближнего боя
@@ -506,7 +507,6 @@ class Soldier(Fighter):  # Воин,атакующий юнит ближнего
         images.append(pygame.image.load(f'sprite/warrior/soldier/{team_id[i]}.png'))
     image = images[0]
     required_level = 0
-    unit_type = TYPE_FIGHTER
 
     def __init__(self, x, y, unit_id, player_id):
         self.image = Soldier.images[player_id]
@@ -514,6 +514,8 @@ class Soldier(Fighter):  # Воин,атакующий юнит ближнего
         super().__init__(x, y, unit_id, player_id, Soldier.images[player_id])
 
     def update(self, event, game):
+        super().update(event, game)
+
         if event.type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
 
             if self.target[0] == TARGET_MOVE:
@@ -521,12 +523,9 @@ class Soldier(Fighter):  # Воин,атакующий юнит ближнего
                 return
 
             if self.target[0] == TARGET_ATTACK:
-                if event.type == SERVER_EVENT_UPDATE and not self.target[1].is_alive():
-                    self.set_target(TARGET_NONE, None, game)
-                    return
 
                 self.find_target_angle()
-                if event.type == SERVER_EVENT_UPDATE:
+                if game.side == SERVER:
                     self.update_delay()
                 near = self.close_to_attack()
                 if self.turn_around(2):
@@ -562,7 +561,6 @@ class Worker(Fighter):  # Рабочий,добывает золото и дер
     for i in range(10):
         images.append(pygame.image.load(f'sprite/warrior/working/{team_id[i]}.png'))
     image = images[0]
-    unit_type = TYPE_FIGHTER
 
     def __init__(self, x, y, unit_id, player_id):
         self.image = Worker.images[player_id]
@@ -580,6 +578,9 @@ class Worker(Fighter):  # Рабочий,добывает золото и дер
         self.find_new_target(game, 2000)
 
     def update(self, event, game):
+        if super().update(event, game):
+            return
+
         if event.type not in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
             return
 
@@ -588,19 +589,14 @@ class Worker(Fighter):  # Рабочий,добывает золото и дер
             return
 
         elif self.target[0] == TARGET_ATTACK:
-            if event.type == SERVER_EVENT_UPDATE and not self.target[1].is_alive():
-                self.set_target(TARGET_NONE, None, game)
-                if self.state == STATE_FIGHT:
-                    self.state = STATE_ANY_WORK
-                return
 
             self.find_target_angle()
-            if event.type == SERVER_EVENT_UPDATE:
+            if game.side == SERVER:
                 self.update_delay()
             near = self.close_to_attack()
             if self.turn_around(2):
                 if near:
-                    if event.type == SERVER_EVENT_UPDATE:
+                    if game.side == SERVER:
                         if isinstance(self.target[1], Mine):
                             if self.single_attack(game):
                                 # если рабочий рядом с шахтой,то он забирает золото,если может унести
@@ -636,13 +632,8 @@ class Worker(Fighter):  # Рабочий,добывает золото и дер
                 self.move_to_angle(1, game)
 
         elif self.target[0] == TARGET_NONE:
-            if event.type == SERVER_EVENT_UPDATE:
+            if game.side == SERVER:
                 self.find_new_target(game, 3000)
-
-        if not self.is_alive():
-            if event.type == SERVER_EVENT_UPDATE:
-                game.kill(self)
-                return
 
     def is_full(self):
         return self.money + self.wood >= self.capacity
@@ -683,15 +674,16 @@ class ProductingBuild(Unit):  # Надкласс зданий производя
                 game.safe_send(self.player_id, '3_6')
 
     def update(self, event, game):
-        if not self.is_alive():
-            if event.type == SERVER_EVENT_UPDATE:
-                game.kill(self)
-                return
+        if super().update(event, game):
+            return True
+
         if event.type == SERVER_EVENT_SEC and self.time > 0 and self.units_tray:
             self.time -= 1
         elif self.time == 0:  # с определенной задержкой создает юнита, имитирую тренировку
             self.time = self.delay
             self.create_unit(game, self.units_tray.pop(0))
+
+        return False
 
 
 class Fortress(ProductingBuild):  # Крепость, задает уровень игрока,делает рабочих - ключевое здание в игре
@@ -730,13 +722,6 @@ class Fortress(ProductingBuild):  # Крепость, задает уровен�
         self.level = 0
         self.can_upgraded = True
         Fortress.instances.append(self)
-
-    def update(self, event, game):
-        super().update(event, game)
-        if not self.is_alive():
-            if event.type == SERVER_EVENT_UPDATE:
-                game.kill(self)
-                return
 
     def next_level(self, game):
         if self.level == 3:
@@ -800,12 +785,6 @@ class Forge(Unit):  # Кузня,несколько уровней.При пос
         super().__init__(x, y, unit_id, player_id)
         self.level = 0
         self.can_upgraded = True
-
-    def update(self, event, game):
-        if not self.is_alive():
-            if event.type == SERVER_EVENT_UPDATE:
-                game.kill(self)
-                return
 
     def next_level(self, game):
         if self.level == 4:
@@ -900,7 +879,7 @@ class MagicBall(TwistUnit):  # Магический шар,снаряд, вып�
     def update(self, event, game):
         if event.type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
             self.move_to_angle(1.5, game)
-            if event.type == SERVER_EVENT_UPDATE:
+            if game.side == SERVER:
                 if self.x < -WORLD_SIZE // 2 or self.x > WORLD_SIZE // 2 or self.y < -WORLD_SIZE // 2 or self.y > WORLD_SIZE // 2:
                     game.kill(self)
                     return
@@ -987,30 +966,25 @@ class ArcherTower(Fighter):  # Башня лучников,имеет три у�
         return 3 > self.level >= 0
 
     def update(self, event, game):
-        if not self.is_alive():
-            if event.type == SERVER_EVENT_UPDATE:
-                game.kill(self)
-                return
+        if super().update(event, game):
+            return
+
         if event.type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
             if self.target[0] == TARGET_MOVE:
                 self.find_target_angle()
                 turned = self.turn_around(3)
 
-                if event.type == SERVER_EVENT_UPDATE:
-                    if turned:
-                        self.set_target(TARGET_NONE, None, game)
-                        return
-
-            elif self.target[0] == TARGET_ATTACK:
-                if event.type == SERVER_EVENT_UPDATE and not self.target[1].is_alive():
-                    self.set_target(TARGET_NONE, None)
+                if game.side == SERVER and turned:
+                    self.set_target(TARGET_NONE, None, game)
                     return
 
+            elif self.target[0] == TARGET_ATTACK:
+
                 self.find_target_angle()
-                if event.type == SERVER_EVENT_UPDATE:
+                if game.side == SERVER:
                     self.update_delay()
                 if self.turn_around(3):
-                    if event.type == SERVER_EVENT_UPDATE:
+                    if game.side == SERVER:
                         # тип снаряда
                         if self.level != 3:
                             self.throw_projectile(game, Arrow)
@@ -1018,7 +992,7 @@ class ArcherTower(Fighter):  # Башня лучников,имеет три у�
                             self.throw_projectile(game, MagicBall)
 
             elif self.target[0] == TARGET_NONE:
-                if event.type == SERVER_EVENT_UPDATE:
+                if game.side == SERVER:
                     self.find_new_target(game)
 
 
@@ -1035,11 +1009,6 @@ class Tree(Unit):  # Дерево, из него рабочие добывают
         super().__init__(x, y, unit_id, player_id)
         self.max_health = UNIT_STATS[type(self)][0]
         self.health = self.max_health
-
-    def update(self, event, game):
-        if event.type == SERVER_EVENT_UPDATE:
-            if not self.is_alive():
-                game.kill(self)
 
 
 class FireProjectile(TwistUnit):  # Снаряд выпускаемый драконом
@@ -1064,10 +1033,10 @@ class FireProjectile(TwistUnit):  # Снаряд выпускаемый драк
             if self.time >= 15:
                 self.time = 0
                 self.current_state += 1
-                if event.type == CLIENT_EVENT_UPDATE:
+                if game.side == CLIENT:
                     self.current_state = min(5, self.current_state)
                     self.update_image()
-                elif event.type == SERVER_EVENT_UPDATE:
+                else:
                     if self.current_state == 6:
                         game.kill(self)
                         print('Dead')
@@ -1099,7 +1068,6 @@ class Dragon(Fighter):  # Дракон,уникальный воин,может 
         )
         images.append(anim)
     image = images[0][0]
-    unit_type = TYPE_FIGHTER
 
     def __init__(self, x, y, unit_id, player_id):
         self.time = 0
@@ -1112,10 +1080,9 @@ class Dragon(Fighter):  # Дракон,уникальный воин,может 
         self.delay = 45 * 10
 
     def update(self, event, game):
-        if not self.is_alive():
-            if event.type == SERVER_EVENT_UPDATE:
-                game.kill(self)
-                return
+        if super().update(event, game):
+            return
+
         if event.type == CLIENT_EVENT_UPDATE:
             self.time += 1
             if self.time >= 45:
@@ -1130,17 +1097,14 @@ class Dragon(Fighter):  # Дракон,уникальный воин,может 
                 return
 
             elif self.target[0] == TARGET_ATTACK:
-                if event.type == SERVER_EVENT_UPDATE and not self.target[1].is_alive():
-                    self.set_target(TARGET_NONE, None, game)
-                    return
 
                 self.find_target_angle()
-                if event.type == SERVER_EVENT_UPDATE:
+                if game.side == SERVER:
                     self.update_delay()
                 near = self.close_to_attack()
                 if self.turn_around(2):
                     if near:
-                        if event.type == SERVER_EVENT_UPDATE:
+                        if game.side == SERVER:
                             self.throw_projectile(game, FireProjectile)
                     else:
                         self.move_to_angle(1, game)
@@ -1201,7 +1165,6 @@ class Ballista(Fighter):  # Баллиста,уникальный класс в�
     for i in range(10):
         images.append(pygame.image.load(f'sprite/warrior/ballista/{team_id[i]}.png'))
     image = images[0]
-    unit_type = TYPE_FIGHTER
 
     def __init__(self, x, y, unit_id, player_id):
         self.image = Ballista.images[player_id]
@@ -1209,26 +1172,22 @@ class Ballista(Fighter):  # Баллиста,уникальный класс в�
         self.delay_time = 400
 
     def update(self, event, game):
-        if not self.is_alive():
-            if event.type == SERVER_EVENT_UPDATE:
-                game.kill(self)
-                return
+        if super().update(event, game):
+            return
+
         if event.type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
             if self.target[0] == TARGET_MOVE:
                 self.move_to_point(event, game, 1, 0.5, 1)
 
             elif self.target[0] == TARGET_ATTACK:
-                if event.type == SERVER_EVENT_UPDATE and not self.target[1].is_alive():
-                    self.set_target(TARGET_NONE, None, game)
-                    return
 
                 self.find_target_angle()
-                if event.type == SERVER_EVENT_UPDATE:
+                if game.side == SERVER:
                     self.update_delay()
                 near = self.close_to_attack(1500)
                 if self.turn_around(3):
                     if near:
-                        if event.type == SERVER_EVENT_UPDATE:
+                        if game.side == SERVER:
                             # стреляет вышеупомянутыми болтами, а не стрелами
                             self.throw_projectile(game, BallistaArrow)
                     else:
@@ -1237,7 +1196,7 @@ class Ballista(Fighter):  # Баллиста,уникальный класс в�
                     self.move_to_angle(0.5, game)
 
             elif self.target[0] == TARGET_NONE:
-                if event.type == SERVER_EVENT_UPDATE:
+                if game.side == SERVER:
                     self.find_new_target(game)
 
 
@@ -1264,7 +1223,7 @@ class Farm(Unit):  # Ферма, чем их больше,тем больше у
                 to_remove.append(inst)
                 continue
             if inst.player_id == player_id:
-                meat += 10
+                meat += MEAT_PER_FARM
         for i in to_remove:
             Farm.instances.remove(i)
         return meat
@@ -1273,12 +1232,6 @@ class Farm(Unit):  # Ферма, чем их больше,тем больше у
         self.image = Farm.images[player_id]
         super().__init__(x, y, unit_id, player_id)
         Farm.instances.append(self)
-
-    def update(self, event, game):
-        if not self.is_alive():
-            if event.type == SERVER_EVENT_UPDATE:
-                game.kill(self)
-                return
 
 
 class Stone(Unit):
