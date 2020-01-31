@@ -1079,6 +1079,19 @@ class Dragon(Fighter):  # Дракон,уникальный воин,может 
         self.update_image()
         self.delay = 45 * 10
 
+    def move(self, x, y, game):
+        if x != 0:
+            self.x += x
+        if y != 0:
+            self.y += y
+        if self.x < -WORLD_SIZE // 2:
+            self.x = -WORLD_SIZE // 2
+            self.rect.centerx = int(self.x) + self.offsetx
+        if self.x > WORLD_SIZE // 2:
+            self.x = WORLD_SIZE // 2
+            self.rect.centerx = int(self.x) + self.offsetx
+        self.update_rect()
+
     def update(self, event, game):
         if super().update(event, game):
             return
@@ -1275,14 +1288,14 @@ UNIT_STATS = {  # (max_health, base_dmg)
     Soldier: (150, 50),  # Soldier,
     Archer: (100, 0),  # Archer,
     Ballista: (400, 0),  # Ballista,
-    Dragon: (600, 0),  # Dragon,
+    Dragon: (500, 0),  # Dragon,
     Mine: (10000, 0),  # Mine,
     Arrow: (1, 60),  # Arrow,
     Casern: (400, 0),  # Casern,
     Fortress: (2000, 0),  # Fortress,
     ArcherTower: (500, 0),  # ArcherTower,
     Tree: (30, 0),  # Tree,
-    FireProjectile: (1, 50),  # FireProjectile,
+    FireProjectile: (1, 10),  # FireProjectile,
     UncompletedBuilding: (200, 0),  # UncompletedBuilding,
     BallistaArrow: (1, 300),  # BallistaArrow,
     DragonLore: (1000, 0),  # DragonLore,
