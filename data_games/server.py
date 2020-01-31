@@ -561,7 +561,7 @@ def main(screen, nickname):
     pygame.time.set_timer(SERVER_EVENT_SEC, 1000 // 1)
     pygame.time.set_timer(SERVER_EVENT_SYNC, 5000)
     background = pygame.image.load('sprite/data/menu.png').convert()
-    current_fps = 60
+    current_fps, frames = 60, 0
     sync_counter = 0
     while running and len(game.players) > 0:
         for event in pygame.event.get():
@@ -571,6 +571,8 @@ def main(screen, nickname):
             elif event.type in [SERVER_EVENT_UPDATE, SERVER_EVENT_SEC]:
                 game.update(event, game)
                 if event.type == SERVER_EVENT_SEC:
+                    current_fps = frames
+                    frames = 0
                     update_players_info()
             elif event.type == SERVER_EVENT_SYNC:
                 if not settings['ONE_PLAYER_MODE']:
@@ -590,7 +592,7 @@ def main(screen, nickname):
         screen.blit(background, (0, 0))
         screen.blit(font.render(f'FPS: {current_fps}', 1, (200, 200, 200)), (0, 0))
         pygame.display.flip()
-        current_fps = 1000 // clock.tick(60)
+        frames += 1
         clock.tick(60)
     server.disconnect()
     return "host"

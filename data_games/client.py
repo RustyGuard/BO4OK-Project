@@ -872,7 +872,7 @@ class ClientWait:
         managers['place'] = PlaceManager(place)
         managers['product'] = ProductManager(screen)
         print(game.other_nicks)
-        fps_count = 60
+        fps_count, frames = 60, 0
 
         camera_area = Sprite()
         camera_area.rect = Rect(0, 0, 1920, 1080)
@@ -936,6 +936,8 @@ class ClientWait:
                     game.update(event, game)  # Обновление всех юнитов
 
                 if event.type == CLIENT_EVENT_SEC:
+                    fps_count = frames
+                    frames = 0
                     # /* Создание партиклов дыма
                     if settings['PARTICLES']:
                         for entity in pygame.sprite.spritecollide(camera_area, game.sprites, False):
@@ -996,8 +998,8 @@ class ClientWait:
             game.lock.release()
             pygame.display.flip()
             # */
-
-            fps_count = 1000 // clock.tick(60)
+            frames += 1
+            clock.tick(60)
 
         client.disconnect('Application closed.')
         return win[0], stats, game.sprites
