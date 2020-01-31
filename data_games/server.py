@@ -594,10 +594,3 @@ def main(screen, nickname):
         clock.tick(60)
     server.disconnect()
     return "host"
-
-
-if __name__ == '__main__':
-    pygame.init()
-    main(pygame.display.set_mode((1000, 1000)), 'randomguy')
-    print('\n\tServer closed.\n')
-

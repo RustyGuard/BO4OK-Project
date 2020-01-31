@@ -1001,15 +1001,3 @@ class ClientWait:
 
         client.disconnect('Application closed.')
         return win[0], stats, game.sprites
-
-
-def main():
-    pygame.init()
-    pygame.mouse.set_visible(False)
-    ClientWait().play(pygame.display.set_mode((0, 0), pygame.FULLSCREEN), nick=random_nick())
-    # End
-    pygame.quit()
-
-
-if __name__ == '__main__':
-    main()
