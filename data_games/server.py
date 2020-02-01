@@ -122,7 +122,7 @@ class Server:
             try:
                 print("[CONNECT] Finding connection!")
                 conn, addr = self.s.accept()
-                if self.is_ready():
+                if self.is_ready() or len(self.clients) >= MAX_PLAYERS:
                     break
                 self.players += 1
                 print(f"[CONNECT] Connected [{self.players}/{MAX_PLAYERS}]!")
@@ -131,7 +131,7 @@ class Server:
             except Exception as ex:
                 print(ex)
                 return
-        self.waiting = False
+        # self.waiting = False
         print('Everybody connected.')
 
     def authentication(self, conn, addr):
