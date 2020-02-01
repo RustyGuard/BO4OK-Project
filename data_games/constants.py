@@ -53,7 +53,7 @@ FORESTS_COUNT = 10
 TREES_PER_FOREST = 30
 TREES_RANGE = 300
 
-MEAT_PER_FARM = 10  # todo Баланс
+MEAT_PER_FARM = 5  # todo Баланс
 
 CLIENT = 1
 SERVER = 2

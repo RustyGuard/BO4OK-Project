@@ -453,11 +453,11 @@ class Fighter(TwistUnit):  # надкласс юнитов способных н
         super().kill()
 
 
-class Archer(Fighter):  # Лучник, атакующий юнит дальнего и среднего боя
+class Archer(Fighter):  # Лучник, атакующий юнит дальнего и среднего боя   # todo Баланс
     cost = (100.0, 3.0)  # стоимость создания.Первый аргумент-золото,второй-дерево
     placeable = False  # лучника нельзя поставить,можно создать только в казарме
     name = 'Лучник'
-    power_cost = 2  # todo Баланс
+    power_cost = 2
     images = []  # список с лучниками всех цветов,в инициализации выбирается цвет игрока
     for i in range(10):
         images.append(pygame.image.load(f'sprite/warrior/archer/{team_id[i]}.png'))
@@ -497,11 +497,11 @@ class Archer(Fighter):  # Лучник, атакующий юнит дальне
                     self.find_new_target(game)
 
 
-class Soldier(Fighter):  # Воин,атакующий юнит ближнего боя
-    cost = (100.0, 0.0)
+class Soldier(Fighter):  # Воин,атакующий юнит ближнего боя   # todo Баланс
+    cost = (50.0, 0.0)
     name = 'Воин'
     placeable = False
-    power_cost = 1  # todo Баланс
+    power_cost = 1
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite/warrior/soldier/{team_id[i]}.png'))
@@ -552,11 +552,11 @@ class Soldier(Fighter):  # Воин,атакующий юнит ближнего
         return super().is_valid_enemy(enemy) and type(enemy) != Dragon
 
 
-class Worker(Fighter):  # Рабочий,добывает золото и дерево,строит здания,носит ресурсы к крепости
+class Worker(Fighter):  # Рабочий,добывает золото и дерево,строит здания,носит ресурсы к крепости   # todo Баланс
     cost = (25.0, 0.0)
     name = 'Рабочий'
     placeable = False
-    power_cost = 3  # todo Баланс
+    power_cost = 3
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite/warrior/working/{team_id[i]}.png'))
@@ -686,12 +686,12 @@ class ProductingBuild(Unit):  # Надкласс зданий производя
         return False
 
 
-class Fortress(ProductingBuild):  # Крепость, задает уровень игрока,делает рабочих - ключевое здание в игре
+class Fortress(ProductingBuild):  # Крепость, задает уровень игрока,делает рабочих - ключевое здание в игре   # todo Баланс
     name = 'Крепость'
     placeable = True
     cost = (250.0, 50.0)
 
-    level_costs = [(300.0, 50.0, 0), (400.0, 100.0, 0)]  # todo Баланс
+    level_costs = [(300.0, 50.0, 0), (400.0, 100.0, 0)]
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite/building/fortress/{team_id[i]}.png'))
@@ -739,12 +739,12 @@ class Fortress(ProductingBuild):  # Крепость, задает уровен�
         return 3 > self.level >= 0
 
 
-class Forge(Unit):  # Кузня,несколько уровней.При постройке,умножает "статы" юнитов на соответсвующий коэффициент
+class Forge(Unit):  # Кузня,несколько уровней.При постройке,умножает "статы" юнитов на соответсвующий коэффициент   # todo Баланс
     name = 'Кузня'
     placeable = True
     cost = (200.0, 50.0)
 
-    level_costs = [(300.0, 75.0, 0), (400.0, 125.0, 0), (500.0, 150.0, 0)]  # todo Баланс
+    level_costs = [(300.0, 75.0, 0), (400.0, 125.0, 0), (500.0, 150.0, 0)]
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite/building/forge/{team_id[i]}.png'))
@@ -814,10 +814,10 @@ class Forge(Unit):  # Кузня,несколько уровней.При пос
         return 4 > self.level >= 0
 
 
-class Casern(ProductingBuild):  # подкласс ProductingBuild, производящий лучников,солдат
+class Casern(ProductingBuild):  # подкласс ProductingBuild, производящий лучников,солдат   # todo Баланс
     placeable = True
     name = 'Казарма'
-    cost = (100.0, 25.0)
+    cost = (200.0, 25.0)
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite/building/casern/{team_id[i]}.png'))
@@ -830,7 +830,7 @@ class Casern(ProductingBuild):  # подкласс ProductingBuild, произв
         super().__init__(x, y, unit_id, player_id, 5, [Archer, Soldier])
 
 
-class DragonLore(ProductingBuild):  # подкласс ProductingBuild, производящий только Драконов
+class DragonLore(ProductingBuild):  # подкласс ProductingBuild, производящий только Драконов   # todo Баланс
     placeable = True
     name = 'Драконье логово'
     cost = (500.0, 0.0)
@@ -846,10 +846,10 @@ class DragonLore(ProductingBuild):  # подкласс ProductingBuild, прои
         super().__init__(x, y, unit_id, player_id, 5, [Dragon])
 
 
-class Workshop(ProductingBuild):  # подкласс ProductingBuild, производящий только баллисты
+class Workshop(ProductingBuild):  # подкласс ProductingBuild, производящий только баллисты   # todo Баланс
     placeable = True
     name = 'Мастерская'
-    cost = (350.0, 100.0)
+    cost = (500.0, 100.0)
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite/building/workshop/{team_id[i]}.png'))
@@ -914,11 +914,11 @@ class MagicBall(TwistUnit):  # Магический шар,снаряд, вып�
         self.update_rect()
 
 
-class ArcherTower(Fighter):  # Башня лучников,имеет три уровня,оборонительное сооружение
-    cost = (200.0, 20.0)
+class ArcherTower(Fighter):  # Башня лучников,имеет три уровня,оборонительное сооружение   # todo Баланс
+    cost = (240.0, 25.0)
     placeable = True
     name = 'Башня'
-    level_costs = [(300.0, 30.0, 0), (400.0, 40.0, 0)]  # todo Баланс
+    level_costs = [(400.0, 50.0, 0), (500.0, 100.0, 0)]
     images = [[pygame.image.load(f'sprite/building/turret/{team_id[i]}.png') for i in range(10)],
               [pygame.image.load(f'sprite/building/turret/2/{team_id[i]}.png') for i in range(10)],
               [pygame.image.load(f'sprite/building/turret/3/{team_id[i]}.png') for i in range(10)]]
@@ -1059,9 +1059,9 @@ class FireProjectile(TwistUnit):  # Снаряд выпускаемый драк
         self.image = rotated_image
 
 
-class Dragon(Fighter):  # Дракон,уникальный воин,может быть ранен только снарядами
-    cost = (300.0, 0.0)
-    power_cost = 5  # todo Баланс
+class Dragon(Fighter):  # Дракон,уникальный воин,может быть ранен только снарядами   # todo Баланс
+    cost = (350.0, 0.0)
+    power_cost = 5
     name = 'Дракон'
     placeable = False
     images = []
@@ -1173,10 +1173,10 @@ class UncompletedBuilding(Unit):  # класс,не построенного,н�
         return super().is_alive() and not self.completed
 
 
-class Ballista(Fighter):  # Баллиста,уникальный класс воина,имеет преимущество против драконов
-    cost = (300.0, 100.0)
+class Ballista(Fighter):  # Баллиста,уникальный класс воина,имеет преимущество против драконов   # todo Баланс
+    cost = (350.0, 100.0)
     placeable = False
-    power_cost = 5  # todo Баланс
+    power_cost = 5
     name = 'Баллиста'
     images = []
     for i in range(10):
@@ -1217,10 +1217,10 @@ class Ballista(Fighter):  # Баллиста,уникальный класс в�
                     self.find_new_target(game)
 
 
-class Farm(Unit):  # Ферма, чем их больше,тем больше уровень "мяса" и больше юнитов может позволить себе игрок
+class Farm(Unit):  # Ферма, чем их больше,тем больше уровень "мяса" и больше юнитов может позволить себе игрок   # todo Баланс
     name = 'Ферма'
     placeable = True
-    cost = (50.0, 10.0)
+    cost = (250.0, 10.0)
 
     images = []
     for i in range(10):
@@ -1286,27 +1286,27 @@ UNIT_TYPES = {
     18: MagicBall,
     19: Stone
 }
-# 'Статы' всех юнитов - максимальное здоровье и урон
+# 'Статы' всех юнитов - максимальное здоровье и урон   # todo Баланс
 UNIT_STATS = {  # (max_health, base_dmg)
     Worker: (50, 5),  # Worker,
-    Soldier: (150, 50),  # Soldier,
-    Archer: (100, 0),  # Archer,
+    Soldier: (300, 50),  # Soldier,
+    Archer: (150, 0),  # Archer,
     Ballista: (400, 0),  # Ballista,
     Dragon: (500, 0),  # Dragon,
     Mine: (10000, 0),  # Mine,
-    Arrow: (1, 60),  # Arrow,
+    Arrow: (1, 30),  # Arrow,
     Casern: (400, 0),  # Casern,
     Fortress: (2000, 0),  # Fortress,
     ArcherTower: (500, 0),  # ArcherTower,
     Tree: (30, 0),  # Tree,
     FireProjectile: (1, 10),  # FireProjectile,
     UncompletedBuilding: (200, 0),  # UncompletedBuilding,
-    BallistaArrow: (1, 300),  # BallistaArrow,
+    BallistaArrow: (1, 150),  # BallistaArrow,
     DragonLore: (1000, 0),  # DragonLore,
     Workshop: (1200, 0),  # Workshop,
     Forge: (500, 0),  # Forge
     Farm: (250, 0),  # Farm
-    MagicBall: (1, 120),  # Magic Ball
+    MagicBall: (1, 60),  # Magic Ball
     Stone: (1, 0)
 }
 

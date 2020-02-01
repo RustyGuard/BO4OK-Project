@@ -386,7 +386,7 @@ def titers(screen):
 
 def write_statistics(stats):
     """ Функция записи статистики в .db файл """
-    statistics = sqlite3.connect("statistics.db")
+    statistics = sqlite3.connect("data_games/statistics.db")
     a = "', '".join([str(stats[i]) for i in stats])
     statistics.execute(
         f"INSERT INTO stats({', '.join([i for i in stats])}, datetime) "
@@ -404,7 +404,7 @@ def statistics(screen):
     all_buttons = pygame.sprite.Group()
     Button(all_buttons, "menu", (12, 12))
 
-    stats = sqlite3.connect("statistics.db").cursor().execute("SELECT * FROM stats").fetchall()
+    stats = sqlite3.connect("data_games/statistics.db").cursor().execute("SELECT * FROM stats").fetchall()
 
     font = pygame.font.Font(None, 80)
     line_position = 0
