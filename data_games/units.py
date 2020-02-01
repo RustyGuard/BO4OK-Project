@@ -556,7 +556,7 @@ class Worker(Fighter):  # Рабочий,добывает золото и дер
     cost = (25.0, 0.0)
     name = 'Рабочий'
     placeable = False
-    power_cost = 1  # todo Баланс
+    power_cost = 3  # todo Баланс
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite/warrior/working/{team_id[i]}.png'))
@@ -968,6 +968,10 @@ class ArcherTower(Fighter):  # Башня лучников,имеет три у�
     def update(self, event, game):
         if super().update(event, game):
             return
+
+        if event.type == SERVER_EVENT_SEC:
+            if self.find_new_target(game, 750):
+                return
 
         if event.type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
             if self.target[0] == TARGET_MOVE:
