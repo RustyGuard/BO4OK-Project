@@ -852,7 +852,6 @@ class ClientWait:
                 game.lock.release()
                 print('[WARNING]', ex)
 
-
         Unit.free_id = None
         win = [None]
         minimap = Minimap()

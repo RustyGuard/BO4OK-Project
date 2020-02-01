@@ -1,6 +1,7 @@
 import socket
 import threading
 from math import radians, cos, sin
+from random import choice
 from threading import Lock
 from typing import Tuple, Dict
 
@@ -390,7 +391,6 @@ def place_fortresses(game: ServerGame):
     game.place(Mine, -100, 100, -1, ignore_money=True, ignore_fort_level=True, ignore_space=True)
     game.place(Mine, 100, -100, -1, ignore_money=True, ignore_fort_level=True, ignore_space=True)
     game.place(Mine, 100, 100, -1, ignore_money=True, ignore_fort_level=True, ignore_space=True)
-
     for player_id, player in game.players.items():
         x, y = cos(radians(angle)), sin(radians(angle))
         angle += 360 / players_count / 2
@@ -419,10 +419,12 @@ def place_fortresses(game: ServerGame):
                 trees_left -= 1
             tree_x, tree_y = randint(x - 500, x + 500), randint(y - 500, y + 500)
 
+    forests = []
     for _ in range(FORESTS_COUNT):
         trees_left = TREES_PER_FOREST
         forest_x, forest_y = randint(- WORLD_SIZE // 3, WORLD_SIZE // 3), randint(- WORLD_SIZE // 3, WORLD_SIZE // 3)
         game.server.send_all(f'13_{forest_x}_{forest_y}')
+        forests.append((forest_x, forest_y))
         tree_x, tree_y = [randint(forest_x - TREES_RANGE, forest_x + TREES_RANGE),
                           randint(forest_y - TREES_RANGE, forest_y + TREES_RANGE)]
         while trees_left > 0:
@@ -432,6 +434,7 @@ def place_fortresses(game: ServerGame):
                               randint(forest_y - TREES_RANGE, forest_y + TREES_RANGE)]
 
     print('Placing stopped.')
+    return forests
 
 
 def main(screen, nickname):
@@ -486,6 +489,18 @@ def main(screen, nickname):
             pl.client.send(f'3_1_{pl.money}_{pl.wood}')
             pl.client.send(f'3_2_{pl.power}_{Farm.get_player_meat(pl.id)}')
         game.lock.release()
+
+    def place_tree(forest_x, forest_y):
+        tree_x, tree_y = [randint(forest_x - TREES_RANGE, forest_x + TREES_RANGE),
+                          randint(forest_y - TREES_RANGE, forest_y + TREES_RANGE)]
+        attemps = 5
+        while attemps > 0:
+            if game.place(Tree, tree_x, tree_y, -1, ignore_money=True, ignore_fort_level=True) is not None:
+                print(f'Tree placed')
+                return
+            tree_x, tree_y = [randint(forest_x - TREES_RANGE, forest_x + TREES_RANGE),
+                              randint(forest_y - TREES_RANGE, forest_y + TREES_RANGE)]
+            attemps -= 1
 
     global settings
     settings = data.read_settings('settings/server_setting.txt')
@@ -561,13 +576,15 @@ def main(screen, nickname):
     server.callback = read
     server.disconnected_callback = disconnect_player_game
     running = True
-    place_fortresses(game)
+    forests = place_fortresses(game)
     pygame.time.set_timer(SERVER_EVENT_UPDATE, 1000 // 60)
     pygame.time.set_timer(SERVER_EVENT_SEC, 1000 // 1)
     pygame.time.set_timer(SERVER_EVENT_SYNC, 5000)
     background = pygame.image.load('sprite/data/menu.png').convert()
     current_fps, frames = 60, 0
     sync_counter = 0
+    plant_delay = 20 - len(game.players)
+    plant_timer = 0
     while running and len(game.players) > 0:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -594,6 +611,14 @@ def main(screen, nickname):
                 if event.key == pygame.K_ESCAPE:
                     server.disconnect()
                     return "host"
+
+            if event.type == SERVER_EVENT_SEC:
+                plant_timer += 1
+                if plant_timer >= plant_delay:
+                    forest = choice(forests)
+                    place_tree(*forest)
+
+                    plant_timer = 0
         screen.blit(background, (0, 0))
         screen.blit(font.render(f'FPS: {current_fps}', 1, (200, 200, 200)), (0, 0))
         pygame.display.flip()

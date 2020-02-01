@@ -224,6 +224,19 @@ class Mine(Unit):  # Шахта,здание располагющее золот
         super().__init__(x, y, unit_id, player_id)
         self.max_health = UNIT_STATS[type(self)][0]
         self.health = self.max_health
+        self.reg_time = 0
+
+    def update(self, event, game):
+        if event.type == SERVER_EVENT_SEC and self.health <= 0:
+            self.reg_time += 1
+            if self.reg_time > 10:
+                if randint(0, 100) > MINE_REGEN_CHANCE:
+                    self.health = self.max_health * MINE_REGEN_MULT
+                    game.server.send_all(f'5_{self.unit_id}_{self.health}_{self.max_health}')
+                    print('Mine regenerated!')
+                else:
+                    print('No chance')
+                self.reg_time = 0
 
 
 class Arrow(TwistUnit):  # Стрела
@@ -686,7 +699,7 @@ class ProductingBuild(Unit):  # Надкласс зданий производя
         return False
 
 
-class Fortress(ProductingBuild):  # Крепость, задает уровень игрока,делает рабочих - ключевое здание в игре   # todo Баланс
+class Fortress(ProductingBuild):  # Крепость, задает уровень игрока,делает рабочих - ключевое здание в игре
     name = 'Крепость'
     placeable = True
     cost = (250.0, 50.0)
@@ -739,7 +752,7 @@ class Fortress(ProductingBuild):  # Крепость, задает уровен�
         return 3 > self.level >= 0
 
 
-class Forge(Unit):  # Кузня,несколько уровней.При постройке,умножает "статы" юнитов на соответсвующий коэффициент   # todo Баланс
+class Forge(Unit):  # Кузня,несколько уровней.При постройке,умножает "статы" юнитов на соответсвующий коэффициент
     name = 'Кузня'
     placeable = True
     cost = (200.0, 50.0)
@@ -1217,7 +1230,7 @@ class Ballista(Fighter):  # Баллиста,уникальный класс в�
                     self.find_new_target(game)
 
 
-class Farm(Unit):  # Ферма, чем их больше,тем больше уровень "мяса" и больше юнитов может позволить себе игрок   # todo Баланс
+class Farm(Unit):  # Ферма, чем их больше,тем больше уровень "мяса" и больше юнитов может позволить себе игрок
     name = 'Ферма'
     placeable = True
     cost = (250.0, 10.0)
