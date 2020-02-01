@@ -454,12 +454,11 @@ def gameover(screen, game_result):
     sound.play(-1)
 
     animation_of_whirling = False
-    coords_sword = [[-2000, 0], [-2000, 2000], [0, 2000],
-                    [2000, 2000], [2000, 0], [2000, -2000],
-                    [0, -2000], [-2000, -2000]]
+    coords_sword = [[-1000, 0], [-1000, 1000], [0, 1000],
+                    [1000, 1000], [1000, 0], [1000, -1000],
+                    [0, -1000], [-1000, -1000]]
 
     angle_of_inclination = 0  # переменная угла поворота мечей
-    coefficient_acceleration = 1  # коэффициент ускорения кручения мечей анимации
     timer = 0
 
     game_result[2].draw(screen)
@@ -475,11 +474,10 @@ def gameover(screen, game_result):
                     return "menu"
 
         if animation_of_whirling:  # кручение мечей
-            angle_of_inclination += 1 * coefficient_acceleration // 1
+            angle_of_inclination += 0.5
             flip = pygame.transform.rotate(swords, angle_of_inclination)
             screen.blit(flip, flip.get_rect(center=(960, 540)))
             screen.blit(win, win.get_rect(center=(960, 540)))
-            coefficient_acceleration += 0.05
             timer += 1
             if timer == 300:
                 sound.stop()
@@ -490,9 +488,9 @@ def gameover(screen, game_result):
                 new_coords = []
                 for j in coords:
                     if j < -110:
-                        new_coords.append(j + 15)
+                        new_coords.append(j + 5)
                     elif j > 110:
-                        new_coords.append(j - 15)
+                        new_coords.append(j - 5)
                     else:
                         new_coords.append(j)
                 if new_coords[0] == -110 and new_coords[1] == 110:  # проверка на максимальное сближение
