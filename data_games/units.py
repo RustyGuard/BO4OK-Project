@@ -1318,7 +1318,7 @@ UNIT_STATS = {  # (max_health, base_dmg)
     Tree: (30, 0),  # Tree,
     FireProjectile: (1, 10),  # FireProjectile,
     UncompletedBuilding: (200, 0),  # UncompletedBuilding,
-    BallistaArrow: (1, 150),  # BallistaArrow,
+    BallistaArrow: (1, 250),  # BallistaArrow,
     DragonLore: (1000, 0),  # DragonLore,
     Workshop: (1200, 0),  # Workshop,
     Forge: (500, 0),  # Forge
