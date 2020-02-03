@@ -313,7 +313,8 @@ class ServerGame:
             if not sprite.spritecollideany(building, self.sprites):
                 if self.claim_money(player_id, build_class.cost):
                     self.server.send_all(
-                        f'1_{get_class_id(UncompletedBuilding)}_{x}_{y}_{building.unit_id}_{player_id}{building.get_args()}')
+                        f'1_{get_class_id(UncompletedBuilding)}_{x}_{y}_'
+                        f'{building.unit_id}_{player_id}{building.get_args()}')
                     self.sprites.add(building)
                     if building.unit_type == TYPE_BUILDING:
                         self.buildings.add(building)

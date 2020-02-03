@@ -256,7 +256,8 @@ class Arrow(TwistUnit):  # Стрела
             self.move_to_angle(3, game)
             if game.side == SERVER:
                 # убивает спрайт стрелы при вылете за экран
-                if self.x < -WORLD_SIZE // 2 or self.x > WORLD_SIZE // 2 or self.y < -WORLD_SIZE // 2 or self.y > WORLD_SIZE // 2:
+                if self.x < -WORLD_SIZE // 2 or self.x > WORLD_SIZE // 2 \
+                        or self.y < -WORLD_SIZE // 2 or self.y > WORLD_SIZE // 2:
                     game.kill(self)
                     return
 
@@ -299,7 +300,8 @@ class BallistaArrow(TwistUnit):  # Болт баллисты
         if event.type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
             self.move_to_angle(3, game)
             if game.side == SERVER:
-                if self.x < -WORLD_SIZE // 2 or self.x > WORLD_SIZE // 2 or self.y < -WORLD_SIZE // 2 or self.y > WORLD_SIZE // 2:
+                if self.x < -WORLD_SIZE // 2 or self.x > WORLD_SIZE // 2 or\
+                        self.y < -WORLD_SIZE // 2 or self.y > WORLD_SIZE // 2:
                     game.kill(self)
                     return
 
@@ -566,7 +568,7 @@ class Soldier(Fighter):  # Воин,атакующий юнит ближнего
 
 
 class Worker(Fighter):  # Рабочий,добывает золото и дерево,строит здания,носит ресурсы к крепости   # todo Баланс
-    cost = (25.0, 0.0)
+    cost = (50.0, 0.0)
     name = 'Рабочий'
     placeable = False
     power_cost = 3
@@ -893,7 +895,8 @@ class MagicBall(TwistUnit):  # Магический шар,снаряд, вып�
         if event.type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
             self.move_to_angle(1.5, game)
             if game.side == SERVER:
-                if self.x < -WORLD_SIZE // 2 or self.x > WORLD_SIZE // 2 or self.y < -WORLD_SIZE // 2 or self.y > WORLD_SIZE // 2:
+                if self.x < -WORLD_SIZE // 2 or self.x > WORLD_SIZE // 2 or\
+                        self.y < -WORLD_SIZE // 2 or self.y > WORLD_SIZE // 2:
                     game.kill(self)
                     return
 
@@ -1231,9 +1234,10 @@ class Ballista(Fighter):  # Баллиста,уникальный класс в�
 
 
 class Farm(Unit):  # Ферма, чем их больше,тем больше уровень "мяса" и больше юнитов может позволить себе игрок
+    # todo Баланс
     name = 'Ферма'
     placeable = True
-    cost = (250.0, 10.0)
+    cost = (200.0, 10.0)
 
     images = []
     for i in range(10):

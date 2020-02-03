@@ -287,13 +287,6 @@ class Camera:
                 x_off -= 1
         self.move(x_off, y_off)
 
-        if x_off != 0 or y_off != 0:
-            if False:  # Если курсор не в другом состоянии
-                pass  # Поменять курсор на другой
-        else:
-            if False:  # Если курсор не в обычном состоянии
-                pass  # Поменять курсор на обычный
-
 
 class Game:
     def __init__(self, nick=random_nick()):
@@ -459,7 +452,8 @@ class SelectArea:
                             continue
                         if spr.alive and spr.unit_type == TYPE_FIGHTER and spr.player_id == self.game.info.id:
                             self.client.send(
-                                f'2_{spr.unit_id}_{event.pos[0] - int(self.camera.off_x)}_{event.pos[1] - int(self.camera.off_y)}')
+                                f'2_{spr.unit_id}_{event.pos[0] - int(self.camera.off_x)}_'
+                                f'{event.pos[1] - int(self.camera.off_y)}')
                     self.clear()
             elif event.button == 1:
                 if self.dragged:
