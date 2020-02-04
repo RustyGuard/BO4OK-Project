@@ -217,7 +217,7 @@ def ip(screen):
     for i in image:
         Button(all_buttons, i, image[i])
 
-    font = pygame.font.Font(None, 100)
+    font = pygame.font.Font("font/ArialRegular.ttf", 100)
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -261,7 +261,7 @@ def play(screen):
         if n < 3:
             Button(all_buttons, i, image[i])
 
-    font = pygame.font.Font(None, 80)
+    font = pygame.font.Font("font/ArialRegular.ttf", 80)
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -407,7 +407,7 @@ def statistics(screen):
 
     stats = sqlite3.connect("data_games/statistics.db").cursor().execute("SELECT * FROM stats").fetchall()
 
-    font = pygame.font.Font(None, 80)
+    font = pygame.font.Font("font/ArialRegular.ttf", 60)
     line_position = 0
     while True:
         for event in pygame.event.get():
@@ -428,9 +428,9 @@ def statistics(screen):
                         line_position -= 1
         screen.blit(background, (0, 0))
         all_buttons.draw(screen)
-        for y, line in enumerate(stats[line_position:line_position + 14][::-1]):
+        for y, line in enumerate(stats[::-1][line_position:line_position + 14]):
             for x, value in enumerate(line[1:]):
-                screen.blit(font.render(value, 1, (255, 255, 255)), (52 + 212 * x, 237 + 57 * y))
+                screen.blit(font.render(value, 1, (255, 255, 255)), (52 + 212 * x, 228 + 57 * y))
         screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
         pygame.display.flip()
         clock.tick(60)

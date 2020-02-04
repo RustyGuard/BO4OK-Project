@@ -518,7 +518,7 @@ def main(screen, nickname):
     server.disconnected_callback = disconnect_player
     thread = threading.Thread(target=server.thread_connection, daemon=True)
     thread.start()
-    font = pygame.font.Font(None, 50)
+    font = pygame.font.Font("font/ArialRegular.ttf", 50)
     background = pygame.image.load('sprite/data/play.png').convert()
     image = {"host": (330, 250),
              "connect": (330, 455),
@@ -534,7 +534,7 @@ def main(screen, nickname):
                 data.Button(all_buttons, i, image[i], 3)
     cancel_buttons = pygame.sprite.Group()
     data.Button(cancel_buttons, "cancel", image["cancel"])
-    font1 = pygame.font.Font(None, 80)
+    font1 = pygame.font.Font("font/ArialRegular.ttf", 80)
 
     while server.connected and not server.is_ready():
         for event in pygame.event.get():
