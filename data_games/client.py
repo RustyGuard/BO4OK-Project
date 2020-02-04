@@ -365,11 +365,11 @@ class SelectArea:
         self.camera = camera
         self.client = client
         self.hided_manager = UIManager(pygame.display.get_surface().get_size(), 'data_games/game_theme.json')
-        UIButton(Rect(5, 5, 50, 50), 'DIG', self.hided_manager, object_id='retarget').type = STATE_DIG
-        UIButton(Rect(55, 5, 50, 50), 'FIGHT', self.hided_manager, object_id='retarget').type = STATE_FIGHT
-        UIButton(Rect(110, 5, 50, 50), 'CHOP', self.hided_manager, object_id='retarget').type = STATE_CHOP
-        UIButton(Rect(165, 5, 50, 50), 'BUILD', self.hided_manager, object_id='retarget').type = STATE_BUILD
-        UIButton(Rect(220, 5, 50, 50), 'ANY', self.hided_manager, object_id='retarget').type = STATE_ANY_WORK
+        UIButton(Rect(5, 5, 75, 50), 'Копать', self.hided_manager, object_id='retarget').type = STATE_DIG
+        UIButton(Rect(80, 5, 75, 50), 'Атаковать', self.hided_manager, object_id='retarget').type = STATE_FIGHT
+        UIButton(Rect(160, 5, 75, 50), 'Рубить', self.hided_manager, object_id='retarget').type = STATE_CHOP
+        UIButton(Rect(240, 5, 75, 50), 'Строить', self.hided_manager, object_id='retarget').type = STATE_BUILD
+        UIButton(Rect(320, 5, 75, 50), 'Всё', self.hided_manager, object_id='retarget').type = STATE_ANY_WORK
 
     def mouse_moved(self, x, y):
         self.width += x
