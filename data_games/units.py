@@ -366,10 +366,9 @@ class Fighter(TwistUnit):  # надкласс юнитов способных н
             game.server.send_all(f'2_{TARGET_MOVE}_{self.unit_id}_{coord[0]}_{coord[1]}')
 
     def find_target_angle(self):  # находит угол между целью и объектом для поворота
-        if self.target is None:
+        if self.target is None or self.target[1] is None:
             return
-        self.target_angle = int(
-            math.degrees(math.atan2(self.target[1][1] - self.y, self.target[1][0] - self.x)))
+        self.target_angle = int(math.degrees(math.atan2(self.target[1][1] - self.y, self.target[1][0] - self.x)))
         if self.target_angle < 0:
             self.target_angle += 360
 
