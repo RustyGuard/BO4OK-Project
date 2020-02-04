@@ -49,7 +49,7 @@ def random_nick():
 class Minimap:
     def __init__(self):
         self.rect = Rect(MINIMAP_OFFSETX, MINIMAP_OFFSETY, MINIMAP_SIZEX, MINIMAP_SIZEY)
-        self.font = pygame.font.Font(None, 25)
+        self.font = pygame.font.Font("font/ArialRegular.ttf", 25)
         self.minimap = pygame.image.load('sprite/minimap.png')
         self.marks: List[Tuple[int, int, Color]] = []
 
@@ -677,7 +677,7 @@ class ClientWait:
         anim_expectation_number = 0
 
         running = True
-        font = pygame.font.Font(None, 75)
+        font = pygame.font.Font("font/ArialRegular.ttf", 75)
 
         while running and not game.started:
             for event in pygame.event.get():
@@ -856,7 +856,7 @@ class ClientWait:
         background = pygame.image.load('sprite/small_map.png').convert()
         settings = data.read_settings()
         particles = Group()
-        small_font = pygame.font.Font(None, 25)
+        small_font = pygame.font.Font("font/ArialRegular.ttf", 25)
         running = True
         client.setEventCallback(listen)
         camera = Camera(game.sprites, particles)
