@@ -822,6 +822,10 @@ class ClientWait:
                         clazz_id = int(args[0])
                         if UNIT_TYPES[clazz_id] == Arrow:
                             en = UNIT_TYPES[int(args[0])](0, 0, 0, 0, 0)
+                        elif UNIT_TYPES[clazz_id] == BallistaArrow:
+                            en = UNIT_TYPES[int(args[0])](0, 0, 0, 0, 0)
+                        elif UNIT_TYPES[clazz_id] == FireProjectile:
+                            en = UNIT_TYPES[int(args[0])](0, 0, 0, 0, 0)
                         else:
                             en = UNIT_TYPES[int(args[0])](0, 0, 0, 0)
                         en.offsetx = camera.off_x
