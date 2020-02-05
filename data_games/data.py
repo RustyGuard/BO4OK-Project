@@ -6,7 +6,7 @@ import datetime
 cursor = pygame.image.load('sprite/icon/cursor.png')
 clock = pygame.time.Clock()
 nickname = ""  # никнейм игрока(если поле пустое - выберает рандомное имя)
-ip_conect = "192.168.0."   # айпи подключения к желаемому хосту
+ip_conect = "192.168.0."  # айпи подключения к желаемому хосту
 
 
 class Button(pygame.sprite.Sprite):
@@ -169,30 +169,33 @@ def headpiece(screen):
     potick_rect = [-400, 500]
     timer = 0
     water_condition = False
+    suffering = float(read_settings()["SUFFERING"])  # если FALSE, то добавляет возможность скипа заставки :D
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 exit()
-            if event.type == pygame.KEYUP:
-                if event.key == pygame.K_ESCAPE:
-                    return "menu"
-        if bo4ok_rect[0] < 232:
+            if not suffering:
+                if event.type == pygame.KEYUP:
+                    if event.key == pygame.K_ESCAPE:
+                        return "menu"
+        if bo4ok_rect[0] < 232:  # Движение надписи "bo4ok potick"
             bo4ok_rect[0] += 4.4
             potick_rect[0] += 4.4
-        else:
+        else:  # как тольуо напись врезается в камень, потик измениет изображение
             potick = potick2
             bo4ok_rect[0] = 410
             potick_rect[0] = 910
             if not water_condition:
                 timer += 1
                 if timer > 48:
-                    water_condition = True
+                    water_condition = True  # через определённый промежуток времени вытекает вода
                     timer = 0
-            if timer > 140:
-                pygame.mixer.music.stop()
-                return "menu"
             else:
-                timer += 1
+                if timer > 140:  # задержка после вытекания воды, перед выключением анимации
+                    pygame.mixer.music.stop()
+                    return "menu"
+                else:
+                    timer += 1
         screen.fill(pygame.Color("white"))
         screen.blit(stone, (1170, 500))
         screen.blit(bo4ok, bo4ok_rect)
@@ -217,7 +220,7 @@ def ip(screen):
     for i in image:
         Button(all_buttons, i, image[i])
 
-    font = pygame.font.Font(None, 100)
+    font = pygame.font.Font("font/NK57.ttf", 100)
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -226,17 +229,15 @@ def ip(screen):
                 if event.key == pygame.K_ESCAPE:
                     return ["play", ip_conect]
             for button in all_buttons:
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    if button.rect.collidepoint(event.pos):
-                        if button.name == "OK":
-                            return ["OK", ip_conect]
-                        return ["play", ip_conect]
                 if button.get_event(event):
-                    return button.get_event(event)
+                    if button.name == "OK":
+                        return ["OK", ip_conect]
+                    return ["play", ip_conect]
             if event.type == pygame.KEYDOWN:
-                if event.unicode in "1234567890.:":
+                if (event.unicode == "." and ip_conect.count(".") < 3) or \
+                        (event.unicode in "1234567890" and len(ip_conect.split(".")[-1]) < 3):
                     ip_conect += event.unicode
-                if event.key == 8:
+                if event.key == pygame.K_BACKSPACE:
                     ip_conect = ip_conect[:-1]
         screen.blit(background, (0, 0))
         all_buttons.draw(screen)
@@ -258,10 +259,9 @@ def play(screen):
 
     all_buttons = pygame.sprite.Group()
     for n, i in enumerate(image):
-        if n < 3:
-            Button(all_buttons, i, image[i])
+        Button(all_buttons, i, image[i])
 
-    font = pygame.font.Font(None, 80)
+    font = pygame.font.Font("font/NK57.ttf", 55)
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -277,11 +277,11 @@ def play(screen):
                                     "бюqwertyuiopasdfghjklzxcvbnm1234567890 _-":
                     if len(nickname) < 11:
                         nickname += event.unicode
-                if event.key == 8:
+                if event.key == pygame.K_BACKSPACE:
                     nickname = nickname[:-1]
         screen.blit(background, (0, 0))
         all_buttons.draw(screen)
-        screen.blit(font.render(nickname, 1, (255, 255, 255)), (810, 740))
+        screen.blit(font.render(nickname, 1, (255, 255, 255)), (810, 745))
         screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
         pygame.display.flip()
         clock.tick(60)
@@ -310,7 +310,7 @@ def settings(screen, music):
     for i in tick_field_image:
         Button(all_tick_field, i, tick_field_image[i], 2)
 
-    flag_volume_cursor = False
+    flag_volume_cursor = False  # ечли True, то полунок громкости - двигается
     volume_cursor_x = 0  # позиция ползунка громкости во время нажатия на ползунок
     while True:
         for event in pygame.event.get():
@@ -321,12 +321,14 @@ def settings(screen, music):
                     write_settings(settings)
                     return "menu"
             if flag_volume_cursor:  # движение ползунка громкости
+                mouse_x_coords = pygame.mouse.get_pos()[0]
+                # значение переменной координаты мыши присвоено до цикла, да бы не инициализировать много раз
                 for volume_cursor in all_volume_cursor:
-                    if 98 <= volume_cursor_x + pygame.mouse.get_pos()[0] <= 762:
+                    if 98 <= volume_cursor_x + mouse_x_coords <= 762:
                         volume_cursor.rect.x = volume_cursor_x + pygame.mouse.get_pos()[0]
-                    if 98 > volume_cursor_x + pygame.mouse.get_pos()[0]:
+                    if 98 > volume_cursor_x + mouse_x_coords:
                         volume_cursor.rect.x = 98
-                    if 762 < volume_cursor_x + pygame.mouse.get_pos()[0]:
+                    if 762 < volume_cursor_x + mouse_x_coords:
                         volume_cursor.rect.x = 762
                     music.set_musik_volume((volume_cursor.rect.x - 98) / 664)
                     if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
@@ -407,7 +409,7 @@ def statistics(screen):
 
     stats = sqlite3.connect("data_games/statistics.db").cursor().execute("SELECT * FROM stats").fetchall()
 
-    font = pygame.font.Font(None, 80)
+    font = pygame.font.Font("font/NK57.ttf", 61)
     line_position = 0
     while True:
         for event in pygame.event.get():
@@ -428,7 +430,7 @@ def statistics(screen):
                         line_position -= 1
         screen.blit(background, (0, 0))
         all_buttons.draw(screen)
-        for y, line in enumerate(stats[line_position:line_position + 14][::-1]):
+        for y, line in enumerate(stats[::-1][line_position:line_position + 14]):
             for x, value in enumerate(line[1:]):
                 screen.blit(font.render(value, 1, (255, 255, 255)), (52 + 212 * x, 237 + 57 * y))
         screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
@@ -441,7 +443,7 @@ def gameover(screen, game_result):
     write_statistics(game_result[1])  # запись статитстики
     global clock
 
-    # инициализация изображений
+    # инициализация изображений и музыки
     sword = pygame.image.load('sprite/over/sword.png')
     swords = pygame.image.load('sprite/over/swords.png')
     if game_result[0]:
@@ -502,4 +504,3 @@ def gameover(screen, game_result):
                 screen.blit(flip, flip.get_rect(center=(960 + i[0], 540 + i[1])))
         pygame.display.flip()
         clock.tick(60)
-

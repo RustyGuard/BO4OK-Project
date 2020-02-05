@@ -41,6 +41,5 @@ while window:  # P.s Это сдаелано для оптимизации,да�
     elif window == "menu":
         window = menu(screen)
     else:
-        print(f"Неверный аргумент 'window'({window})")
         exit()
 pygame.quit()

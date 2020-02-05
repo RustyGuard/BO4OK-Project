@@ -11,7 +11,7 @@ from pygame.sprite import Group
 from . import data
 from .units import *
 
-NEED_PLAYERS = 1
+NEED_PLAYERS = 2
 MAX_PLAYERS = 10
 
 CURRENT_ID = 0
@@ -518,7 +518,7 @@ def main(screen, nickname):
     server.disconnected_callback = disconnect_player
     thread = threading.Thread(target=server.thread_connection, daemon=True)
     thread.start()
-    font = pygame.font.Font(None, 50)
+    font = pygame.font.Font("font/NK57.ttf", 40)
     background = pygame.image.load('sprite/data/play.png').convert()
     image = {"host": (330, 250),
              "connect": (330, 455),
@@ -534,7 +534,7 @@ def main(screen, nickname):
                 data.Button(all_buttons, i, image[i], 3)
     cancel_buttons = pygame.sprite.Group()
     data.Button(cancel_buttons, "cancel", image["cancel"])
-    font1 = pygame.font.Font(None, 80)
+    font1 = pygame.font.Font("font/NK57.ttf", 55)
 
     while server.connected and not server.is_ready():
         for event in pygame.event.get():
@@ -557,7 +557,7 @@ def main(screen, nickname):
         screen.blit(text, (650, 455))
         all_buttons.draw(screen)
         cancel_buttons.draw(screen)
-        screen.blit(font1.render(nickname, 1, (255, 255, 255)), (810, 740))
+        screen.blit(font1.render(nickname, 1, (255, 255, 255)), (810, 745))
         screen.blit(data.cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
         pygame.display.flip()
 

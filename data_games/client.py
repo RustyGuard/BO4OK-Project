@@ -49,7 +49,7 @@ def random_nick():
 class Minimap:
     def __init__(self):
         self.rect = Rect(MINIMAP_OFFSETX, MINIMAP_OFFSETY, MINIMAP_SIZEX, MINIMAP_SIZEY)
-        self.font = pygame.font.Font(None, 25)
+        self.font = pygame.font.Font("font/NK57.ttf", 23)
         self.minimap = pygame.image.load('sprite/minimap.png')
         self.marks: List[Tuple[int, int, Color]] = []
 
@@ -677,7 +677,7 @@ class ClientWait:
         anim_expectation_number = 0
 
         running = True
-        font = pygame.font.Font(None, 75)
+        font = pygame.font.Font("font/NK57.ttf", 55)
 
         while running and not game.started:
             for event in pygame.event.get():
@@ -852,7 +852,8 @@ class ClientWait:
         background = pygame.image.load('sprite/small_map.png').convert()
         settings = data.read_settings()
         particles = Group()
-        small_font = pygame.font.Font(None, 25)
+        small_font = pygame.font.Font("font/NK57.ttf", 18)
+        fps_font = pygame.font.Font("font/NK57.ttf", 30)
         running = True
         client.setEventCallback(listen)
         camera = Camera(game.sprites, particles)
@@ -988,7 +989,7 @@ class ClientWait:
             select_area.draw_ui(screen)
             screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
             if settings['FPS']:
-                text = small_font.render(f'FPS: {fps_count}', 1, pygame.Color('red' if fps_count < 40 else 'green'))
+                text = fps_font.render(f'{fps_count}', 1, pygame.Color('red' if fps_count < 40 else 'green'))
                 screen.blit(text, (0, 0))
 
             game.lock.release()
