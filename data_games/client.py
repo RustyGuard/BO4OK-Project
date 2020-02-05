@@ -48,14 +48,15 @@ def random_nick():
 
 class Minimap:
     def __init__(self):
-        self.rect = Rect(MINIMAP_OFFSETX, MINIMAP_OFFSETY, MINIMAP_SIZEX, MINIMAP_SIZEY)
+        self.rect = Rect(MINIMAP_OFFSETX, 0, MINIMAP_SIZEX, MINIMAP_SIZEY)
+        self.rect.bottom = settings['HEIGHT']
         self.font = pygame.font.Font("font/NK57.ttf", 23)
         self.minimap = pygame.image.load('sprite/minimap.png')
         self.marks: List[Tuple[int, int, Color]] = []
 
     def worldpos_to_minimap(self, pos):
-        return MINIMAP_OFFSETX + (pos[0] + WORLD_SIZE / 2) / WORLD_SIZE * MINIMAP_SIZEX - MINIMAP_ICON_SIZE / 2, \
-               MINIMAP_OFFSETY + (pos[1] + WORLD_SIZE / 2) / WORLD_SIZE * MINIMAP_SIZEY - MINIMAP_ICON_SIZE / 2
+        return self.rect.x + (pos[0] + WORLD_SIZE / 2) / WORLD_SIZE * self.rect.width - MINIMAP_ICON_SIZE / 2, \
+               self.rect.y + (pos[1] + WORLD_SIZE / 2) / WORLD_SIZE * self.rect.height - MINIMAP_ICON_SIZE / 2
 
     def minimap_to_worldpos(self, pos):
         return pos[0] / self.rect.width * WORLD_SIZE - WORLD_SIZE * 0.5, \
@@ -67,13 +68,13 @@ class Minimap:
         return None
 
     def draw(self, camera, game, screen):
-        screen.blit(self.minimap, (0, 692))
+        screen.blit(self.minimap, (0, settings['HEIGHT'] - self.minimap.get_height()))
         text = self.font.render(str(game.info.money), 1, (100, 255, 100))
-        screen.blit(text, (35, 805))
+        screen.blit(text, (35, settings['HEIGHT'] - 275))
         text = self.font.render(str(game.info.wood), 1, Color('burlywood'))
-        screen.blit(text, (145, 805))
+        screen.blit(text, (145, settings['HEIGHT'] - 275))
         text = self.font.render(f'{game.info.power}/{game.info.max_power}', 1, Color('palevioletred3'))
-        screen.blit(text, (260, 805))
+        screen.blit(text, (260, settings['HEIGHT'] - 275))
 
         icon = Rect(0, 0, MINIMAP_ICON_SIZE, MINIMAP_ICON_SIZE)
         for i in game.buildings:
@@ -95,13 +96,13 @@ class Minimap:
             icon.center = self.worldpos_to_minimap((i, j))
             pygame.draw.ellipse(screen, k, icon)
 
-        rect = (MINIMAP_OFFSETX + (-camera.off_x + WORLD_SIZE / 2) / WORLD_SIZE * MINIMAP_SIZEX,
-                MINIMAP_OFFSETY + (-camera.off_y + WORLD_SIZE / 2) / WORLD_SIZE * MINIMAP_SIZEY,
+        rect = (self.rect.x + (-camera.off_x + WORLD_SIZE / 2) / WORLD_SIZE * self.rect.width,
+                self.rect.y + (-camera.off_y + WORLD_SIZE / 2) / WORLD_SIZE * self.rect.height,
                 settings['WIDTH'] / WORLD_SIZE * self.rect.width, settings['HEIGHT'] / WORLD_SIZE * self.rect.height)
         pygame.draw.rect(screen, Color('red'), rect, 1)
 
         if settings['DEBUG']:
-            pygame.draw.rect(screen, (255, 0, 0), (MINIMAP_OFFSETX, MINIMAP_OFFSETY, MINIMAP_SIZEX, MINIMAP_SIZEY), 1)
+            pygame.draw.rect(screen, (255, 0, 0), self.rect, 1)
 
 
 class Particle(Sprite):
@@ -365,11 +366,15 @@ class SelectArea:
         self.camera = camera
         self.client = client
         self.hided_manager = UIManager(pygame.display.get_surface().get_size(), 'data_games/game_theme.json')
-        UIButton(Rect(5, 5, 75, 50), 'Копать', self.hided_manager, object_id='retarget').type = STATE_DIG
-        UIButton(Rect(80, 5, 75, 50), 'Атаковать', self.hided_manager, object_id='retarget').type = STATE_FIGHT
-        UIButton(Rect(160, 5, 75, 50), 'Рубить', self.hided_manager, object_id='retarget').type = STATE_CHOP
-        UIButton(Rect(240, 5, 75, 50), 'Строить', self.hided_manager, object_id='retarget').type = STATE_BUILD
-        UIButton(Rect(320, 5, 75, 50), 'Всё', self.hided_manager, object_id='retarget').type = STATE_ANY_WORK
+        buttons = [
+            ('Копать', STATE_DIG),
+            ('Атаковать', STATE_FIGHT),
+            ('Рубить', STATE_CHOP),
+            ('Строить', STATE_BUILD),
+            ('Всё', STATE_ANY_WORK)
+        ]
+        for i, (name, state) in enumerate(buttons):
+            UIButton(Rect(5, 115 + i * 55, 80, 50), name, self.hided_manager, object_id='retarget').type = state
 
     def mouse_moved(self, x, y):
         self.width += x
@@ -852,9 +857,9 @@ class ClientWait:
 
         Unit.free_id = None
         win = [None]
-        minimap = Minimap()
         background = pygame.image.load('sprite/small_map.png').convert()
         settings = data.read_settings()
+        minimap = Minimap()
         particles = Group()
         small_font = pygame.font.Font("font/NK57.ttf", 18)
         fps_font = pygame.font.Font("font/NK57.ttf", 30)
