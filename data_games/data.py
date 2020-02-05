@@ -432,7 +432,7 @@ def statistics(screen):
         all_buttons.draw(screen)
         for y, line in enumerate(stats[::-1][line_position:line_position + 14]):
             for x, value in enumerate(line[1:]):
-                screen.blit(font.render(value, 1, (255, 255, 255)), (52 + 212 * x, 237 + 57 * y))
+                screen.blit(font.render(value, 1, (255, 255, 255)), (52 + 212 * x, 228 + 57 * y))
         screen.blit(cursor, (pygame.mouse.get_pos()[0] - 9, pygame.mouse.get_pos()[1] - 5))
         pygame.display.flip()
         clock.tick(60)
