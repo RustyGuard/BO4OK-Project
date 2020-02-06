@@ -39,6 +39,9 @@ class Unit(Sprite):  # родительский класс любого воин
     power_cost = 0  # количество места которое занимает юнит(далее "мясо",подробнее в классе Фермы)
     unit_type = TYPE_BUILDING  # стандартное значение
     required_level = 0
+    name = 'Default'
+    placeable = False  # объект нельзя поставить вручную,лишь может быть создан другим юнитом
+    cost = (0.0, 0.0)
 
     def __init__(self, x, y, unit_id, player_id):
         self.unit_id = unit_id
@@ -99,12 +102,12 @@ class Unit(Sprite):  # родительский класс любого воин
                         self.rect.bottom = spr.rect.top
                     self.y = self.rect.centery - self.offsety
                     break
-                if self.y < -WORLD_SIZE // 2:
-                    self.y = -WORLD_SIZE // 2
-                    self.rect.centery = int(self.y) + self.offsety
-                if self.y > WORLD_SIZE // 2:
-                    self.y = WORLD_SIZE // 2
-                    self.rect.centery = int(self.y) + self.offsety
+            if self.y < -WORLD_SIZE // 2:
+                self.y = -WORLD_SIZE // 2
+                self.rect.centery = int(self.y) + self.offsety
+            if self.y > WORLD_SIZE // 2:
+                self.y = WORLD_SIZE // 2
+                self.rect.centery = int(self.y) + self.offsety
 
     def set_offset(self, x, y):  # поправка на положение камеры
         self.offsetx, self.offsety = x, y
@@ -113,6 +116,9 @@ class Unit(Sprite):  # родительский класс любого воин
     def update_rect(self):
         self.rect.centerx = int(self.x) + self.offsetx
         self.rect.centery = int(self.y) + self.offsety
+
+    def is_outside(self):
+        return (abs(self.x) > WORLD_SIZE // 2) or (abs(self.y) > WORLD_SIZE // 2)
 
     def update_image(self):
         pass
@@ -212,11 +218,9 @@ class TwistUnit(Unit):  # подкласс Unit имеющий угол вращ
 
 
 class Mine(Unit):  # Шахта,здание располагющее золотом,которое могут добыть рабочие
-    placeable = False  # шахту нельзя поставить вручную, они появляются в начале игры
     name = 'Шахта'
     mine = pygame.image.load('sprite/building/mine/mine.png')
     image = mine
-    required_level = 1
     unit_type = TYPE_RESOURCE  # тип юнитов хранящих ресурсы для добычи
 
     def __init__(self, x, y, unit_id, player_id):
@@ -233,16 +237,12 @@ class Mine(Unit):  # Шахта,здание располагющее золот
                 if randint(0, 100) > MINE_REGEN_CHANCE:
                     self.health = self.max_health * MINE_REGEN_MULT
                     game.server.send_all(f'5_{self.unit_id}_{self.health}_{self.max_health}')
-                    print('Mine regenerated!')
-                else:
-                    print('No chance')
                 self.reg_time = 0
 
 
 class Arrow(TwistUnit):  # Стрела
     image = pygame.image.load(f'sprite/warrior/archer/arrow.png')
     name = 'Arrow'
-    placeable = False  # объект нельзя поставить вручную,лишь может быть создан другим юнитом
     unit_type = TYPE_PROJECTILE  # Projectile - тип снаряда в игре
 
     def __init__(self, x, y, unit_id, player_id, angle):
@@ -255,16 +255,12 @@ class Arrow(TwistUnit):  # Стрела
         if event.type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
             self.move_to_angle(3, game)
             if game.side == SERVER:
-                # убивает спрайт стрелы при вылете за экран
-                if self.x < -WORLD_SIZE // 2 or self.x > WORLD_SIZE // 2 \
-                        or self.y < -WORLD_SIZE // 2 or self.y > WORLD_SIZE // 2:
+                self.time -= 1
+                # убивает спрайт стрелы при вылете за экран или если кончилось время
+                if self.is_outside() or self.time <= 0:
                     game.kill(self)
                     return
 
-                self.time -= 1
-                if self.time <= 0:  # убивает спрайт стрелы если кончилось время
-                    game.kill(self)
-                    return
                 for spr in game.get_intersect(self):
                     # проверяет то что атакуемый объект - не дружественный юнит и не снаряд
                     if spr.player_id not in [-1, self.player_id] and spr.unit_type != TYPE_PROJECTILE:
@@ -276,23 +272,19 @@ class Arrow(TwistUnit):  # Стрела
         return f'_{self.angle}'
 
     def move(self, x, y, game):
-        if x != 0:
-            self.x += x
-        if y != 0:
-            self.y += y
+        self.x += x
+        self.y += y
         self.update_rect()
 
 
 class BallistaArrow(TwistUnit):  # Болт баллисты
     image = pygame.image.load(f'sprite/warrior/ballista/anim/arrow.png')
     name = 'BallistaArrow'
-    placeable = False
     unit_type = TYPE_PROJECTILE
 
     def __init__(self, x, y, unit_id, player_id, angle):
         super().__init__(x, y, unit_id, player_id, BallistaArrow.image)
         self.set_angle(int(angle))
-        self.time = 1200
         self.live_time = 5  # "прочность" болта,может задеть только 5 юнитов,после чего спрайт исчезает
         self.time = 350  # максимальное время "жизни" объекта, по истечении которого он пропадает
         self.striken = []  # список задетых снарядом юнитов,болт не ударит дважды по тому же обьъекту
@@ -302,33 +294,27 @@ class BallistaArrow(TwistUnit):  # Болт баллисты
         if event.type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
             self.move_to_angle(3, game)
             if game.side == SERVER:
-                if self.x < -WORLD_SIZE // 2 or self.x > WORLD_SIZE // 2 or\
-                        self.y < -WORLD_SIZE // 2 or self.y > WORLD_SIZE // 2:
+                self.time -= 1
+                if self.is_outside() or  self.time <= 0:
                     game.kill(self)
                     return
 
-                self.time -= 1
-                if self.time <= 0:
-                    game.kill(self)
-                    return
                 for spr in game.get_intersect(self):
-                    if spr.player_id not in [-1, self.player_id] and spr.unit_type != TYPE_PROJECTILE:
-                        if spr not in self.striken:
-                            self.live_time -= (1 if type(spr) != Dragon else 5)  # дракон ломает болт с одного попадания
-                            spr.take_damage(self.damage, game)
-                            self.striken.append(spr)
-                            if self.live_time <= 0:
-                                game.kill(self)
-                                return
+                    if spr.player_id not in [-1, self.player_id] and \
+                            spr.unit_type != TYPE_PROJECTILE and spr not in self.striken:
+                        self.live_time -= (1 if type(spr) != Dragon else 5)  # дракон ломает болт с одного попадания
+                        spr.take_damage(self.damage, game)
+                        self.striken.append(spr)
+                        if self.live_time <= 0:
+                            game.kill(self)
+                            return
 
     def get_args(self):
         return f'_{self.angle}'
 
     def move(self, x, y, game):
-        if x != 0:
-            self.x += x
-        if y != 0:
-            self.y += y
+        self.x += x
+        self.y += y
         self.update_rect()
 
 
@@ -472,7 +458,6 @@ class Fighter(TwistUnit):  # надкласс юнитов способных н
 
 class Archer(Fighter):  # Лучник, атакующий юнит дальнего и среднего боя   # todo Баланс
     cost = (100.0, 3.0)  # стоимость создания.Первый аргумент-золото,второй-дерево
-    placeable = False  # лучника нельзя поставить,можно создать только в казарме
     name = 'Лучник'
     power_cost = 2
     images = []  # список с лучниками всех цветов,в инициализации выбирается цвет игрока
@@ -517,13 +502,11 @@ class Archer(Fighter):  # Лучник, атакующий юнит дальне
 class Soldier(Fighter):  # Воин,атакующий юнит ближнего боя   # todo Баланс
     cost = (50.0, 0.0)
     name = 'Воин'
-    placeable = False
     power_cost = 1
     images = []
     for i in range(10):
         images.append(pygame.image.load(f'sprite/warrior/soldier/{team_id[i]}.png'))
     image = images[0]
-    required_level = 0
 
     def __init__(self, x, y, unit_id, player_id):
         self.image = Soldier.images[player_id]
@@ -572,7 +555,6 @@ class Soldier(Fighter):  # Воин,атакующий юнит ближнего
 class Worker(Fighter):  # Рабочий,добывает золото и дерево,строит здания,носит ресурсы к крепости   # todo Баланс
     cost = (50.0, 0.0)
     name = 'Рабочий'
-    placeable = False
     power_cost = 3
     images = []
     for i in range(10):
@@ -656,7 +638,7 @@ class Worker(Fighter):  # Рабочий,добывает золото и дер
         return self.money + self.wood >= self.capacity
 
     def is_valid_enemy(self, enemy):
-        # выбирает цель рабочему,взависимости от заданной деятельности
+        # выбирает цель рабочему, в зависимости от заданной деятельности
         if self.is_full():
             return isinstance(enemy, Fortress) and enemy.player_id == self.player_id
         if self.state == STATE_ANY_WORK:
@@ -673,8 +655,7 @@ class Worker(Fighter):  # Рабочий,добывает золото и дер
 
 class ProductingBuild(Unit):  # Надкласс зданий производящих юнитов(например, казарма)
     def __init__(self, x, y, unit_id, player_id, delay, valid_types):
-        self.time = delay
-        self.delay = delay
+        self.time = self.delay = delay
         self.units_tray = []  # очередь производимых юнитов
         self.valid_types = valid_types  # возможные к производству типы юнитов
         super().__init__(x, y, unit_id, player_id)
@@ -882,7 +863,6 @@ class Workshop(ProductingBuild):  # подкласс ProductingBuild, произ
 class MagicBall(TwistUnit):  # Магический шар,снаряд, выпускаемый третьим уровнем башни лучников
     image = pygame.image.load(f'sprite/building/turret/3/magic_ball.png')
     name = 'Magic Ball'
-    placeable = False
     unit_type = TYPE_PROJECTILE
 
     def __init__(self, x, y, unit_id, player_id, angle):
@@ -897,8 +877,7 @@ class MagicBall(TwistUnit):  # Магический шар,снаряд, вып�
         if event.type in [SERVER_EVENT_UPDATE, CLIENT_EVENT_UPDATE]:
             self.move_to_angle(1.5, game)
             if game.side == SERVER:
-                if self.x < -WORLD_SIZE // 2 or self.x > WORLD_SIZE // 2 or\
-                        self.y < -WORLD_SIZE // 2 or self.y > WORLD_SIZE // 2:
+                if self.is_outside():
                     game.kill(self)
                     return
 
@@ -925,10 +904,8 @@ class MagicBall(TwistUnit):  # Магический шар,снаряд, вып�
         return f'_{self.angle}'
 
     def move(self, x, y, game):
-        if x != 0:
-            self.x += x
-        if y != 0:
-            self.y += y
+        self.x += x
+        self.y += y
         self.update_rect()
 
 
@@ -1019,11 +996,9 @@ class ArcherTower(Fighter):  # Башня лучников,имеет три у�
 
 
 class Tree(Unit):  # Дерево, из него рабочие добывают древесину
-    placeable = False
     name = 'Дерево'
     tree = pygame.image.load('sprite/icon/tree.png')
     image = tree
-    required_level = 1
     unit_type = TYPE_RESOURCE
 
     def __init__(self, x, y, unit_id, player_id):
@@ -1081,7 +1056,6 @@ class Dragon(Fighter):  # Дракон,уникальный воин,может 
     cost = (350.0, 0.0)
     power_cost = 5
     name = 'Дракон'
-    placeable = False
     images = []
     for i in range(10):
         anim = (
@@ -1102,10 +1076,8 @@ class Dragon(Fighter):  # Дракон,уникальный воин,может 
         self.delay = 45 * 10
 
     def move(self, x, y, game):
-        if x != 0:
-            self.x += x
-        if y != 0:
-            self.y += y
+        self.x += x
+        self.y += y
         if self.x < -WORLD_SIZE // 2:
             self.x = -WORLD_SIZE // 2
             self.rect.centerx = int(self.x) + self.offsetx
@@ -1156,7 +1128,6 @@ class Dragon(Fighter):  # Дракон,уникальный воин,может 
 
 
 class UncompletedBuilding(Unit):  # класс,не построенного,но уже размещенного здания
-    placeable = False
     unit_type = TYPE_BUILDING
 
     def __init__(self, x, y, unit_id, player_id, clazz_id):
@@ -1193,7 +1164,6 @@ class UncompletedBuilding(Unit):  # класс,не построенного,н�
 
 class Ballista(Fighter):  # Баллиста,уникальный класс воина,имеет преимущество против драконов   # todo Баланс
     cost = (350.0, 100.0)
-    placeable = False
     power_cost = 5
     name = 'Баллиста'
     images = []
@@ -1274,8 +1244,6 @@ class Stone(Unit):
     unit_type = TYPE_BUILDING
     image = pygame.image.load('sprite/icon/stone.png')
     name = 'Булыжник'
-    placeable = False
-    cost = (0.0, 0.0)
 
     def __init__(self, x, y, unit_id, player_id):
         self.image = Stone.image
