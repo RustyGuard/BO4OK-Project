@@ -106,15 +106,18 @@ class Minimap:
 
 
 class Particle(Sprite):
+    all_frames = {}
 
     def __init__(self, type_building, x, y, camera, particles):
         super().__init__(particles)
         self.cur_frame = 0
         self.x = x
         self.y = y
-        self.frames = [pygame.image.load(f'sprite/building/{type_building}/smoke/{1}.png'),
-                       pygame.image.load(f'sprite/building/{type_building}/smoke/{2}.png'),
-                       pygame.image.load(f'sprite/building/{type_building}/smoke/{3}.png')]
+        if type_building not in Particle.all_frames:
+            Particle.all_frames[type_building] = (pygame.image.load(f'sprite/building/{type_building}/smoke/{1}.png'),
+                                                  pygame.image.load(f'sprite/building/{type_building}/smoke/{2}.png'),
+                                                  pygame.image.load(f'sprite/building/{type_building}/smoke/{3}.png'))
+        self.frames = Particle.all_frames[type_building]
         self.image = self.frames[self.cur_frame]
         self.rect = self.image.get_rect()
         self.rect.centerx = self.x + camera.off_x
