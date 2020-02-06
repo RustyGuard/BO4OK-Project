@@ -211,8 +211,8 @@ class Client:
 
 class PlayerInfo:
     def __init__(self, nick=random_nick()):
-        self.money = 150.0
-        self.wood = 100.0
+        self.money = MONEY_FROM_START
+        self.wood = WOOD_FROM_START
         self.id = None
         self.nick = nick
         self.power = 0

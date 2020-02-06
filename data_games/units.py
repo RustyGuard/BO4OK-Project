@@ -264,6 +264,7 @@ class Arrow(TwistUnit):  # Стрела
                 self.time -= 1
                 if self.time <= 0:  # убивает спрайт стрелы если кончилось время
                     game.kill(self)
+                    return
                 for spr in game.get_intersect(self):
                     # проверяет то что атакуемый объект - не дружественный юнит и не снаряд
                     if spr.player_id not in [-1, self.player_id] and spr.unit_type != TYPE_PROJECTILE:
@@ -293,6 +294,7 @@ class BallistaArrow(TwistUnit):  # Болт баллисты
         self.set_angle(int(angle))
         self.time = 1200
         self.live_time = 5  # "прочность" болта,может задеть только 5 юнитов,после чего спрайт исчезает
+        self.time = 350  # максимальное время "жизни" объекта, по истечении которого он пропадает
         self.striken = []  # список задетых снарядом юнитов,болт не ударит дважды по тому же обьъекту
         self.damage = UNIT_STATS[BallistaArrow][1] * Forge.get_mult(self)[1]
 
@@ -308,6 +310,7 @@ class BallistaArrow(TwistUnit):  # Болт баллисты
                 self.time -= 1
                 if self.time <= 0:
                     game.kill(self)
+                    return
                 for spr in game.get_intersect(self):
                     if spr.player_id not in [-1, self.player_id] and spr.unit_type != TYPE_PROJECTILE:
                         if spr not in self.striken:
@@ -1249,7 +1252,7 @@ class Farm(Unit):  # Ферма, чем их больше,тем больше у
 
     @staticmethod
     def get_player_meat(player_id):  # получение уровня "мяса" игрока.Отвечает за возможное число юнитов
-        meat = 10
+        meat = BASE_MEAT
         to_remove = []
         for inst in Farm.instances:
             if not inst.is_alive():
@@ -1259,7 +1262,7 @@ class Farm(Unit):  # Ферма, чем их больше,тем больше у
                 meat += MEAT_PER_FARM
         for i in to_remove:
             Farm.instances.remove(i)
-        return meat
+        return min(meat, MAX_MEAT_VALUE)
 
     def __init__(self, x, y, unit_id, player_id):
         self.image = Farm.images[player_id]

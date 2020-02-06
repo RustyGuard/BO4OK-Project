@@ -53,11 +53,16 @@ FORESTS_COUNT = 10
 TREES_PER_FOREST = 30
 TREES_RANGE = 300
 
+BASE_MEAT = 10  # todo Баланс
 MEAT_PER_FARM = 5  # todo Баланс
+MAX_MEAT_VALUE = 500  # todo Баланс
 
 CLIENT = 1
 SERVER = 2
 
 # Каждые десять секунд срабатывает шанс на восстановление n% хп шахты в случае если она ипчерпана
-MINE_REGEN_CHANCE = 25  # todo Баланс (50%)
-MINE_REGEN_MULT = 0.25  # todo Баланс (25% здоровья при срабатывании)
+MINE_REGEN_CHANCE = 25  # (50%)
+MINE_REGEN_MULT = 0.25  # (25% здоровья при срабатывании)
+
+MONEY_FROM_START = 200.0  # todo Баланс
+WOOD_FROM_START = 200.0  # todo Баланс

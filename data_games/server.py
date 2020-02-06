@@ -175,8 +175,8 @@ class Server:
 class Player:
     def __init__(self, client):
         self.client: ClientConnection = client
-        self.money = 150.0
-        self.wood = 100.0
+        self.money = MONEY_FROM_START
+        self.wood = WOOD_FROM_START
         self.max_forge_level = 0
         self.id = -2
         self.power = 0
