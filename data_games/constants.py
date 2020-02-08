@@ -64,5 +64,5 @@ SERVER = 2
 MINE_REGEN_CHANCE = 25  # (50%)
 MINE_REGEN_MULT = 0.25  # (25% здоровья при срабатывании)
 
-MONEY_FROM_START = 200.0  # todo Баланс
+MONEY_FROM_START = 500.0  # todo Баланс
 WOOD_FROM_START = 200.0  # todo Баланс
