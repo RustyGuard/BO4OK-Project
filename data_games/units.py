@@ -1,3 +1,4 @@
+import logging
 import math
 from random import randint
 
@@ -174,7 +175,7 @@ class Unit(Sprite):  # родительский класс любого воин
         self.alive = False
         if Unit.free_id is not None:
             Unit.free_id.append(self.unit_id)
-            print('id', self.unit_id, 'free now')
+            logging.debug('id %d free now', self.unit_id)
         super().kill()
 
 
@@ -723,13 +724,13 @@ class Fortress(ProductingBuild):  # Крепость, задает уровен�
 
     def next_level(self, game):
         if self.level == 3:
-            print('Already on max level!')
+            logging.info('Already on max level!')
             return
         self.level += 1
 
     def level_cost(self, game):
         if self.level == 3:
-            print('Max level!')
+            logging.info('Max level!')
             return None
         return Fortress.level_costs[self.level - 1]
 
@@ -786,7 +787,7 @@ class Forge(Unit):  # Кузня,несколько уровней.При пос
 
     def next_level(self, game):
         if self.level == 4:
-            print('Already on max level!')
+            logging.info('Already on max level!')
             return
         self.level += 1
         if game.players[self.player_id].max_forge_level < self.level:
@@ -804,7 +805,7 @@ class Forge(Unit):  # Кузня,несколько уровней.При пос
 
     def level_cost(self, game):
         if self.level == 4:
-            print('Max level!')
+            logging.info('Max level!')
             return None
         return Forge.level_costs[self.level - 1]
 
@@ -939,7 +940,7 @@ class ArcherTower(Fighter):  # Башня лучников,имеет три у�
 
     def next_level(self, game):
         if self.level == 3:
-            print('Already on max level!')
+            logging.info('Already on max level!')
             return
         self.level += 1
         self.levels_update()
@@ -953,7 +954,7 @@ class ArcherTower(Fighter):  # Башня лучников,имеет три у�
 
     def level_cost(self, game):
         if self.level == 3:
-            print('Max level!')
+            logging.info('Max level!')
             return None
         return ArcherTower.level_costs[self.level - 1]
 
@@ -1036,7 +1037,7 @@ class FireProjectile(TwistUnit):  # Снаряд выпускаемый драк
                 else:
                     if self.current_state == 6:
                         game.kill(self)
-                        print('Dead')
+                        logging.info('Dead')
                         return
                     for spr in game.get_intersect(self):
                         if (spr != self) and (spr.unit_type != TYPE_PROJECTILE) \
@@ -1044,7 +1045,6 @@ class FireProjectile(TwistUnit):  # Снаряд выпускаемый драк
                             spr.take_damage(self.damage, game)
 
     def get_args(self):
-        print(self.angle)
         return f'_{self.angle}'
 
     def update_image(self):

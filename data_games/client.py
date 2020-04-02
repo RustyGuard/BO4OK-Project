@@ -1,3 +1,4 @@
+import logging
 import socket
 import threading
 from random import choice
@@ -178,7 +179,7 @@ class Client:
             self.disconnect(e)
 
     def disconnect(self, msg):
-        print("[EXCEPTION] Disconnected from server:", msg)
+        logging.info("[EXCEPTION] Disconnected from server: %s", msg)
         self.conn.close()
         self.connected = False
 
@@ -198,8 +199,8 @@ class Client:
                         command_buffer = command_buffer[splitter + 1:]
                         splitter = command_buffer.find(';')
             except Exception as ex:
-                print('[READ THREAD]', ex)
-                print('[READ THREAD] NO LONGER READING FROM SERVER!')
+                logging.info('[READ THREAD] %s', ex)
+                logging.info('[READ THREAD] NO LONGER READING FROM SERVER!')
                 self.disconnect(ex)
                 return
 
@@ -315,7 +316,7 @@ class Game:
         self.lock.acquire()
         en = self.find_with_id(unit_id)
         if en:
-            print('Fantom', en)
+            logging.warning('Fantom %s', en)
             en.kill()
         en = UNIT_TYPES[unit_type](x, y, unit_id, player_id, *args)
         en.offsetx = camera.off_x
@@ -324,7 +325,6 @@ class Game:
         self.sprites.add(en)
         if en.unit_type == TYPE_BUILDING:
             self.buildings.add(en)
-        # print(f'Created entity of type [{type}] at [{x}, {y}] owner {player_id}')
         self.lock.release()
 
     def get_intersect(self, sprite):
@@ -346,7 +346,7 @@ class Game:
                     i.set_target(TARGET_MOVE, (x, y))
                 self.lock.release()
                 return
-        print(f'No objects with this id {unit_id}!!!')
+        logging.info(f'No objects with this id {unit_id}!!!')
         self.lock.release()
 
     def find_with_id(self, unit_id):
@@ -428,11 +428,11 @@ class SelectArea:
                 mods = pygame.key.get_mods()
                 if mods & pygame.KMOD_CTRL:
                     if self.selected:
-                        print('Saved', index, self.selected)
+                        logging.info('Saved %d %s', index, self.selected)
                         self.saved[index] = self.selected.copy()
                 elif mods & pygame.KMOD_SHIFT:
                     if self.saved[index]:
-                        print('Loaded', index, self.saved[index])
+                        logging.info('Loaded %d %s', index, self.saved[index])
                         self.clear()
                         self.selected = self.saved[index].copy()
                         self.active = True
@@ -557,7 +557,7 @@ class PlaceManager:
 
     def process_events(self, event):
         if self.build_id is None:
-            print('PlaceManager has empty build_id!!!')
+            logging.warning('PlaceManager has empty build_id!!!')
             return
         if event.type == pygame.MOUSEBUTTONUP:
             if event.button == 1:
@@ -649,17 +649,17 @@ class ClientWait:
         players_info = [0, 0]
 
         def read(cmd, args):
-            print(cmd, args)
+            logging.debug('%s %s', cmd, args)
             if cmd == '0':
                 client.setEventCallback(None)
                 game.info.id = int(args[0])
                 game.other_nicks.extend(args[1::])
                 game.start()
-                print(f'Game started. Our id is {game.info.id}')
+                logging.debug(f'Game started. Our id is {game.info.id}')
             if cmd == '10':
                 players_info[0] = int(args[0])
                 players_info[1] = int(args[1])
-                print(players_info)
+                logging.debug(players_info)
 
         client.setEventCallback(read)
         background = pygame.image.load('sprite/data/play.png').convert()
@@ -714,7 +714,7 @@ class ClientWait:
                 anim_expectation_number = 0
             pygame.display.flip()
             clock.tick(60)
-        print('Ended')
+        logging.debug('Ended')
         if not running:
             client.disconnect('App closed.')
             return False
@@ -735,7 +735,7 @@ class ClientWait:
         def listen(cmd, args):
             try:
                 if settings['DEBUG']:
-                    print(cmd, args)
+                    logging.debug('%s %s', cmd, args)
 
                 if cmd == '1':  # Add entity of [type] at [x, y] with [id]
                     unit_type, x, y, unit_id, id_player = int(args[0]), int(args[1]), int(args[2]), int(args[3]), int(
@@ -753,7 +753,7 @@ class ClientWait:
                             if issubclass(type(en), Fighter):
                                 en.set_target(TARGET_ATTACK, game.find_with_id(other_id))
                         else:
-                            print('No object with id:', unit_id)
+                            logging.debug('No object with id: %d', unit_id)
                         game.lock.release()
                     elif args[0] == str(TARGET_NONE):
                         game.lock.acquire()
@@ -763,7 +763,7 @@ class ClientWait:
                             if issubclass(type(en), Fighter):
                                 en.set_target(TARGET_NONE, None)
                         else:
-                            print('No object with id:', unit_id)
+                            logging.debug('No object with id: %d', unit_id)
                         game.lock.release()
                 elif cmd == '3':  # Update Player Info
                     if args[0] == '1':  # Money
@@ -796,7 +796,7 @@ class ClientWait:
                     game.lock.release()
                 elif cmd == '6':
                     camera.set_pos(int(args[0]), int(args[1]))
-                    print(camera.off_x, camera.off_y)
+                    logging.debug('Camera position setted by server %d %d', camera.off_x, camera.off_y)
                 elif cmd == '7':
                     game.lock.acquire()
                     en = game.find_with_id(int(args[0]))
@@ -809,24 +809,24 @@ class ClientWait:
                     if args[0] == '0':
                         if args[1] == '0':
                             play_sound(sounds['no_money'])
-                            print('No money')
+                            logging.info('No money')
                         elif args[1] == '1':
                             play_sound(sounds['no_wood'])
-                            print('No wood')
+                            logging.info('No wood')
                         elif args[1] == '2':
                             play_sound(sounds['no_meat'])
-                            print('No meat')
+                            logging.info('No meat')
                     elif args[0] == '1':
                         play_sound(sounds['no_place'])
-                        print('No place')
+                        logging.info('No place')
                     elif args[0] == '2':
                         play_sound(sounds['no_level'])
-                        print('No fort level')
+                        logging.info('No fort level')
                 elif cmd == '9':
                     game.lock.acquire()
                     en = game.find_with_id(int(args[3]))
                     if en is None:
-                        print('Wasn"t', args)
+                        logging.warning('Wasn"t %s', args)
                         clazz_id = int(args[0])
                         if UNIT_TYPES[clazz_id] == Arrow:
                             en = UNIT_TYPES[int(args[0])](0, 0, 0, 0, 0)
@@ -853,10 +853,10 @@ class ClientWait:
                 elif cmd == '13':
                     minimap.marks.append((int(args[0]), int(args[1]), Color('green')))
                 else:
-                    print('Taken message:', cmd, args)
+                    logging.info('Taken message: %s %s', cmd, args)
             except Exception as ex:
                 game.lock.release()
-                print('[WARNING]', ex)
+                logging.info('[WARNING] %s', ex)
 
         Unit.free_id = None
         win = [None]
@@ -880,7 +880,7 @@ class ClientWait:
         managers['main'] = main_manager
         managers['place'] = PlaceManager(place)
         managers['product'] = ProductManager(screen)
-        print(game.other_nicks)
+        logging.info(game.other_nicks)
         fps_count, frames = 60, 0
 
         camera_area = Sprite()

@@ -1,4 +1,6 @@
-﻿import pygame
+﻿import logging
+
+import pygame
 from data_games.data import headpiece, Music, play, settings, statistics, titers, ip, gameover, menu
 from data_games.server import main
 from data_games.client import ClientWait
@@ -14,6 +16,8 @@ music = Music("menu", ["creators", "build_a_farm", "click",
 
 window = "headpiece"  # запуск игрового цикла
 ip_host = nickname = None
+
+logging.basicConfig(level=logging.INFO)
 while window:  # P.s Это сдаелано для оптимизации,дабы инициализации других окон не весела в программе
     music.update(window)
     if window == "headpiece":

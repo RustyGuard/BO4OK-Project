@@ -1,3 +1,4 @@
+import logging
 import socket
 import threading
 from math import radians, cos, sin
@@ -26,12 +27,12 @@ def get_curr_id():
     ID_LOCK.acquire()
     if FREE_ID:
         ret = FREE_ID.pop(0)
-        print('Free id taken', ret)
+        logging.info('Free id taken', ret)
         ID_LOCK.release()
         return ret
     c = CURRENT_ID
     CURRENT_ID += 1
-    print('Current id is', CURRENT_ID)
+    logging.debug('Current id is %d', CURRENT_ID)
     ID_LOCK.release()
     return c
 
@@ -48,7 +49,7 @@ class ClientConnection:
         self.nick = None
 
     def disconnect(self, msg):
-        print('Disconnected', msg)
+        logging.info('Disconnected %s', msg)
         self.conn.close()
 
     def send(self, msg):
@@ -56,7 +57,7 @@ class ClientConnection:
             try:
                 self.conn.send((msg + ';').encode())
             except Exception as ex:
-                print('[ClientConnection::send]', ex)
+                logging.info('[ClientConnection::send] %s', ex)
                 self.connected = False
 
     def send_bytes(self, msg):
@@ -64,7 +65,7 @@ class ClientConnection:
             try:
                 self.conn.send(msg + b';')
             except Exception as ex:
-                print('[ClientConnection::send]', ex)
+                logging.info('[ClientConnection::send] %s', ex)
                 self.connected = False
 
 
@@ -109,31 +110,31 @@ class Server:
         try:
             self.s.bind((server, port))
         except socket.error as e:
-            print(str(e))
+            logging.info(str(e))
 
         try:
             self.s.listen(1)
         except Exception as e:
             self.connected = False
-            print('Failed to listen:', e)
+            logging.info('Failed to listen: %s', e)
             return
-        print("Waiting for a connection, Server Started")
+        logging.info("Waiting for a connection, Server Started")
 
         while self.players < MAX_PLAYERS:
             try:
-                print("[CONNECT] Finding connection!")
+                logging.info("[CONNECT] Finding connection!")
                 conn, addr = self.s.accept()
                 if self.is_ready() or len(self.clients) >= MAX_PLAYERS:
                     break
                 self.players += 1
-                print(f"[CONNECT] Connected [{self.players}/{MAX_PLAYERS}]!")
+                logging.info(f"[CONNECT] Connected [{self.players}/{MAX_PLAYERS}]!")
                 self.authentication(conn, addr)
                 self.send_all(f'10_{self.players}_{MAX_PLAYERS}')
             except Exception as ex:
-                print(ex)
+                logging.info('%s', ex)
                 return
         # self.waiting = False
-        print('Everybody connected.')
+        logging.info('Everybody connected.')
 
     def authentication(self, conn, addr):
         try:
@@ -143,9 +144,9 @@ class Server:
             thread = threading.Thread(target=self.player_input_thread, args=(client,), daemon=True)
             client.thread = thread
             thread.start()
-            print(f"[AUTHENTICATION] Thread for client '{client.id}' started.")
+            logging.info(f"[AUTHENTICATION] Thread for client '{client.id}' started.")
         except Exception as e:
-            print("[AUTHENTICATION][ERROR]", e)
+            logging.info("[AUTHENTICATION][ERROR]", e)
             conn.close()
 
     def player_input_thread(self, client):
@@ -163,11 +164,11 @@ class Server:
                     command_buffer = command_buffer[splitter + 1:]
                     splitter = command_buffer.find(';')
             except Exception as ex:
-                print('[PLAYER THREAD ERROR] from client:', client.id, ex)
+                logging.info('[PLAYER THREAD ERROR] from client: %d %s', client.id, ex)
                 self.clients.remove(client)
                 self.disconnected_callback(client)
                 self.players -= 1
-                print(f"[CONNECT] Disconnected [{self.players}/{MAX_PLAYERS}]!")
+                logging.info(f"[CONNECT] Disconnected [{self.players}/{MAX_PLAYERS}]!")
                 self.send_all(f'10_{self.players}_{MAX_PLAYERS}')
                 return
 
@@ -197,11 +198,11 @@ class ServerGame:
         if pl is None:
             return False
         if pl.money < costs[0]:
-            print('Not enough money')
+            logging.info('Not enough money')
             pl.client.send('8_0_0')
             return False
         if pl.wood < costs[1]:
-            print('Not enough wood')
+            logging.info('Not enough wood')
             pl.client.send('8_0_1')
             return False
         pl.money -= costs[0]
@@ -214,15 +215,15 @@ class ServerGame:
         if pl is None:
             return False
         if pl.money < clazz.cost[0]:
-            print('Not enough money')
+            logging.info('Not enough money')
             pl.client.send('8_0_0')
             return False
         if pl.wood < clazz.cost[1]:
-            print('Not enough wood')
+            logging.info('Not enough wood')
             pl.client.send('8_0_1')
             return False
         if Farm.get_player_meat(player_id) < pl.power + clazz.power_cost:
-            print('Not enough meat')
+            logging.info('Not enough meat')
             pl.client.send('8_0_2')
             return False
         pl.money -= clazz.cost[0]
@@ -242,7 +243,7 @@ class ServerGame:
         for pl in losed:
             pl.client.send('12')
             pl.client.disconnect('You lose!!!')
-            print(pl.id, 'lose')
+            logging.info('%d lose', pl.id)
         if len(self.players) == 1:
             for i in self.players.values():
                 i.client.send('11')
@@ -375,7 +376,7 @@ class ServerGame:
                 p = i
                 break
         if p is None:
-            print('No player with', client, client.id)
+            logging.info(f'No player with {client} {client.id}')
         else:
             for spr in self.sprites:
                 if spr.player_id == self.players[p].id:
@@ -385,7 +386,7 @@ class ServerGame:
 
 
 def place_fortresses(game: ServerGame):
-    print('Placing started.')
+    logging.debug('Placing started.')
     players_count = len(game.players.values())
     angle = 0
     game.place(Mine, -100, -100, -1, ignore_money=True, ignore_fort_level=True, ignore_space=True)
@@ -434,7 +435,7 @@ def place_fortresses(game: ServerGame):
             tree_x, tree_y = [randint(forest_x - TREES_RANGE, forest_x + TREES_RANGE),
                               randint(forest_y - TREES_RANGE, forest_y + TREES_RANGE)]
 
-    print('Placing stopped.')
+    logging.debug('Placing stopped.')
     return forests
 
 
@@ -442,15 +443,15 @@ def main(screen, nickname):
     connect_info = [0, 0]
 
     def pre_read(cmd, args, client):
-        print(cmd, args)
+        logging.info(f'{cmd}, {args}')
         if cmd == '10':  # Player is ready
             connect_info[1] += 1
-            print(client, 'ready')
+            logging.info('%s ready', client)
             client.ready = True
             client.nick = args[0]
 
     def read(cmd, args, client):
-        print(cmd, args)
+        logging.info(f'{cmd}, {args}')
         if cmd == '1':
             game.place_building(UNIT_TYPES[int(args[0])], int(args[1]), int(args[2]), client.id)
         elif cmd == '2':
@@ -471,7 +472,7 @@ def main(screen, nickname):
         elif cmd == '5':
             game.upgrade_building(int(args[0]), client)
         else:
-            print('Invalid command')
+            logging.info('Invalid command')
 
     def connect_player(_):
         connect_info[0] += 1
@@ -497,7 +498,7 @@ def main(screen, nickname):
         attemps = 5
         while attemps > 0:
             if game.place(Tree, tree_x, tree_y, -1, ignore_money=True, ignore_fort_level=True) is not None:
-                print(f'Tree placed')
+                logging.info(f'Tree placed')
                 return
             tree_x, tree_y = [randint(forest_x - TREES_RANGE, forest_x + TREES_RANGE),
                               randint(forest_y - TREES_RANGE, forest_y + TREES_RANGE)]
@@ -508,7 +509,7 @@ def main(screen, nickname):
     server_ip = settings['IP']
     if server_ip == 'auto':
         server_ip = socket.gethostbyname(socket.gethostname())
-    print('\n\tYour ip is:', server_ip, '\n')
+    logging.info('Your ip is: %s', server_ip)
     server = Server(server_ip)
     game = ServerGame(server)
     Unit.game = game
@@ -568,7 +569,7 @@ def main(screen, nickname):
     for i, c in enumerate(server.clients):
         game.add_player(c, i)
         nicknames.append(c.nick)
-        print('Nick', c.nick)
+        logging.info('Nick %s', c.nick)
     for i, c in game.players.items():
         c.client.send(f'0_{i}_{"_".join(nicknames)}')
 
@@ -602,7 +603,7 @@ def main(screen, nickname):
                     game.find_losed_players()
                 sync_counter += 1
                 if sync_counter >= len(game.players):
-                    print('Sync')
+                    logging.info('Sync')
                     sync_counter = 0
                     game.lock.acquire()
                     for spr in game.sprites:
